@@ -1,6 +1,9 @@
+#!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
 #
-# This first line allow to use UTF-8 encoding on this file.
+# These lines allow to use UTF-8 encoding and run this file with `./update.py`, instead of `python update.py`
+# https://stackoverflow.com/questions/7670303/purpose-of-usr-bin-python3
+# https://stackoverflow.com/questions/728891/correct-way-to-define-python-source-code-encoding
 #
 #
 
@@ -21,11 +24,52 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import re
+import os
 import sys
+import imp
+import urllib
 import unittest
+import importlib
+import threading
+import find_forks
+import configparser
 
-sys.path.insert(0,'PythonDebugTools')
+def assert_path(module):
+    """
+        Import a module from a relative path
+        https://stackoverflow.com/questions/279237/import-a-module-from-a-relative-path
+    """
+    if module not in sys.path:
+        sys.path.insert( 0, module )
+
+index = 0;
+for path in sys.path:
+    print(index, path);
+    index += 1;
+
+# print( "current_directory: " + current_directory )
+current_directory = os.path.dirname( os.path.realpath( __file__ ) )
+
+assert_path( os.path.join( current_directory, '../PythonDebugTools' ) )
+assert_path( os.path.join( current_directory, 'six' ) )
+assert_path( os.path.join( current_directory, 'find_forks/find_forks' ) )
+
+# https://stackoverflow.com/questions/2534480/proper-way-to-reload-a-python-module-from-the-console
+# https://stackoverflow.com/questions/961162/reloading-module-giving-nameerror-name-reload-is-not-defined
+# print( sys.modules )
+# import git_wrapper
+# imp.reload( find_forks )
+# imp.reload( git_wrapper )
+imp.reload( sys )
+
+# sys.tracebacklimit = 10; raise ValueError
+from find_forks import find_forks as find_forks_
+
+import debug_tools
+
 from debug_tools import log
+debug_tools.g_debug_level = 127
 
 log( 1, "Debugging" )
 log( 1, "..." )
@@ -44,7 +88,7 @@ log( 1, "..." )
 ##
 def main():
     log( 1, "Entering on main(0)" )
-    create_backstroke_pulls()
+    ListPackagesThread().start()
 
     # https://github.com/sublimehq/Packages
     # "https://backstroke.us/",
@@ -63,15 +107,75 @@ def main():
 #
 # My forks upstreams
 #
+class ListPackagesThread(threading.Thread):
 
-def create_backstroke_pulls():
+    def __init__(self):
+        threading.Thread.__init__(self)
+
+    def run(self):
+        log( 1, "ListPackagesThread::run" )
+
+        self.create_backstroke_pulls()
+        log( 1, "Finished ListPackagesThread::run()" )
+
+    def create_backstroke_pulls(self):
+        log( 1, "ListPackagesThread::create_backstroke_pulls" )
+
+        configParser   = configparser.RawConfigParser()
+        configFilePath = os.path.join( current_directory, '..', '..', '.gitmodules' )
+
+        log( 1, "ListPackagesThread::sections: " + configFilePath )
+        configParser.read( configFilePath )
+
+        # https://stackoverflow.com/questions/22068050/iterate-over-sections-in-a-config-file
+        for section in configParser.sections():
+            log( 1, section )
+            # for (each_key, each_val) in configParser.items(section):
+            #     log( 1, each_key + ': ' + each_val )
+
+            # https://docs.python.org/3/library/configparser.html#configparser.ConfigParser.get
+            upstream   = configParser.get( section, "upstream" )
+            backstroke = configParser.get( section, "backstroke" )
+            path       = configParser.get( section, "path" )
+
+            # log( 1, upstream )
+            # log( 1, backstroke )
+
+            if len( upstream ) > 20:
+                find_forks.path = path
+                user, repository = parse_upstream( upstream )
+                find_forks_( user, repository, repo_path=path )
+                break
+
+            # https://stackoverflow.com/questions/2018026/what-are-the-differences-between-the-urllib-urllib2-and-requests-module
+            if len( backstroke ) > 20:
+                continue
+                # https://stackoverflow.com/questions/28396036/python-3-4-urllib-request-error-http-403
+                req = urllib.request.Request( backstroke, headers={'User-Agent': 'Mozilla/5.0'} )
+                res = urllib.request.urlopen( req )
+
+                # https://stackoverflow.com/questions/2667509/curl-alternative-in-python
+                print( res.read() )
+
 
     # Now loop through the above array
-    for current_url in backstroke_request_list:
-        print( str( current_url ) )
+    # for current_url in backstroke_request_list:
+    #     print( str( current_url ) )
         # curl -X POST current_url
 
 
+def parse_upstream( upstream ):
+    """
+    How to extract a substring from inside a string in Python?
+    https://stackoverflow.com/questions/4666973/how-to-extract-a-substring-from-inside-a-string-in-python
+    """
+    # https://regex101.com/r/TRxkI9/1/
+    matches = re.search( 'github\.com\/(.+)\/(.+)', upstream )
+
+    if matches:
+        return matches.group(1), matches.group(2)
+
+    return "", ""
 
 # Here's our "unit".
 def IsOdd(n):
@@ -85,3 +189,7 @@ class IsOddTests(unittest.TestCase):
 
 if __name__ == "__main__":
     main()
+
+def plugin_loaded():
+    main()
+
