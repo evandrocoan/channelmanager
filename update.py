@@ -26,14 +26,23 @@
 
 import re
 import os
+import io
 import sys
 import imp
 import shlex
-import urllib
 import unittest
 import importlib
 import threading
-import configparser
+
+# # https://stackoverflow.com/questions/9079036/detect-python-version-at-runtime
+if sys.version_info[0] < 3:
+    # https://github.com/noahcoad/google-spell-check/pull/26/files
+    import urllib2 as urllib
+    is_python_2 = True
+else:
+    # https://stackoverflow.com/questions/3969726/attributeerror-module-object-has-no-attribute-urlopen
+    import urllib.request as urllib
+    is_python_2 = False
 
 def assert_path(module):
     """
@@ -50,18 +59,27 @@ def print_python_envinronment():
         print(index, path);
         index += 1;
 
+# https://stackoverflow.com/questions/14087598/python-3-importerror-no-module-named-configparser
+try:
+    import configparser
+except:
+    from six.moves import configparser
+
 # print_python_envinronment()
 current_directory = os.path.dirname( os.path.realpath( __file__ ) )
 
 # print( "current_directory: " + current_directory )
-assert_path( os.path.join( current_directory, '../PythonDebugTools' ) )
+assert_path( os.path.join( os.path.dirname( current_directory ), 'PythonDebugTools' ) )
+assert_path( os.path.join( os.path.dirname( current_directory ), "Package Control", "package_control" ) )
 
 # sys.tracebacklimit = 10; raise ValueError
 find_forks_path = "StudioChannel/find_forks"
 
 # https://stackoverflow.com/questions/9123517/how-do-you-import-a-file-in-python-with-spaces-in-the-name
-cmd = importlib.import_module("Package Control.package_control.cmd")
+# cmd = __import__("Package Control.package_control.cmd")
+cmd = importlib.import_module("cmd")
 
+print_python_envinronment()
 # from find_forks import find_forks as find_forks_
 import debug_tools
 from debug_tools import log
@@ -117,11 +135,16 @@ class ListPackagesThread(threading.Thread):
     def create_backstroke_pulls(self):
         log( 1, "ListPackagesThread::create_backstroke_pulls" )
 
-        configParser   = configparser.RawConfigParser()
-        configFilePath = os.path.join( current_directory, '..', '..', '.gitmodules' )
+        configParser   = configparser.RawConfigParser( allow_no_value=True )
+        configFilePath = os.path.join( os.path.dirname( os.path.dirname( current_directory ) ), '.gitmodules' )
+
+        # https://stackoverflow.com/questions/45415684/how-to-stop-tabs-on-python-2-7-rawconfigparser-throwing-parsingerror/
+        with open( configFilePath ) as fakeFile:
+            # https://stackoverflow.com/questions/22316333/how-can-i-resolve-typeerror-with-stringio-in-python-2-7
+            fakefile = io.StringIO( fakeFile.read().replace( u"\t", u"" ) )
 
         log( 1, "ListPackagesThread::sections: " + configFilePath )
-        configParser.read( configFilePath )
+        configParser._read( fakefile, configFilePath )
 
         # https://stackoverflow.com/questions/22068050/iterate-over-sections-in-a-config-file
         for section in configParser.sections():
@@ -141,18 +164,21 @@ class ListPackagesThread(threading.Thread):
                 user, repository = parse_upstream( upstream )
                 command = cmd.Cli( None, True )
 
-                command.execute(
+                output = command.execute(
                     shlex.split( "python ../%s --user=%s --repo=%s" % ( find_forks_path, user, repository ) ),
-                    os.path.join( current_directory, '..', '..', path ),
+                    os.path.join( os.path.dirname( os.path.dirname( current_directory ) ), path ),
                     live_output=True
                 )
+
+                if is_python_2:
+                    print( output )
 
             # https://stackoverflow.com/questions/2018026/what-are-the-differences-between-the-urllib-urllib2-and-requests-module
             if len( backstroke ) > 20:
 
                 # https://stackoverflow.com/questions/28396036/python-3-4-urllib-request-error-http-403
-                req = urllib.request.Request( backstroke, headers={'User-Agent': 'Mozilla/5.0'} )
-                res = urllib.request.urlopen( req )
+                req = urllib.Request( backstroke, headers={'User-Agent': 'Mozilla/5.0'} )
+                res = urllib.urlopen( req )
 
                 # https://stackoverflow.com/questions/2667509/curl-alternative-in-python
                 print( res.read() )
@@ -176,6 +202,7 @@ def parse_upstream( upstream ):
         return matches.group(1), matches.group(2)
 
     return "", ""
+
 
 # Here's our "unit".
 def IsOdd(n):
