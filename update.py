@@ -28,6 +28,7 @@ import re
 import os
 import sys
 import imp
+import shlex
 import urllib
 import unittest
 import importlib
@@ -43,37 +44,33 @@ def assert_path(module):
     if module not in sys.path:
         sys.path.insert( 0, module )
 
-index = 0;
-for path in sys.path:
-    print(index, path);
-    index += 1;
+def print_python_envinronment():
+    index = 0;
 
-# print( "current_directory: " + current_directory )
+    for path in sys.path:
+        print(index, path);
+        index += 1;
+
+print_python_envinronment()
 current_directory = os.path.dirname( os.path.realpath( __file__ ) )
 
+# print( "current_directory: " + current_directory )
 assert_path( os.path.join( current_directory, '../PythonDebugTools' ) )
-assert_path( os.path.join( current_directory, 'six' ) )
-assert_path( os.path.join( current_directory, 'find_forks/find_forks' ) )
-
-# https://stackoverflow.com/questions/2534480/proper-way-to-reload-a-python-module-from-the-console
-# https://stackoverflow.com/questions/961162/reloading-module-giving-nameerror-name-reload-is-not-defined
-# print( sys.modules )
-# import git_wrapper
-# imp.reload( find_forks )
-# imp.reload( git_wrapper )
-imp.reload( sys )
 
 # sys.tracebacklimit = 10; raise ValueError
-from find_forks import find_forks as find_forks_
+find_forks_path = "StudioChannel/find_forks"
 
+# https://stackoverflow.com/questions/9123517/how-do-you-import-a-file-in-python-with-spaces-in-the-name
+cmd = importlib.import_module("Package Control.package_control.cmd")
+
+# from find_forks import find_forks as find_forks_
 import debug_tools
-
 from debug_tools import log
-debug_tools.g_debug_level = 127
 
+debug_tools.g_debug_level = 127
+log( 1, "..." )
+log( 1, "..." )
 log( 1, "Debugging" )
-log( 1, "..." )
-log( 1, "..." )
 
 ##
 ## Usage:
@@ -142,9 +139,14 @@ class ListPackagesThread(threading.Thread):
             # log( 1, backstroke )
 
             if len( upstream ) > 20:
-                find_forks.path = path
                 user, repository = parse_upstream( upstream )
-                find_forks_( user, repository, repo_path=path )
+                command = cmd.Cli( None, True )
+
+                command.execute(
+                    shlex.split( "python ../%s --user=%s --repo=%s" % ( find_forks_path, user, repository ) ),
+                    os.path.join( current_directory, '..', '..', path ),
+                    live_output=True
+                )
                 break
 
             # https://stackoverflow.com/questions/2018026/what-are-the-differences-between-the-urllib-urllib2-and-requests-module
