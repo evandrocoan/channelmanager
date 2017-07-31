@@ -1,3 +1,6 @@
 [submodule "find_forks"]
 	path = find_forks
 	url = https://github.com/frost-nzcr4/find_forks
+[submodule "six"]
+	path = six
+	url = https://github.com/benjaminp/six
