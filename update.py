@@ -101,11 +101,9 @@ log( 1, "Debugging" )
 ##
 def main():
     log( 1, "Entering on main(0)" )
-    ListPackagesThread().start()
+    UpdatePackagesThread().start()
 
-    # https://github.com/sublimehq/Packages
-    # "https://backstroke.us/",
-
+    # ListPackagesThread().start()
     # unittest.main()
 
 
@@ -115,7 +113,26 @@ def main():
 # https://github.com/sublimehq/Packages
 # https://github.com/evandrocoan/SublimeAMXX_Editor
 # https://github.com/evandrocoan/SublimePreferencesEditor
+#
+# https://github.com/sublimehq/Packages
+# "https://backstroke.us/",
 
+class UpdatePackagesThread(threading.Thread):
+
+    def __init__(self):
+        threading.Thread.__init__(self)
+
+    def run(self):
+        update_submodules()
+
+    def update_submodules():
+        command_line_interface = cmd.Cli( None, True )
+
+        run_command_line(
+            command_line_interface,
+            shlex.split( "git submodule foreach git pull --rebase" ),
+            os.path.dirname( os.path.dirname( current_directory ) ),
+        )
 
 #
 # My forks upstreams
