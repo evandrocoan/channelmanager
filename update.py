@@ -33,7 +33,6 @@ import urllib
 import unittest
 import importlib
 import threading
-import find_forks
 import configparser
 
 def assert_path(module):
@@ -51,7 +50,7 @@ def print_python_envinronment():
         print(index, path);
         index += 1;
 
-print_python_envinronment()
+# print_python_envinronment()
 current_directory = os.path.dirname( os.path.realpath( __file__ ) )
 
 # print( "current_directory: " + current_directory )
@@ -147,11 +146,10 @@ class ListPackagesThread(threading.Thread):
                     os.path.join( current_directory, '..', '..', path ),
                     live_output=True
                 )
-                break
 
             # https://stackoverflow.com/questions/2018026/what-are-the-differences-between-the-urllib-urllib2-and-requests-module
             if len( backstroke ) > 20:
-                continue
+
                 # https://stackoverflow.com/questions/28396036/python-3-4-urllib-request-error-http-403
                 req = urllib.request.Request( backstroke, headers={'User-Agent': 'Mozilla/5.0'} )
                 res = urllib.request.urlopen( req )
@@ -192,6 +190,6 @@ class IsOddTests(unittest.TestCase):
 if __name__ == "__main__":
     main()
 
-def plugin_loaded():
-    main()
+# def plugin_loaded():
+#     main()
 
