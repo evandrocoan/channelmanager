@@ -162,16 +162,21 @@ class ListPackagesThread(threading.Thread):
 
             if len( upstream ) > 20:
                 user, repository = parse_upstream( upstream )
-                command = cmd.Cli( None, True )
+                command_line_interface = cmd.Cli( None, True )
 
-                output = command.execute(
+                # Find all forks, add them as remote and fetch them
+                run_command_line(
+                    command_line_interface,
                     shlex.split( "python ../%s --user=%s --repo=%s" % ( find_forks_path, user, repository ) ),
                     os.path.join( os.path.dirname( os.path.dirname( current_directory ) ), path ),
-                    live_output=True
                 )
 
-                if is_python_2:
-                    print( output )
+                # Clean duplicate branches
+                run_command_line(
+                    command_line_interface,
+                    shlex.split( "sh ../%s/remove_duplicate_branches.sh %s" % ( find_forks_path, user ) ),
+                    os.path.join( os.path.dirname( os.path.dirname( current_directory ) ), path ),
+                )
 
             # https://stackoverflow.com/questions/2018026/what-are-the-differences-between-the-urllib-urllib2-and-requests-module
             if len( backstroke ) > 20:
@@ -188,6 +193,14 @@ class ListPackagesThread(threading.Thread):
     # for current_url in backstroke_request_list:
     #     print( str( current_url ) )
         # curl -X POST current_url
+
+
+def run_command_line(command_line_interface, commad, initial_folder):
+    print( "" )
+    output = command_line_interface.execute( commad, initial_folder, live_output=True )
+
+    if is_python_2:
+        print( output )
 
 
 def parse_upstream( upstream ):
