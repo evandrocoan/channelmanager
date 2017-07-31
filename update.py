@@ -79,7 +79,6 @@ find_forks_path = "StudioChannel/find_forks"
 # cmd = __import__("Package Control.package_control.cmd")
 cmd = importlib.import_module("cmd")
 
-print_python_envinronment()
 # from find_forks import find_forks as find_forks_
 import debug_tools
 from debug_tools import log
