@@ -70,14 +70,14 @@ current_directory = os.path.dirname( os.path.realpath( __file__ ) )
 
 # print( "current_directory: " + current_directory )
 assert_path( os.path.join( os.path.dirname( current_directory ), 'PythonDebugTools' ) )
-assert_path( os.path.join( os.path.dirname( current_directory ), "Package Control", "package_control" ) )
+assert_path( os.path.join( os.path.dirname( current_directory ), "Package Control" ) )
 
 # sys.tracebacklimit = 10; raise ValueError
 find_forks_path = "StudioChannel/find_forks"
 
 # https://stackoverflow.com/questions/9123517/how-do-you-import-a-file-in-python-with-spaces-in-the-name
 # cmd = __import__("Package Control.package_control.cmd")
-cmd = importlib.import_module("cmd")
+from package_control import cmd
 
 # from find_forks import find_forks as find_forks_
 import debug_tools
