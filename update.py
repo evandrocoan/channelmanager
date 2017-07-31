@@ -50,7 +50,7 @@ def assert_path(module):
         https://stackoverflow.com/questions/279237/import-a-module-from-a-relative-path
     """
     if module not in sys.path:
-        sys.path.insert( 0, module )
+        sys.path.append( module )
 
 def print_python_envinronment():
     index = 0;
