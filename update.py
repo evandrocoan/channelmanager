@@ -37,13 +37,18 @@ import threading
 
 # # https://stackoverflow.com/questions/9079036/detect-python-version-at-runtime
 if sys.version_info[0] < 3:
+    is_python_2 = True
+
     # https://github.com/noahcoad/google-spell-check/pull/26/files
     import urllib2 as urllib
-    is_python_2 = True
+    from urllib2 import HTTPError
+
 else:
+    is_python_2 = False
+
     # https://stackoverflow.com/questions/3969726/attributeerror-module-object-has-no-attribute-urlopen
     import urllib.request as urllib
-    is_python_2 = False
+    from urllib.error import HTTPError
 
 def assert_path(module):
     """
@@ -224,11 +229,14 @@ class RunBackstrokeThread(threading.Thread):
 
                 # https://stackoverflow.com/questions/28396036/python-3-4-urllib-request-error-http-403
                 req = urllib.Request( backstroke, headers={'User-Agent': 'Mozilla/5.0'} )
-                res = urllib.urlopen( req )
 
-                # https://stackoverflow.com/questions/2667509/curl-alternative-in-python
-                print( res.read() )
+                try:
+                    # https://stackoverflow.com/questions/2667509/curl-alternative-in-python
+                    res = urllib.urlopen( req )
+                    print( res.read() )
 
+                except HTTPError as error:
+                    print( "\n\n\nERROR! ", error.read() )
 
     # Now loop through the above array
     # for current_url in backstroke_request_list:
