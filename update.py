@@ -179,7 +179,10 @@ class RunBackstrokeThread(threading.Thread):
 
     def create_backstroke_pulls(self):
         log( 1, "RunBackstrokeThread::create_backstroke_pulls" )
-        find_forks = self._find_forks;
+        successfull_resquests = 0
+
+        find_forks    = self._find_forks;
+        request_index = 0
 
         configParser   = configparser.RawConfigParser( allow_no_value=True )
         configFilePath = os.path.join( os.path.dirname( os.path.dirname( current_directory ) ), '.gitmodules' )
@@ -194,7 +197,8 @@ class RunBackstrokeThread(threading.Thread):
 
         # https://stackoverflow.com/questions/22068050/iterate-over-sections-in-a-config-file
         for section in configParser.sections():
-            log( 1, section )
+            request_index += 1
+            log( 1, "Index: ", successfull_resquests, "/", request_index, ", ", section )
             # for (each_key, each_val) in configParser.items(section):
             #     log( 1, each_key + ': ' + each_val )
 
@@ -207,7 +211,8 @@ class RunBackstrokeThread(threading.Thread):
             # log( 1, backstroke )
 
             if find_forks and len( upstream ) > 20:
-                user, repository = parse_upstream( upstream )
+                successfull_resquests += 1
+                user, repository       = parse_upstream( upstream )
                 command_line_interface = cmd.Cli( None, True )
 
                 # Find all forks, add them as remote and fetch them
@@ -226,6 +231,7 @@ class RunBackstrokeThread(threading.Thread):
 
             # https://stackoverflow.com/questions/2018026/what-are-the-differences-between-the-urllib-urllib2-and-requests-module
             if not find_forks and len( backstroke ) > 20:
+                successfull_resquests += 1
 
                 # https://stackoverflow.com/questions/28396036/python-3-4-urllib-request-error-http-403
                 req = urllib.Request( backstroke, headers={'User-Agent': 'Mozilla/5.0'} )
