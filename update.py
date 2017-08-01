@@ -30,6 +30,7 @@ import io
 import sys
 import imp
 import shlex
+import argparse
 import unittest
 import importlib
 import threading
@@ -88,24 +89,46 @@ log( 1, "..." )
 log( 1, "..." )
 log( 1, "Debugging" )
 
-##
-## Usage:
-##   make <target>
-##
-## Targets:
-##   all              generate all assets
-##
-##   forks            check all forks not supported by `backstroke` against their upstream
-##   backstroke       check all backstroke registered repositories updates with their upstream
-##   update           perform a git pull from the remote repositories
-##
 def main():
+    # https://stackoverflow.com/questions/6382804/how-to-use-getopt-optarg-in-python-how-to-shift
     log( 1, "Entering on main(0)" )
-    UpdatePackagesThread().start()
 
-    # ListPackagesThread().start()
+    print_command_line_arguments()
+    argumentParser = argparse.ArgumentParser( description='Update Sublime Text Studio' )
+
+    argumentParser.add_argument( "-a", "--all", action="store_true",
+            help="Generate all assets" )
+
+    argumentParser.add_argument( "-b", "--backstroke", action="store_true",
+            help="Check all backstroke registered repositories updates with their upstream" )
+
+    argumentParser.add_argument( "-f", "--find-forks", action="store_true",
+            help="Find all repositories forks, fetch their branches and clean the duplicated branches" )
+
+    argumentParser.add_argument( "-p", "--pull", action="store_true",
+            help="Perform a git pull from the remote repositories" )
+
+    argumentsNamespace = argumentParser.parse_args()
+
+    # print( argumentsNamespace )
+    if argumentsNamespace.all:
+        # These are too long operations to run within Sublime Text console
+        RunGitPullThread().start()
+        RunBackstrokeThread().start()
+
+    elif argumentsNamespace.find_forks:
+        RunBackstrokeThread(True).start()
+
+    elif argumentsNamespace.backstroke:
+        RunBackstrokeThread(False).start()
+
+    elif argumentsNamespace.pull:
+        RunGitPullThread().start()
+
+    else:
+        argumentParser.print_help()
+
     # unittest.main()
-
 
 #
 # Repositories which are a fork from outside the Github, which need manually checking.
@@ -117,7 +140,7 @@ def main():
 # https://github.com/sublimehq/Packages
 # "https://backstroke.us/",
 
-class UpdatePackagesThread(threading.Thread):
+class RunGitPullThread(threading.Thread):
 
     def __init__(self):
         threading.Thread.__init__(self)
@@ -137,19 +160,21 @@ class UpdatePackagesThread(threading.Thread):
 #
 # My forks upstreams
 #
-class ListPackagesThread(threading.Thread):
+class RunBackstrokeThread(threading.Thread):
 
-    def __init__(self):
+    def __init__(self, find_forks):
         threading.Thread.__init__(self)
+        self._find_forks = find_forks
 
     def run(self):
-        log( 1, "ListPackagesThread::run" )
+        log( 1, "RunBackstrokeThread::run" )
 
         self.create_backstroke_pulls()
-        log( 1, "Finished ListPackagesThread::run()" )
+        log( 1, "Finished RunBackstrokeThread::run()" )
 
     def create_backstroke_pulls(self):
-        log( 1, "ListPackagesThread::create_backstroke_pulls" )
+        log( 1, "RunBackstrokeThread::create_backstroke_pulls" )
+        find_forks = self._find_forks;
 
         configParser   = configparser.RawConfigParser( allow_no_value=True )
         configFilePath = os.path.join( os.path.dirname( os.path.dirname( current_directory ) ), '.gitmodules' )
@@ -159,7 +184,7 @@ class ListPackagesThread(threading.Thread):
             # https://stackoverflow.com/questions/22316333/how-can-i-resolve-typeerror-with-stringio-in-python-2-7
             fakefile = io.StringIO( fakeFile.read().replace( u"\t", u"" ) )
 
-        log( 1, "ListPackagesThread::sections: " + configFilePath )
+        log( 1, "RunBackstrokeThread::sections: " + configFilePath )
         configParser._read( fakefile, configFilePath )
 
         # https://stackoverflow.com/questions/22068050/iterate-over-sections-in-a-config-file
@@ -176,7 +201,7 @@ class ListPackagesThread(threading.Thread):
             # log( 1, upstream )
             # log( 1, backstroke )
 
-            if len( upstream ) > 20:
+            if find_forks and len( upstream ) > 20:
                 user, repository = parse_upstream( upstream )
                 command_line_interface = cmd.Cli( None, True )
 
@@ -195,7 +220,7 @@ class ListPackagesThread(threading.Thread):
                 )
 
             # https://stackoverflow.com/questions/2018026/what-are-the-differences-between-the-urllib-urllib2-and-requests-module
-            if len( backstroke ) > 20:
+            if not find_forks and len( backstroke ) > 20:
 
                 # https://stackoverflow.com/questions/28396036/python-3-4-urllib-request-error-http-403
                 req = urllib.Request( backstroke, headers={'User-Agent': 'Mozilla/5.0'} )
@@ -233,6 +258,13 @@ def parse_upstream( upstream ):
     return "", ""
 
 
+def print_command_line_arguments():
+    log( 1, "( print_command_line_arguments ) len(sys.argv): " + str( len( sys.argv ) ) )
+
+    for arg in sys.argv:
+        log( 1, "( print_command_line_arguments ) arg: " + str( arg ) )
+
+
 # Here's our "unit".
 def IsOdd(n):
     return n % 2 == 1
@@ -246,6 +278,7 @@ class IsOddTests(unittest.TestCase):
 if __name__ == "__main__":
     main()
 
-# def plugin_loaded():
-#     main()
+def plugin_loaded():
+    pass
+    # main()
 
