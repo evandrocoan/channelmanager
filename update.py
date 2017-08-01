@@ -276,12 +276,14 @@ class RunBackstrokeThread(threading.Thread):
 
         with open( studio_session_file, 'wt' ) as configfile:
 
-            if maximum_errors != MAXIMUM_REQUEST_ERRORS:
+            if maximum_errors == MAXIMUM_REQUEST_ERRORS:
                 print( "\n\nCongratulations! It was a successful execution." )
+
+                lastSection.set( 'last_session', 'index', "0" )
                 lastSection.write( configfile )
 
             else:
-                lastSection.set( 'last_session', 'index', "0" )
+                print( "\n\nAttention! There were error on execution, please review its output." )
                 lastSection.write( configfile )
 
     # Now loop through the above array
