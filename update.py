@@ -71,8 +71,12 @@ try:
 except:
     from six.moves import configparser
 
+# How many errors are acceptable when the GitHub API request fails
+MAXIMUM_REQUEST_ERRORS = 10
+
 # print_python_envinronment()
-current_directory = os.path.dirname( os.path.realpath( __file__ ) )
+current_directory   = os.path.dirname( os.path.realpath( __file__ ) )
+studio_session_file = os.path.join( current_directory, 'last_session.studio-channel' )
 
 # print( "current_directory: " + current_directory )
 assert_path( os.path.join( os.path.dirname( current_directory ), 'PythonDebugTools' ) )
@@ -179,12 +183,23 @@ class RunBackstrokeThread(threading.Thread):
 
     def create_backstroke_pulls(self):
         log( 1, "RunBackstrokeThread::create_backstroke_pulls" )
-        successfull_resquests = 0
+        request_index        = 0
+        successful_resquests = 0
 
-        find_forks    = self._find_forks;
-        request_index = 0
+        find_forks     = self._find_forks;
+        lastSection    = configparser.ConfigParser( allow_no_value=True )
+        maximum_errors = MAXIMUM_REQUEST_ERRORS
 
-        configParser   = configparser.RawConfigParser( allow_no_value=True )
+        # https://pymotw.com/3/configparser/
+        if os.path.exists( studio_session_file ):
+            lastSection.read( studio_session_file )
+
+        else:
+            lastSection.add_section( 'last_session' )
+            lastSection.set( 'last_session', 'index', '0' )
+
+        start_index    = lastSection.getint( 'last_session', 'index' )
+        configParser   = configparser.RawConfigParser()
         configFilePath = os.path.join( os.path.dirname( os.path.dirname( current_directory ) ), '.gitmodules' )
 
         # https://stackoverflow.com/questions/45415684/how-to-stop-tabs-on-python-2-7-rawconfigparser-throwing-parsingerror/
@@ -198,7 +213,12 @@ class RunBackstrokeThread(threading.Thread):
         # https://stackoverflow.com/questions/22068050/iterate-over-sections-in-a-config-file
         for section in configParser.sections():
             request_index += 1
-            log( 1, "Index: ", successfull_resquests, "/", request_index, ", ", section )
+
+            if start_index > 0:
+                start_index -= 1
+                continue
+
+            log( 1, "Index: ", successful_resquests, "/", request_index, ", ", section )
             # for (each_key, each_val) in configParser.items(section):
             #     log( 1, each_key + ': ' + each_val )
 
@@ -211,7 +231,7 @@ class RunBackstrokeThread(threading.Thread):
             # log( 1, backstroke )
 
             if find_forks and len( upstream ) > 20:
-                successfull_resquests += 1
+                successful_resquests += 1
                 user, repository       = parse_upstream( upstream )
                 command_line_interface = cmd.Cli( None, True )
 
@@ -231,7 +251,7 @@ class RunBackstrokeThread(threading.Thread):
 
             # https://stackoverflow.com/questions/2018026/what-are-the-differences-between-the-urllib-urllib2-and-requests-module
             if not find_forks and len( backstroke ) > 20:
-                successfull_resquests += 1
+                successful_resquests += 1
 
                 # https://stackoverflow.com/questions/28396036/python-3-4-urllib-request-error-http-403
                 req = urllib.Request( backstroke, headers={'User-Agent': 'Mozilla/5.0'} )
@@ -242,7 +262,27 @@ class RunBackstrokeThread(threading.Thread):
                     print( res.read() )
 
                 except HTTPError as error:
+                    maximum_errors -= 1
+
                     print( "\n\n\nERROR! ", error.read() )
+                    lastSection.set( 'last_session', 'index', str( request_index ) )
+
+                    if maximum_errors < 1:
+                        break
+
+                    if start_index == 0:
+                        start_index = request_index
+                        lastSection.set( 'last_session', 'index', str(request_index - 1) )
+
+        with open( studio_session_file, 'wt' ) as configfile:
+
+            if maximum_errors != MAXIMUM_REQUEST_ERRORS:
+                print( "\n\nCongratulations! It was a successful execution." )
+                lastSection.write( configfile )
+
+            else:
+                lastSection.set( 'last_session', 'index', "0" )
+                lastSection.write( configfile )
 
     # Now loop through the above array
     # for current_url in backstroke_request_list:
