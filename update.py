@@ -155,9 +155,9 @@ class RunGitPullThread(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
-        update_submodules()
+        self.update_submodules()
 
-    def update_submodules():
+    def update_submodules(self):
         command_line_interface = cmd.Cli( None, True )
 
         run_command_line(
