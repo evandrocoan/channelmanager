@@ -109,10 +109,12 @@ def main():
             help="Generate all assets" )
 
     argumentParser.add_argument( "-b", "--backstroke", action="store_true",
-            help="Check all backstroke registered repositories updates with their upstream" )
+            help="Check all backstroke registered repositories updates with their upstream. "
+            "The backstroke URLs are now in a separate file on: Local/Backstroke.gitmodules" )
 
     argumentParser.add_argument( "-f", "--find-forks", action="store_true",
-            help="Find all repositories forks, fetch their branches and clean the duplicated branches" )
+            help="Find all repositories forks, fetch their branches and clean the duplicated branches. "
+            "The upstream data in on the `.gitmodules` file on: Sublime Text `Data` folder" )
 
     argumentParser.add_argument( "-p", "--pull", action="store_true",
             help="Perform a git pull from the remote repositories" )
@@ -145,9 +147,6 @@ def main():
 # https://github.com/sublimehq/Packages
 # https://github.com/evandrocoan/SublimeAMXX_Editor
 # https://github.com/evandrocoan/SublimePreferencesEditor
-#
-# https://github.com/sublimehq/Packages
-# "https://backstroke.us/",
 
 class RunGitPullThread(threading.Thread):
 
@@ -178,15 +177,20 @@ class RunBackstrokeThread(threading.Thread):
     def run(self):
         log( 1, "RunBackstrokeThread::run" )
 
-        self.create_backstroke_pulls()
+        if self._find_forks:
+            self.create_pulls()
+
+        else:
+            self.create_backstroke()
+
         log( 1, "Finished RunBackstrokeThread::run()" )
 
-    def create_backstroke_pulls(self):
-        log( 1, "RunBackstrokeThread::create_backstroke_pulls" )
+    def create_backstroke(self):
+        log( 1, "RunBackstrokeThread::create_backstroke" )
+
         request_index        = 0
         successful_resquests = 0
 
-        find_forks     = self._find_forks;
         lastSection    = configparser.ConfigParser( allow_no_value=True )
         maximum_errors = MAXIMUM_REQUEST_ERRORS
 
@@ -198,17 +202,12 @@ class RunBackstrokeThread(threading.Thread):
             lastSection.add_section( 'last_session' )
             lastSection.set( 'last_session', 'index', '0' )
 
-        start_index    = lastSection.getint( 'last_session', 'index' )
-        configParser   = configparser.RawConfigParser()
-        configFilePath = os.path.join( os.path.dirname( os.path.dirname( current_directory ) ), '.gitmodules' )
+        start_index  = lastSection.getint( 'last_session', 'index' )
+        configParser = configparser.RawConfigParser()
+        backstrokeFilePath = os.path.join( os.path.dirname( os.path.dirname( current_directory ) ), 'Local', 'Backstroke.gitmodules' )
 
-        # https://stackoverflow.com/questions/45415684/how-to-stop-tabs-on-python-2-7-rawconfigparser-throwing-parsingerror/
-        with open( configFilePath ) as fakeFile:
-            # https://stackoverflow.com/questions/22316333/how-can-i-resolve-typeerror-with-stringio-in-python-2-7
-            fakefile = io.StringIO( fakeFile.read().replace( u"\t", u"" ) )
-
-        log( 1, "RunBackstrokeThread::sections: " + configFilePath )
-        configParser._read( fakefile, configFilePath )
+        log( 1, "RunBackstrokeThread::sections: " + backstrokeFilePath )
+        configParser.read( backstrokeFilePath )
 
         # https://stackoverflow.com/questions/22068050/iterate-over-sections-in-a-config-file
         for section in configParser.sections():
@@ -225,32 +224,12 @@ class RunBackstrokeThread(threading.Thread):
             # https://docs.python.org/3/library/configparser.html#configparser.ConfigParser.get
             upstream   = configParser.get( section, "upstream" )
             backstroke = configParser.get( section, "backstroke" )
-            path       = configParser.get( section, "path" )
 
             # log( 1, upstream )
             # log( 1, backstroke )
 
-            if find_forks and len( upstream ) > 20:
-                successful_resquests += 1
-                user, repository       = parse_upstream( upstream )
-                command_line_interface = cmd.Cli( None, True )
-
-                # Find all forks, add them as remote and fetch them
-                run_command_line(
-                    command_line_interface,
-                    shlex.split( "python ../%s --user=%s --repo=%s" % ( find_forks_path, user, repository ) ),
-                    os.path.join( os.path.dirname( os.path.dirname( current_directory ) ), path ),
-                )
-
-                # Clean duplicate branches
-                run_command_line(
-                    command_line_interface,
-                    shlex.split( "sh ../%s/remove_duplicate_branches.sh %s" % ( find_forks_path, user ) ),
-                    os.path.join( os.path.dirname( os.path.dirname( current_directory ) ), path ),
-                )
-
             # https://stackoverflow.com/questions/2018026/what-are-the-differences-between-the-urllib-urllib2-and-requests-module
-            if not find_forks and len( backstroke ) > 20:
+            if len( backstroke ) > 20:
                 successful_resquests += 1
 
                 # https://stackoverflow.com/questions/28396036/python-3-4-urllib-request-error-http-403
@@ -290,6 +269,58 @@ class RunBackstrokeThread(threading.Thread):
     # for current_url in backstroke_request_list:
     #     print( str( current_url ) )
         # curl -X POST current_url
+
+    def create_pulls(self):
+        log( 1, "RunBackstrokeThread::create_pulls" )
+
+        request_index        = 0
+        successful_resquests = 0
+
+        gitFilePath  = os.path.join( os.path.dirname( os.path.dirname( current_directory ) ), '.gitmodules' )
+        configParser = configparser.RawConfigParser()
+
+        # https://stackoverflow.com/questions/45415684/how-to-stop-tabs-on-python-2-7-rawconfigparser-throwing-parsingerror/
+        with open( gitFilePath ) as fakeFile:
+            # https://stackoverflow.com/questions/22316333/how-can-i-resolve-typeerror-with-stringio-in-python-2-7
+            fakefile = io.StringIO( fakeFile.read().replace( u"\t", u"" ) )
+
+        log( 1, "RunBackstrokeThread::sections: " + gitFilePath )
+        configParser._read( fakefile, gitFilePath )
+        configParser.read( fakefile, gitFilePath )
+
+        # https://stackoverflow.com/questions/22068050/iterate-over-sections-in-a-config-file
+        for section in configParser.sections():
+            request_index += 1
+
+            log( 1, "Index: ", successful_resquests, "/", request_index, ", ", section )
+            # for (each_key, each_val) in configParser.items(section):
+            #     log( 1, each_key + ': ' + each_val )
+
+            # https://docs.python.org/3/library/configparser.html#configparser.ConfigParser.get
+            path       = configParser.get( section, "path" )
+            upstream   = configParser.get( section, "upstream" )
+
+            # log( 1, path )
+            # log( 1, upstream )
+
+            if len( upstream ) > 20:
+                successful_resquests += 1
+                user, repository       = parse_upstream( upstream )
+                command_line_interface = cmd.Cli( None, True )
+
+                # Find all forks, add them as remote and fetch them
+                run_command_line(
+                    command_line_interface,
+                    shlex.split( "python ../%s --user=%s --repo=%s" % ( find_forks_path, user, repository ) ),
+                    os.path.join( os.path.dirname( os.path.dirname( current_directory ) ), path ),
+                )
+
+                # Clean duplicate branches
+                run_command_line(
+                    command_line_interface,
+                    shlex.split( "sh ../%s/remove_duplicate_branches.sh %s" % ( find_forks_path, user ) ),
+                    os.path.join( os.path.dirname( os.path.dirname( current_directory ) ), path ),
+                )
 
 
 def run_command_line(command_line_interface, commad, initial_folder):
