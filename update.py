@@ -297,14 +297,16 @@ class RunBackstrokeThread(threading.Thread):
             #     log( 1, each_key + ': ' + each_val )
 
             # https://docs.python.org/3/library/configparser.html#configparser.ConfigParser.get
-            path       = configParser.get( section, "path" )
-            upstream   = configParser.get( section, "upstream" )
+            path     = configParser.get( section, "path" )
+            forkUrl  = configParser.get( section, "url" )
+            upstream = configParser.get( section, "upstream" )
 
             # log( 1, path )
             # log( 1, upstream )
 
             if len( upstream ) > 20:
-                successful_resquests += 1
+                successful_resquests  += 1
+                forkUser, _            = parse_upstream( forkUrl )
                 user, repository       = parse_upstream( upstream )
                 command_line_interface = cmd.Cli( None, True )
 
@@ -318,7 +320,7 @@ class RunBackstrokeThread(threading.Thread):
                 # Clean duplicate branches
                 run_command_line(
                     command_line_interface,
-                    shlex.split( "sh ../%s/remove_duplicate_branches.sh %s" % ( find_forks_path, user ) ),
+                    shlex.split( "sh ../%s/remove_duplicate_branches.sh %s" % ( find_forks_path, forkUser ) ),
                     os.path.join( os.path.dirname( os.path.dirname( current_directory ) ), path ),
                 )
 
