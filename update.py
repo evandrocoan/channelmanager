@@ -89,7 +89,7 @@ find_forks_path = "StudioChannel/find_forks"
 # cmd = __import__("Package Control.package_control.cmd")
 from package_control import cmd
 
-# from find_forks import find_forks as find_forks_
+# Import the debugger
 import debug_tools
 from debug_tools import log
 
