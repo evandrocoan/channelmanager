@@ -178,6 +178,7 @@ class RunBackstrokeThread(threading.Thread):
         log( 1, "RunBackstrokeThread::run" )
 
         if self._find_forks:
+            self.create_pulls(True)
             self.create_pulls()
 
         else:
@@ -270,7 +271,7 @@ class RunBackstrokeThread(threading.Thread):
     #     print( str( current_url ) )
         # curl -X POST current_url
 
-    def create_pulls(self):
+    def create_pulls(self, isKeyErrorChecking=False):
         log( 1, "RunBackstrokeThread::create_pulls" )
 
         request_index        = 0
@@ -304,7 +305,10 @@ class RunBackstrokeThread(threading.Thread):
             # log( 1, path )
             # log( 1, upstream )
 
-            if len( upstream ) > 20:
+            if isKeyErrorChecking:
+                pass
+
+            elif len( upstream ) > 20:
                 successful_resquests  += 1
                 forkUser, _            = parse_upstream( forkUrl )
                 user, repository       = parse_upstream( upstream )
@@ -335,8 +339,8 @@ def run_command_line(command_line_interface, commad, initial_folder):
 
 def parse_upstream( upstream ):
     """
-    How to extract a substring from inside a string in Python?
-    https://stackoverflow.com/questions/4666973/how-to-extract-a-substring-from-inside-a-string-in-python
+        How to extract a substring from inside a string in Python?
+        https://stackoverflow.com/questions/4666973/how-to-extract-a-substring-from-inside-a-string-in-python
     """
     # https://regex101.com/r/TRxkI9/1/
     matches = re.search( 'github\.com\/(.+)\/(.+)', upstream )
