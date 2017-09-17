@@ -172,7 +172,10 @@ class RunGitPullThread(threading.Thread):
     def update_submodules(self):
         # Continue looping over submodules with the “git submodule foreach” command after a non-zero exit
         # https://stackoverflow.com/questions/19728933/continue-looping-over-submodules-with-the-git-submodule-foreach-command-after
-        command   = shlex.split( "git submodule foreach 'git checkout master && git pull --rebase'" )
+        #
+        # git submodule foreach - Robust way to recursively commit a child module first?
+        # https://stackoverflow.com/questions/14846967/git-submodule-foreach-robust-way-to-recursively-commit-a-child-module-first
+        command   = shlex.split( "git submodule foreach --recursive 'date && git checkout master && git pull --rebase || :'" )
         directory = os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) )
 
         if sublime:
