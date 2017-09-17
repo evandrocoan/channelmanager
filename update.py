@@ -163,9 +163,11 @@ class RunGitPullThread(threading.Thread):
     def update_submodules(self):
         command_line_interface = cmd.Cli( None, True )
 
+        # Continue looping over submodules with the “git submodule foreach” command after a non-zero exit
+        # https://stackoverflow.com/questions/19728933/continue-looping-over-submodules-with-the-git-submodule-foreach-command-after
         run_command_line(
             command_line_interface,
-            shlex.split( "git submodule foreach git pull --rebase" ),
+            shlex.split( "git submodule foreach 'git checkout master && git pull --rebase'" ),
             os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) ),
         )
 
