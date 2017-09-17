@@ -68,22 +68,25 @@ def print_python_envinronment():
 # https://stackoverflow.com/questions/14087598/python-3-importerror-no-module-named-configparser
 try:
     import configparser
+    from configparser import NoOptionError
+
 except:
     from six.moves import configparser
+    from six.moves.configparser import NoOptionError
 
 # How many errors are acceptable when the GitHub API request fails
 MAXIMUM_REQUEST_ERRORS = 10
 
 # print_python_envinronment()
-current_directory   = os.path.dirname( os.path.realpath( __file__ ) )
-studio_session_file = os.path.join( current_directory, 'last_session.studio-channel' )
+CURRENT_DIRECTORY   = os.path.dirname( os.path.realpath( __file__ ) )
+STUDIO_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, 'last_session.studio-channel' )
 
-# print( "current_directory: " + current_directory )
-assert_path( os.path.join( os.path.dirname( current_directory ), 'PythonDebugTools' ) )
-assert_path( os.path.join( os.path.dirname( current_directory ), "Package Control" ) )
+# print( "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
+assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools' ) )
+assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), "Package Control" ) )
 
 # sys.tracebacklimit = 10; raise ValueError
-find_forks_path = "StudioChannel/find_forks"
+FIND_FORKS_PATH = "StudioChannel/find_forks"
 
 # https://stackoverflow.com/questions/9123517/how-do-you-import-a-file-in-python-with-spaces-in-the-name
 # cmd = __import__("Package Control.package_control.cmd")
@@ -125,7 +128,8 @@ def main():
     if argumentsNamespace.all:
         # These are too long operations to run within Sublime Text console
         RunGitPullThread().start()
-        RunBackstrokeThread().start()
+        RunBackstrokeThread(False).start()
+        RunBackstrokeThread(True).start()
 
     elif argumentsNamespace.find_forks:
         RunBackstrokeThread(True).start()
@@ -162,7 +166,7 @@ class RunGitPullThread(threading.Thread):
         run_command_line(
             command_line_interface,
             shlex.split( "git submodule foreach git pull --rebase" ),
-            os.path.dirname( os.path.dirname( current_directory ) ),
+            os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) ),
         )
 
 #
@@ -170,61 +174,71 @@ class RunGitPullThread(threading.Thread):
 #
 class RunBackstrokeThread(threading.Thread):
 
-    def __init__(self, find_forks):
+    def __init__(self, is_find_forks):
         threading.Thread.__init__(self)
-        self._find_forks = find_forks
+        self._is_find_forks = is_find_forks
 
     def run(self):
         log( 1, "RunBackstrokeThread::run" )
 
-        if self._find_forks:
-            self.create_pulls(True)
-            self.create_pulls()
+        if self._is_find_forks:
+
+            if self.run_find_forks(True):
+                self.run_find_forks()
 
         else:
             self.create_backstroke()
 
         log( 1, "Finished RunBackstrokeThread::run()" )
 
+    def open_last_session_data(self):
+        lastSection = configparser.ConfigParser( allow_no_value=True )
+
+        if os.path.exists( STUDIO_SESSION_FILE ):
+            lastSection.read( STUDIO_SESSION_FILE )
+
+        else:
+            lastSection.add_section( 'last_backstroke_session' )
+            lastSection.set( 'last_backstroke_session', 'index', '0' )
+
+            lastSection.add_section( 'last_findforks_session' )
+            lastSection.set( 'last_findforks_session', 'index', '0' )
+
+        return lastSection
+
     def create_backstroke(self):
         log( 1, "RunBackstrokeThread::create_backstroke" )
+        backstrokeFilePath = os.path.join( os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) ), 'Local', 'Backstroke.gitmodules' )
 
         request_index        = 0
         successful_resquests = 0
 
-        lastSection    = configparser.ConfigParser( allow_no_value=True )
+        # https://pymotw.com/3/configparser/
+        lastSection    = self.open_last_session_data()
         maximum_errors = MAXIMUM_REQUEST_ERRORS
 
-        # https://pymotw.com/3/configparser/
-        if os.path.exists( studio_session_file ):
-            lastSection.read( studio_session_file )
-
-        else:
-            lastSection.add_section( 'last_session' )
-            lastSection.set( 'last_session', 'index', '0' )
-
-        start_index  = lastSection.getint( 'last_session', 'index' )
-        configParser = configparser.RawConfigParser()
-        backstrokeFilePath = os.path.join( os.path.dirname( os.path.dirname( current_directory ) ), 'Local', 'Backstroke.gitmodules' )
+        start_index       = lastSection.getint( 'last_backstroke_session', 'index' )
+        backstrokeConfigs = configparser.RawConfigParser()
 
         log( 1, "RunBackstrokeThread::sections: " + backstrokeFilePath )
-        configParser.read( backstrokeFilePath )
+        backstrokeConfigs.read( backstrokeFilePath )
 
         # https://stackoverflow.com/questions/22068050/iterate-over-sections-in-a-config-file
-        for section in configParser.sections():
+        for section in backstrokeConfigs.sections():
             request_index += 1
 
+            # Walk until the last processed index, skipping everything else
             if start_index > 0:
                 start_index -= 1
                 continue
 
             log( 1, "Index: ", successful_resquests, "/", request_index, ", ", section )
-            # for (each_key, each_val) in configParser.items(section):
+            # for (each_key, each_val) in backstrokeConfigs.items(section):
             #     log( 1, each_key + ': ' + each_val )
 
             # https://docs.python.org/3/library/configparser.html#configparser.ConfigParser.get
-            upstream   = configParser.get( section, "upstream" )
-            backstroke = configParser.get( section, "backstroke" )
+            upstream   = backstrokeConfigs.get( section, "upstream" )
+            backstroke = backstrokeConfigs.get( section, "backstroke" )
 
             # log( 1, upstream )
             # log( 1, backstroke )
@@ -245,25 +259,28 @@ class RunBackstrokeThread(threading.Thread):
                     maximum_errors -= 1
 
                     print( "\n\n\nERROR! ", error.read() )
-                    lastSection.set( 'last_session', 'index', str( request_index ) )
+                    lastSection.set( 'last_backstroke_session', 'index', str( request_index - 1 ) )
 
                     if maximum_errors < 1:
                         break
 
-                    if start_index == 0:
-                        start_index = request_index
-                        lastSection.set( 'last_session', 'index', str(request_index - 1) )
+                    else:
+                        continue
 
-        with open( studio_session_file, 'wt' ) as configfile:
+        self.save_session_data( maximum_errors, 'last_backstroke_session', lastSection )
+
+    def save_session_data(self, maximum_errors, session_key, lastSection):
+
+        with open( STUDIO_SESSION_FILE, 'wt' ) as configfile:
 
             if maximum_errors == MAXIMUM_REQUEST_ERRORS:
                 print( "\n\nCongratulations! It was a successful execution." )
 
-                lastSection.set( 'last_session', 'index', "0" )
+                lastSection.set( session_key, 'index', "0" )
                 lastSection.write( configfile )
 
             else:
-                print( "\n\nAttention! There were error on execution, please review its output." )
+                print( "\n\nAttention! There were errors on execution, please review its output." )
                 lastSection.write( configfile )
 
     # Now loop through the above array
@@ -271,14 +288,19 @@ class RunBackstrokeThread(threading.Thread):
     #     print( str( current_url ) )
         # curl -X POST current_url
 
-    def create_pulls(self, isKeyErrorChecking=False):
-        log( 1, "RunBackstrokeThread::create_pulls" )
+    def run_find_forks(self, isKeyErrorChecking=False):
+        log( 1, "RunBackstrokeThread::run_find_forks" )
+        maximum_errors = MAXIMUM_REQUEST_ERRORS
+
+        # https://pymotw.com/3/configparser/
+        lastSection = self.open_last_session_data()
+        start_index = lastSection.getint( 'last_findforks_session', 'index' )
 
         request_index        = 0
         successful_resquests = 0
 
-        gitFilePath  = os.path.join( os.path.dirname( os.path.dirname( current_directory ) ), '.gitmodules' )
-        configParser = configparser.RawConfigParser()
+        gitFilePath      = os.path.join( os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) ), '.gitmodules' )
+        upstreamsConfigs = configparser.RawConfigParser()
 
         # https://stackoverflow.com/questions/45415684/how-to-stop-tabs-on-python-2-7-rawconfigparser-throwing-parsingerror/
         with open( gitFilePath ) as fakeFile:
@@ -286,24 +308,40 @@ class RunBackstrokeThread(threading.Thread):
             fakefile = io.StringIO( fakeFile.read().replace( u"\t", u"" ) )
 
         log( 1, "RunBackstrokeThread::sections: " + gitFilePath )
-        configParser._read( fakefile, gitFilePath )
-        configParser.read( fakefile, gitFilePath )
+        upstreamsConfigs._read( fakefile, gitFilePath )
+        upstreamsConfigs.read( fakefile, gitFilePath )
 
         # https://stackoverflow.com/questions/22068050/iterate-over-sections-in-a-config-file
-        for section in configParser.sections():
+        for section in upstreamsConfigs.sections():
             request_index += 1
 
+            # Walk until the last processed index, skipping everything else
+            if start_index > 0:
+                start_index -= 1
+                continue
+
             log( 1, "Index: ", successful_resquests, "/", request_index, ", ", section )
-            # for (each_key, each_val) in configParser.items(section):
+            # for (each_key, each_val) in upstreamsConfigs.items(section):
             #     log( 1, each_key + ': ' + each_val )
 
-            # https://docs.python.org/3/library/configparser.html#configparser.ConfigParser.get
-            path     = configParser.get( section, "path" )
-            forkUrl  = configParser.get( section, "url" )
-            upstream = configParser.get( section, "upstream" )
+            try:
 
-            # log( 1, path )
-            # log( 1, upstream )
+                # https://docs.python.org/3/library/configparser.html#configparser.ConfigParser.get
+                path     = upstreamsConfigs.get( section, "path" )
+                forkUrl  = upstreamsConfigs.get( section, "url" )
+                upstream = upstreamsConfigs.get( section, "upstream" )
+
+            except( NoOptionError, KeyError ) as error:
+                maximum_errors -= 1
+
+                print( "\n\n\nERROR! " + str( error ) )
+                lastSection.set( 'last_findforks_session', 'index', str( request_index - 1 ) )
+
+                self.save_session_data( maximum_errors, 'last_findforks_session', lastSection )
+                return False
+
+            # log( 1, "path: " + path )
+            # log( 1, "upstream: " + upstream )
 
             if isKeyErrorChecking:
                 pass
@@ -317,17 +355,19 @@ class RunBackstrokeThread(threading.Thread):
                 # Find all forks, add them as remote and fetch them
                 run_command_line(
                     command_line_interface,
-                    shlex.split( "python ../%s --user=%s --repo=%s" % ( find_forks_path, user, repository ) ),
-                    os.path.join( os.path.dirname( os.path.dirname( current_directory ) ), path ),
+                    shlex.split( "python ../%s --user=%s --repo=%s" % ( FIND_FORKS_PATH, user, repository ) ),
+                    os.path.join( os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) ), path ),
                 )
 
                 # Clean duplicate branches
                 run_command_line(
                     command_line_interface,
-                    shlex.split( "sh ../%s/remove_duplicate_branches.sh %s" % ( find_forks_path, forkUser ) ),
-                    os.path.join( os.path.dirname( os.path.dirname( current_directory ) ), path ),
+                    shlex.split( "sh ../%s/remove_duplicate_branches.sh %s" % ( FIND_FORKS_PATH, forkUser ) ),
+                    os.path.join( os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) ), path ),
                 )
 
+        self.save_session_data( maximum_errors, 'last_findforks_session', lastSection )
+        return True
 
 def run_command_line(command_line_interface, commad, initial_folder):
     print( "" )
