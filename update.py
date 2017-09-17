@@ -109,6 +109,7 @@ debug_tools.g_debug_level = 127
 log( 1, "..." )
 log( 1, "..." )
 log( 1, "Debugging" )
+log( 1, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 
 def main():
     # https://stackoverflow.com/questions/6382804/how-to-use-getopt-optarg-in-python-how-to-shift
@@ -170,25 +171,40 @@ class RunGitPullThread(threading.Thread):
         self.update_submodules()
 
     def update_submodules(self):
-        # Continue looping over submodules with the “git submodule foreach” command after a non-zero exit
-        # https://stackoverflow.com/questions/19728933/continue-looping-over-submodules-with-the-git-submodule-foreach-command-after
-        #
+        directory  = os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) )
+        error_list = []
+        log( 1, "update_submodules::Current directory: " + directory )
+
+        for _ in range(0, 100):
+            error_list.append( "Error! " )
+
+        # What is the most efficient string concatenation method in python?
+        # https://stackoverflow.com/questions/1316887/what-is-the-most-efficient-string-concatenation-method-in-python
+        error_string = ''.join( error_list )
+
         # git submodule foreach - Robust way to recursively commit a child module first?
         # https://stackoverflow.com/questions/14846967/git-submodule-foreach-robust-way-to-recursively-commit-a-child-module-first
-        command   = shlex.split( "git submodule foreach --recursive 'date && git checkout master && git pull --rebase || :'" )
-        directory = os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) )
+        command  = "git submodule foreach --recursive "
+
+        # Continue looping over submodules with the “git submodule foreach” command after a non-zero exit
+        # https://stackoverflow.com/questions/19728933/continue-looping-over-submodules-with-the-git-submodule-foreach-command-after
+        command += "'date && git checkout master && git pull --rebase || printf \"%s\n\n\n\n\n\"'" % error_string
 
         if sublime:
             command_line_interface = cmd.Cli( None, True )
-            run_command_line( command_line_interface, command, directory )
+            run_command_line( command_line_interface, shlex.split( command ), directory )
 
         else:
-            # https://stackoverflow.com/questions/89228/calling-an-external-command-in-python
-            # https://stackoverflow.com/questions/89228/calling-an-external-command-in-python
-            process = subprocess.Popen( command , shell=True, cwd=directory )
-            process.communicate()
+            # Python os.system() call runs in incorrect directory
+            # https://stackoverflow.com/questions/18066278/python-os-system-call-runs-in-incorrect-directory
+            os.chdir( directory )
 
-#
+            # Calling an external command in Python
+            # https://stackoverflow.com/questions/89228/calling-an-external-command-in-python
+            os.system( command )
+
+        log( 1, "Process finished! If there are any, review its log output looking for 'Error!' messages." )
+
 # My forks upstreams
 #
 class RunBackstrokeThread(threading.Thread):
