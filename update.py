@@ -34,6 +34,15 @@ import argparse
 import unittest
 import importlib
 import threading
+import subprocess
+
+try:
+    # Allow using this file on the website where the sublime
+    # module is unavailable
+    import sublime
+
+except (ImportError):
+    sublime = None
 
 # # https://stackoverflow.com/questions/9079036/detect-python-version-at-runtime
 if sys.version_info[0] < 3:
@@ -161,15 +170,20 @@ class RunGitPullThread(threading.Thread):
         self.update_submodules()
 
     def update_submodules(self):
-        command_line_interface = cmd.Cli( None, True )
-
         # Continue looping over submodules with the “git submodule foreach” command after a non-zero exit
         # https://stackoverflow.com/questions/19728933/continue-looping-over-submodules-with-the-git-submodule-foreach-command-after
-        run_command_line(
-            command_line_interface,
-            shlex.split( "git submodule foreach 'git checkout master && git pull --rebase'" ),
-            os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) ),
-        )
+        command   = shlex.split( "git submodule foreach 'git checkout master && git pull --rebase'" )
+        directory = os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) )
+
+        if sublime:
+            command_line_interface = cmd.Cli( None, True )
+            run_command_line( command_line_interface, command, directory )
+
+        else:
+            # https://stackoverflow.com/questions/89228/calling-an-external-command-in-python
+            # https://stackoverflow.com/questions/89228/calling-an-external-command-in-python
+            process = subprocess.Popen( command , shell=True, cwd=directory )
+            process.communicate()
 
 #
 # My forks upstreams
