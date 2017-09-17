@@ -257,9 +257,11 @@ class RunBackstrokeThread(threading.Thread):
 
                 except HTTPError as error:
                     maximum_errors -= 1
-
                     print( "\n\n\nERROR! ", error.read() )
-                    lastSection.set( 'last_backstroke_session', 'index', str( request_index - 1 ) )
+
+                    # Save only where the first error happened
+                    if maximum_errors == MAXIMUM_REQUEST_ERRORS - 1:
+                        lastSection.set( 'last_backstroke_session', 'index', str( request_index - 1 ) )
 
                     if maximum_errors < 1:
                         break
