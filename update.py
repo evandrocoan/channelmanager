@@ -105,7 +105,10 @@ from package_control import cmd
 import debug_tools
 from debug_tools import log
 
-debug_tools.g_debug_level = 127
+# Debugger settings: 0 - disabled, 127 - enabled
+debug_tools.g_debug_level = 0
+debug_tools.debugger_name = os.path.basename( __file__ )
+
 log( 1, "..." )
 log( 1, "..." )
 log( 1, "Debugging" )
