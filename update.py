@@ -102,18 +102,17 @@ FIND_FORKS_PATH = "StudioChannel/find_forks"
 from package_control import cmd
 
 # Import the debugger
-import debug_tools
-from debug_tools import log
+from debug_tools import Debugger
 
 # Debugger settings: 0 - disabled, 127 - enabled
-debug_tools.g_debug_level = 1
-debug_tools.debugger_name = os.path.basename( __file__ )
+log = Debugger( 127, os.path.basename( __file__ ) )
+
+# log( 1, "..." )
+# log( 1, "..." )
+# log( 1, "Debugging" )
+# log( 1, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 
 def main():
-    log( 1, "..." )
-    log( 1, "..." )
-    log( 1, "Debugging" )
-    log( 1, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
     log( 1, "Entering on main(0)" )
 
     # https://stackoverflow.com/questions/6382804/how-to-use-getopt-optarg-in-python-how-to-shift
