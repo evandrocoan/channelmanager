@@ -191,7 +191,7 @@ class RunGitPullThread(threading.Thread):
 
         # Continue looping over submodules with the “git submodule foreach” command after a non-zero exit
         # https://stackoverflow.com/questions/19728933/continue-looping-over-submodules-with-the-git-submodule-foreach-command-after
-        command += "'date && git checkout master && git pull --rebase || printf \"%s\n\n\n\n\n\"'" % error_string
+        command += "'date && git checkout master && git pull --rebase && printf \"\n\" || printf \"%s\n\n\n\n\n\"'" % error_string
 
         if sublime:
             command_line_interface = cmd.Cli( None, True )
