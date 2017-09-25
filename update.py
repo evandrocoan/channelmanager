@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: UTF-8 -*-
-#
+
 # These lines allow to use UTF-8 encoding and run this file with `./update.py`, instead of `python update.py`
 # https://stackoverflow.com/questions/7670303/purpose-of-usr-bin-python3
 # https://stackoverflow.com/questions/728891/correct-way-to-define-python-source-code-encoding
