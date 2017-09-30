@@ -24,19 +24,13 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import sublime
+
 import os
 import sys
 import zipfile
 import threading
 import contextlib
-
-try:
-    # Allow using this file on the website where the sublime
-    # module is unavailable
-    import sublime
-
-except (ImportError):
-    sublime = None
 
 
 # https://stackoverflow.com/questions/14087598/python-3-importerror-no-module-named-configparser
@@ -139,23 +133,19 @@ def is_sublime_text_upgraded():
                        upgrade, False otherwise.
     """
 
-    if sublime:
-        current_version = int( sublime.version() )
+    current_version = int( sublime.version() )
 
-        last_section = open_last_session_data( UPGRADE_SESSION_FILE )
-        last_version = int( last_section.getint( 'last_sublime_text_version', 'integer_value' ) )
+    last_section = open_last_session_data( UPGRADE_SESSION_FILE )
+    last_version = int( last_section.getint( 'last_sublime_text_version', 'integer_value' ) )
 
-        last_section.set( 'last_sublime_text_version', 'integer_value', str( current_version ) )
-        save_session_data( last_section, UPGRADE_SESSION_FILE )
+    last_section.set( 'last_sublime_text_version', 'integer_value', str( current_version ) )
+    save_session_data( last_section, UPGRADE_SESSION_FILE )
 
-        if last_version < current_version:
-            return True
-
-        else:
-            return False
+    if last_version < current_version:
+        return True
 
     else:
-        return True
+        return False
 
 
 def open_last_session_data(session_file):
