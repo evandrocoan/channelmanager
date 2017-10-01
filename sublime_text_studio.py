@@ -161,36 +161,52 @@ def get_repositories( all_packages ):
     repositories = []
     gitModulesFile.read( gitFilePath )
 
+    index = 0
+
     for section in gitModulesFile.sections():
         url  = gitModulesFile.get( section, "url" )
         path = gitModulesFile.get( section, "path" )
 
-        # log( 1, "url:  ", url )
-        # log( 1, "path: ", path )
+        release_date = get_git_date( os.path.join( sublimeFolder, path ) )
+
+        # For quick testing
+        # index += 1
+        # if index > 10:
+        #     break
 
         if 'Packages' in os.path.dirname( path ):
+            release_data    = {}
             repository_info = {}
             repository_name = os.path.basename( path )
 
+            if repository_name in all_packages:
+                repository_info = all_packages[repository_name]
+                release_data    = repository_info['releases'][0]
+
+            else:
+                repository_info['details']  = url
+                repository_info['homepage'] = url
+
+                release_data['platforms']    = "*"
+                release_data['sublime_text'] = ">=3126"
+
+            release_data['url']     = get_download_url( url )
+            release_data['date']    = release_date
+            release_data['version'] = get_git_version( release_date )
+
+            if 'description' not in repository_info:
+                repository_info['description'] = "No description available."
+
             repository_info['name']     = repository_name
-            repository_info['details']  = url
-            repository_info['homepage'] = url
-            repository_info['releases'] = []
+            repository_info['releases'] = [ release_data ]
 
-            release_date = get_git_date( os.path.join( sublimeFolder, path ) )
-
-            release_info         = {}
-            release_info['url']  = url.replace("//github.com/", "//codeload.github.com/") + "/zip/master"
-            release_info['date'] = release_date
-
-            release_info['platforms']    = "*"
-            release_info['version']      = get_git_version( release_date )
-            release_info['sublime_text'] = ">=3126"
-
-            repository_info['releases'].append( release_info )
             repositories.append(repository_info)
 
     return repositories
+
+
+def get_download_url(url):
+    return url.replace("//github.com/", "//codeload.github.com/") + "/zip/master"
 
 
 def get_git_date(repository_path):
