@@ -36,6 +36,8 @@ import re
 import shlex
 import subprocess
 
+from collections import OrderedDict
+
 
 def assert_path(module):
     """
@@ -116,7 +118,7 @@ def load_deafault_channel():
 
 
 def create_repository_file( repositories, dependencies ):
-    repository_file = {}
+    repository_file = OrderedDict()
     repository_file['schema_version'] = "3.0.0"
 
     repository_file['packages']     = repositories
@@ -127,17 +129,17 @@ def create_repository_file( repositories, dependencies ):
 
 
 def create_channel_file( repositories, dependencies ):
-    channel_file   = {}
+    channel_file   = OrderedDict()
     repository_url = "https://raw.githubusercontent.com/evandrocoan/SublimeTextStudioChannel/master/repository.json"
 
     channel_file['repositories'] = []
     channel_file['repositories'].append( repository_url )
 
     channel_file['schema_version'] = "3.0.0"
-    channel_file['packages_cache'] = {}
+    channel_file['packages_cache'] = OrderedDict()
     channel_file['packages_cache'][repository_url] = repositories
 
-    channel_file['dependencies_cache'] = {}
+    channel_file['dependencies_cache'] = OrderedDict()
     channel_file['dependencies_cache'][repository_url] = dependencies
 
     # print_data_file( STUDIO_CHANNEL_FILE, channel_file )
@@ -165,12 +167,12 @@ def get_repositories( all_packages ):
 
         # # For quick testing
         # index += 1
-        # if index > 3:
+        # if index > 7:
         #     break
 
         if 'Packages' in os.path.dirname( path ):
-            release_data    = {}
-            repository_info = {}
+            release_data    = OrderedDict()
+            repository_info = OrderedDict()
             repository_name = os.path.basename( path )
 
             if repository_name in all_packages:
@@ -237,7 +239,29 @@ def get_repositories( all_packages ):
                 release_data['url'] = get_download_url( url )
                 repositories.append( repository_info )
 
-    return repositories, dependencies
+            sort_dictionary( release_data )
+
+    return sort_list_of_dictionary( repositories) , sort_list_of_dictionary( dependencies )
+
+
+def sort_dictionary(dictionary):
+    return OrderedDict( sorted( dictionary.items() ) )
+
+
+def sort_list_of_dictionary(list_of_dictionaries):
+    """
+        How do I sort a list of dictionaries by values of the dictionary in Python?
+        https://stackoverflow.com/questions/72899/how-do-i-sort-a-list-of-dictionaries-by-values-of-the-dictionary-in-python
+
+        case-insensitive list sorting, without lowercasing the result?
+        https://stackoverflow.com/questions/10269701/case-insensitive-list-sorting-without-lowercasing-the-result
+    """
+    sorted_list = []
+
+    for dictionary in list_of_dictionaries:
+        sorted_list.append( sort_dictionary( dictionary ) )
+
+    return sorted( sorted_list, key=lambda k: k['name'].lower() )
 
 
 def get_parse_list( comma_separated_list ):
