@@ -207,7 +207,13 @@ def get_repositories( all_packages ):
 
                 if len( dependency_list ) > 0:
 
-                    if dependency_list[0] == "true":
+                    try:
+                        load_order = int( dependency_list[0] )
+
+                        repository_info['issues']     = url + "/issues"
+                        repository_info['load_order'] = load_order
+
+                        release_data['url']  = get_download_url( url )
                         release_data['base'] = url
                         release_data['tags'] = True
 
@@ -217,7 +223,7 @@ def get_repositories( all_packages ):
                         if len( dependency_list ) > 0:
                             release_data['dependencies'] = dependency_list
 
-                    else:
+                    except ValueError:
                         release_data['dependencies'] = dependency_list
 
                         release_data['url'] = get_download_url( url )
