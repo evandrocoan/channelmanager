@@ -69,10 +69,6 @@ from package_control.package_manager import PackageManager
 from package_control.providers.channel_provider import ChannelProvider
 from package_control import cmd
 
-package_manager  = PackageManager()
-channel_provider = ChannelProvider( "https://packagecontrol.io/channel_v3.json", package_manager.settings )
-all_packages     = {}
-command_line_interface = cmd.Cli( None, True )
 
 # Import the debugger
 from debug_tools import Debugger
@@ -91,27 +87,35 @@ log( 2, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 
 def main():
     log( 2, "Entering on main(0)" )
-    channel_repositories = channel_provider.get_sources()
-
-    version = git_version( "D:/User/Dropbox/Applications/SoftwareVersioning/SublimeText/Data/Packages/StudioChannel" )
-    log( 2, "git_version: " + version )
-
-    # for repository in channel_repositories:
-    #     packages = channel_provider.get_packages(repository)
-    #     all_packages.update( packages )
-
-    # print_some_repositoies()
-    # threading.Thread(target=run).start()
+    threading.Thread(target=run).start()
 
 
 def run():
-    repositories = get_repositories()
+    command_line_interface = cmd.Cli( None, True )
+    all_packages = load_deafault_channel()
+
+    # print_some_repositoies(all_packages)
+    repositories = get_repositories( all_packages )
 
     create_channel_file( repositories )
     create_repository_file( repositories )
 
 
-def print_some_repositoies():
+def load_deafault_channel():
+    package_manager  = PackageManager()
+    channel_provider = ChannelProvider( "https://packagecontrol.io/channel_v3.json", package_manager.settings )
+
+    all_packages = {}
+    channel_repositories = channel_provider.get_sources()
+
+    for repository in channel_repositories:
+        packages = channel_provider.get_packages(repository)
+        all_packages.update( packages )
+
+    return all_packages
+
+
+def print_some_repositoies(all_packages):
     index = 1
 
     for package in all_packages:
@@ -149,7 +153,7 @@ def create_channel_file( repositories ):
     write_data_file( STUDIO_CHANNEL_FILE, channel_file )
 
 
-def get_repositories():
+def get_repositories( all_packages ):
     sublimeFolder  = os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) )
     gitFilePath    = os.path.join( sublimeFolder, '.gitmodules' )
     gitModulesFile = configparser.RawConfigParser()
@@ -173,12 +177,14 @@ def get_repositories():
             repository_info['homepage'] = url
             repository_info['releases'] = []
 
+            release_date = get_git_date( os.path.join( sublimeFolder, path ) )
+
             release_info         = {}
             release_info['url']  = url.replace("//github.com/", "//codeload.github.com/") + "/zip/master"
-            # release_info['date'] =
+            release_info['date'] = release_date
 
             release_info['platforms']    = "*"
-            release_info['version']      = git_version( os.path.join( sublimeFolder, path ) )
+            release_info['version']      = get_git_version( release_date )
             release_info['sublime_text'] = ">=3126"
 
             repository_info['releases'].append( release_info )
@@ -187,16 +193,24 @@ def get_repositories():
     return repositories
 
 
-def git_version(repository_path):
+def get_git_date(repository_path):
     """
         Get timestamp of the last commit in git repository
         https://gist.github.com/bitrut/1494315
     """
-    # commad = shlex.split( "git log -1 --date=iso" )
-    commad = shlex.split( "git log -1 --pretty=format:%ci" )
+    # command = shlex.split( "git log -1 --date=iso" )
+    command = shlex.split( "git log -1 --pretty=format:%ci" )
 
-    output = command_line_interface.execute( commad, repository_path )
-    return output.replace("-", ".")[0:10]
+    output = command_line_interface.execute( command, repository_path )
+    return output[0:19]
+
+
+def get_git_version(release_date):
+    """
+        Get timestamp of the last commit in git repository
+        https://gist.github.com/bitrut/1494315
+    """
+    return release_date.replace("-", ".")[0:10]
 
 
 def write_data_file(file_path, channel_file):
