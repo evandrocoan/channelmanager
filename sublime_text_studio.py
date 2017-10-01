@@ -95,10 +95,10 @@ def run():
     all_packages = load_deafault_channel()
 
     # print_some_repositoies(all_packages)
-    repositories = get_repositories( all_packages )
+    repositories, dependencies = get_repositories( all_packages )
 
-    create_channel_file( repositories )
-    create_repository_file( repositories )
+    create_channel_file( repositories, dependencies )
+    create_repository_file( repositories, dependencies )
 
 
 def load_deafault_channel():
@@ -115,30 +115,18 @@ def load_deafault_channel():
     return all_packages
 
 
-def print_some_repositoies(all_packages):
-    index = 1
-
-    for package in all_packages:
-        index += 1
-
-        if index > 10:
-            break
-
-        log( 1, "" )
-        log( 1, "package: %-20s" %  str( package ) + json.dumps( all_packages[package], indent=4 ) )
-
-
-def create_repository_file( repositories ):
+def create_repository_file( repositories, dependencies ):
     repository_file = {}
-
-    repository_file['packages']       = repositories
     repository_file['schema_version'] = "3.0.0"
+
+    repository_file['packages']     = repositories
+    repository_file['dependencies'] = dependencies
 
     # print_data_file( STUDIO_REPOSITORY_FILE, repository_file )
     write_data_file( STUDIO_REPOSITORY_FILE, repository_file )
 
 
-def create_channel_file( repositories ):
+def create_channel_file( repositories, dependencies ):
     channel_file   = {}
     repository_url = "https://raw.githubusercontent.com/evandrocoan/SublimeTextStudioChannel/master/repository.json"
 
@@ -148,6 +136,9 @@ def create_channel_file( repositories ):
     channel_file['schema_version'] = "3.0.0"
     channel_file['packages_cache'] = {}
     channel_file['packages_cache'][repository_url] = repositories
+
+    channel_file['dependencies_cache'] = {}
+    channel_file['dependencies_cache'][repository_url] = dependencies
 
     # print_data_file( STUDIO_CHANNEL_FILE, channel_file )
     write_data_file( STUDIO_CHANNEL_FILE, channel_file )
@@ -159,6 +150,7 @@ def get_repositories( all_packages ):
     gitModulesFile = configparser.RawConfigParser()
 
     repositories = []
+    dependencies = []
     gitModulesFile.read( gitFilePath )
 
     index = 0
@@ -173,7 +165,7 @@ def get_repositories( all_packages ):
 
         # # For quick testing
         # index += 1
-        # if index > 30:
+        # if index > 3:
         #     break
 
         if 'Packages' in os.path.dirname( path ):
@@ -196,7 +188,6 @@ def get_repositories( all_packages ):
                 release_data['platforms']    = "*"
                 release_data['sublime_text'] = ">=3126"
 
-            release_data['url']     = get_download_url( url )
             release_data['date']    = release_date
             release_data['version'] = get_git_version( release_date )
 
@@ -206,9 +197,49 @@ def get_repositories( all_packages ):
             repository_info['name']     = repository_name
             repository_info['releases'] = [ release_data ]
 
-            repositories.append(repository_info)
+            # If it has the dependency option, then it:
+            # 1. It is a module dependency only
+            # 2. It is a module dependency and has other dependencies
+            # 3. It is a package and has dependencies
+            if gitModulesFile.has_option( section, "dependency" ):
+                dependency      = gitModulesFile.get( section, "dependency" )
+                dependency_list = get_parse_list( dependency )
 
-    return repositories
+                if len( dependency_list ) > 0:
+
+                    if dependency_list[0] == "true":
+                        release_data['base'] = url
+                        release_data['tags'] = True
+
+                        del dependency_list[0]
+                        dependencies.append( repository_info )
+
+                        if len( dependency_list ) > 0:
+                            release_data['dependencies'] = dependency_list
+
+                    else:
+                        release_data['dependencies'] = dependency_list
+
+                        release_data['url'] = get_download_url( url )
+                        repositories.append( repository_info )
+
+                else:
+                    release_data['url'] = get_download_url( url )
+                    repositories.append( repository_info )
+
+            else:
+                release_data['url'] = get_download_url( url )
+                repositories.append( repository_info )
+
+    return repositories, dependencies
+
+
+def get_parse_list( comma_separated_list ):
+
+    if comma_separated_list:
+        return [ dependency.strip() for dependency in comma_separated_list.split(',') ]
+
+    return []
 
 
 def ensure_author_name(user_forker, upstream, repository_info):
@@ -280,7 +311,20 @@ def print_data_file(file_path, channel_file):
 
     with open( file_path, 'r', encoding='utf-8' ) as studio_channel_data:
         channel_file = json.load( studio_channel_data)
-        log( 1, "channel_file: " + json.dumps( channel_file, indent=4 ) )
+        log( 1, "channel_file: " + json.dumps( channel_file, indent=4, sort_keys=True ) )
+
+
+def print_some_repositoies(all_packages):
+    index = 1
+
+    for package in all_packages:
+        index += 1
+
+        if index > 10:
+            break
+
+        log( 1, "" )
+        log( 1, "package: %-20s" %  str( package ) + json.dumps( all_packages[package], indent=4 ) )
 
 
 class SublimeTextStudioGenerateChannelFileCommand( sublime_plugin.TextCommand ):
