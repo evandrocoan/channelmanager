@@ -91,7 +91,7 @@ CURRENT_DIRECTORY   = os.path.dirname( os.path.realpath( __file__ ) )
 STUDIO_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, 'last_session.studio-channel' )
 
 # print( "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
-assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools' ) )
+assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), "PythonDebugTools" ) )
 assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), "Package Control" ) )
 
 # sys.tracebacklimit = 10; raise ValueError
