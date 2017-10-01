@@ -164,14 +164,16 @@ def get_repositories( all_packages ):
     index = 0
 
     for section in gitModulesFile.sections():
-        url  = gitModulesFile.get( section, "url" )
-        path = gitModulesFile.get( section, "path" )
+        url      = gitModulesFile.get( section, "url" )
+        path     = gitModulesFile.get( section, "path" )
+        upstream = gitModulesFile.get( section, "upstream" )
 
+        user_forker  = get_user_name( url )
         release_date = get_git_date( os.path.join( sublimeFolder, path ) )
 
-        # For quick testing
+        # # For quick testing
         # index += 1
-        # if index > 10:
+        # if index > 30:
         #     break
 
         if 'Packages' in os.path.dirname( path ):
@@ -183,7 +185,11 @@ def get_repositories( all_packages ):
                 repository_info = all_packages[repository_name]
                 release_data    = repository_info['releases'][0]
 
+                ensure_author_name( user_forker, upstream, repository_info )
+
             else:
+                ensure_author_name( user_forker, upstream, repository_info )
+
                 repository_info['details']  = url
                 repository_info['homepage'] = url
 
@@ -203,6 +209,41 @@ def get_repositories( all_packages ):
             repositories.append(repository_info)
 
     return repositories
+
+
+def ensure_author_name(user_forker, upstream, repository_info):
+
+    if 'authors' not in repository_info:
+
+        if len( upstream ) > 20:
+
+            original_author           = get_user_name( upstream )
+            repository_info['authors'] = [ original_author ]
+
+        else:
+
+            # If there is not upstream set, then it is your own package (user_forker)
+            repository_info['authors'] = [user_forker]
+
+    if user_forker not in repository_info['authors']:
+        repository_info['authors'].append( "Forked by " + user_forker )
+
+
+def get_user_name( url, regular_expression="github\.com\/(.+)/(.+)", allow_recursion=True ):
+    """
+        How to extract a substring from inside a string in Python?
+        https://stackoverflow.com/questions/4666973/how-to-extract-a-substring-from-inside-a-string-in-python
+    """
+    # https://regex101.com/r/TRxkI9/1/
+    matches = re.search( regular_expression, url )
+
+    if matches:
+        return matches.group(1)
+
+    elif allow_recursion:
+        return get_user_name( url, "bitbucket\.org\/(.+)/(.+)", False )
+
+    return ""
 
 
 def get_download_url(url):
