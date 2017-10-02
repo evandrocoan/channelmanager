@@ -245,6 +245,7 @@ class RunGitPullThread(threading.Thread):
 
         log( 1, "Process finished! If there are any, review its log output looking for 'Error!' messages." )
 
+
 # My forks upstreams
 #
 class RunBackstrokeThread(threading.Thread):
@@ -298,8 +299,11 @@ class RunBackstrokeThread(threading.Thread):
         log( 1, "RunBackstrokeThread::sections: " + backstrokeFilePath )
         backstrokeConfigs.read( backstrokeFilePath )
 
+        sections = backstrokeConfigs.sections()
+        sections_count = len( sections )
+
         # https://stackoverflow.com/questions/22068050/iterate-over-sections-in-a-config-file
-        for section in backstrokeConfigs.sections():
+        for section in sections:
             request_index += 1
 
             # Walk until the last processed index, skipping everything else
@@ -311,7 +315,7 @@ class RunBackstrokeThread(threading.Thread):
             # then we make it take a little longer so all the requests can be performed in a row.
             time.sleep(2)
 
-            log( 1, "Index: ", successful_resquests, "/", request_index, ", ", section )
+            log( 1, "Index: ", successful_resquests, "/", request_index, " of ", sections_count, ", ", section )
             # for (each_key, each_val) in backstrokeConfigs.items(section):
             #     log( 1, each_key + ': ' + each_val )
 
@@ -402,8 +406,11 @@ class RunBackstrokeThread(threading.Thread):
         upstreamsConfigs._read( fakefile, gitFilePath )
         upstreamsConfigs.read( fakefile, gitFilePath )
 
+        sections = upstreamsConfigs.sections()
+        sections_count = len( sections )
+
         # https://stackoverflow.com/questions/22068050/iterate-over-sections-in-a-config-file
-        for section in upstreamsConfigs.sections():
+        for section in sections:
             request_index += 1
 
             # Walk until the last processed index, skipping everything else
@@ -411,7 +418,7 @@ class RunBackstrokeThread(threading.Thread):
                 start_index -= 1
                 continue
 
-            log( 1, "Index: ", successful_resquests, "/", request_index, ", ", section )
+            log( 1, "Index: ", successful_resquests, "/", request_index, " of ", sections_count,", ", section )
             # for (each_key, each_val) in upstreamsConfigs.items(section):
             #     log( 1, each_key + ': ' + each_val )
 
@@ -463,6 +470,7 @@ class RunBackstrokeThread(threading.Thread):
 
         self.save_session_data( maximum_errors, 'last_findforks_session', lastSection )
         return True
+
 
 def run_command_line(command_line_interface, commad, initial_folder):
     print( "" )
