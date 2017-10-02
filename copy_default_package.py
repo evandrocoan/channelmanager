@@ -56,7 +56,7 @@ CURRENT_DIRECTORY    = os.path.dirname( os.path.realpath( __file__ ) )
 UPGRADE_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, 'last_sublime_upgrade.studio-channel' )
 
 # print( "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
-assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools' ) )
+assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools/all' ) )
 
 # Import the debugger
 from debug_tools import Debugger

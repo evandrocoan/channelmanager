@@ -107,7 +107,7 @@ def main():
 def run():
     all_packages = load_deafault_channel()
 
-    # print_some_repositoies(all_packages)
+    # print_some_repositories(all_packages)
     repositories, dependencies = get_repositories( all_packages )
 
     create_channel_file( repositories, dependencies )
@@ -354,7 +354,7 @@ def print_data_file(file_path, channel_dictionary):
         log( 1, "channel_dictionary: " + json.dumps( channel_dictionary, indent=4, sort_keys=True ) )
 
 
-def print_some_repositoies(all_packages):
+def print_some_repositories(all_packages):
     index = 1
 
     for package in all_packages:
