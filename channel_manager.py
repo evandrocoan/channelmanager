@@ -97,7 +97,7 @@ def main():
     CHANNEL_FILE_URL    = "https://raw.githubusercontent.com/evandrocoan/SublimeStudioChannel/master/repository.json"
     DEFAULT_CHANNEL_URL = "https://packagecontrol.io/channel_v3.json"
 
-    STUDIO_MAIN_DIRECTORY  = os.path.join( os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) ) )
+    STUDIO_MAIN_DIRECTORY  = os.path.dirname( sublime.packages_path() )
     STUDIO_CHANNEL_FILE    = os.path.join( STUDIO_MAIN_DIRECTORY, "StudioChannel", "channel.json" )
     STUDIO_REPOSITORY_FILE = os.path.join( STUDIO_MAIN_DIRECTORY, "StudioChannel", "repository.json" )
 
@@ -370,7 +370,6 @@ def print_some_repositoies(all_packages):
 class StudioChannelManagerGenerateChannelFileCommand( sublime_plugin.TextCommand ):
 
     def run(self, edit):
-        print( 'Calling SublimeTextStudioGenerateChannelFile...' )
         main()
 
 
