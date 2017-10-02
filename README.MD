@@ -34,6 +34,16 @@ the following threads for more information about the `Package Control` channel a
 
 
 ___
+## Studio Installer
+
+The `studio_installer.py` performs the installation of the [Sublime Text
+Studio](https://github.com/evandrocoan/SublimeTextStudio) packages by the `Package Control` when
+installing the normal version, or by `git` when installing the development version of the `Sublime
+Text Studio`.
+
+
+
+___
 ## Submodules Manager
 
 The package `submodules_manager.py` run several operations based on the `.gitmodules` file on the
