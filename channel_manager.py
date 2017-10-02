@@ -178,14 +178,14 @@ def get_repositories( all_packages ):
             if repository_name in all_packages:
                 repository_info = all_packages[repository_name]
                 release_data    = repository_info['releases'][0]
-            else:
 
+            else:
                 repository_info['details']  = url
-                repository_info['homepage'] = url
 
                 release_data['platforms']    = "*"
                 release_data['sublime_text'] = ">=3126"
 
+            repository_info['homepage'] = url
             ensure_author_name( user_forker, upstream, repository_info )
 
             release_data['date']    = release_date
@@ -358,8 +358,9 @@ def print_some_repositoies(all_packages):
 
 class SublimeTextStudioGenerateChannelFileCommand( sublime_plugin.TextCommand ):
 
-    def run(self):
+    def run(self, edit):
         print( 'Calling SublimeTextStudioGenerateChannelFile...' )
+        main()
 
 
 if __name__ == "__main__":
