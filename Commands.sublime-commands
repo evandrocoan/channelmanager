@@ -1,6 +1,6 @@
 [
   {
-    "caption": "Sublime Text Studio: Generate Channel File",
-    "command": "sublime_text_studio_generate_channel_file"
+    "caption": "Studio Channel: Generate Channel File",
+    "command": "studio_channel_generate_channel_file"
   },
 ]

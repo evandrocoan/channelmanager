@@ -356,7 +356,7 @@ def print_some_repositoies(all_packages):
         log( 1, "package: %-20s" %  str( package ) + json.dumps( all_packages[package], indent=4 ) )
 
 
-class SublimeTextStudioGenerateChannelFileCommand( sublime_plugin.TextCommand ):
+class StudioChannelGenerateChannelFileCommand( sublime_plugin.TextCommand ):
 
     def run(self, edit):
         print( 'Calling SublimeTextStudioGenerateChannelFile...' )
