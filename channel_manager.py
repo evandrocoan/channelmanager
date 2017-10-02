@@ -162,12 +162,17 @@ def get_repositories( all_packages ):
 
     repositories = []
     dependencies = []
-    gitModulesFile.read( gitFilePath )
 
-    index = 0
+    gitModulesFile.read( gitFilePath )
     command_line_interface = cmd.Cli( None, True )
 
-    for section in gitModulesFile.sections():
+    sections       = gitModulesFile.sections()
+    sections_count = len( sections )
+
+    index = 0
+    log( 1, "Total repositories to parse: " + str( sections_count ) )
+
+    for section in sections:
         url      = gitModulesFile.get( section, "url" )
         path     = gitModulesFile.get( section, "path" )
         upstream = gitModulesFile.get( section, "upstream" )
@@ -190,61 +195,18 @@ def get_repositories( all_packages ):
                 release_data    = repository_info['releases'][0]
 
             else:
-                repository_info['details']  = url
+                repository_info['details']   = url
 
                 release_data['platforms']    = "*"
                 release_data['sublime_text'] = ">=3126"
 
-            repository_info['homepage'] = url
-            ensure_author_name( user_forker, upstream, repository_info )
-
             release_data['date']    = release_date
             release_data['version'] = get_git_version( release_date )
 
-            if 'description' not in repository_info:
-                repository_info['description'] = "No description available."
+            fix_sublime_text_release( release_data, gitModulesFile, section, repository_info, repositories, dependencies, url )
 
-            # If it has the dependency option, then it:
-            # 1. It is a module dependency only
-            # 2. It is a module dependency and has other dependencies
-            # 3. It is a package and has dependencies
-            if gitModulesFile.has_option( section, "dependency" ):
-                dependency      = gitModulesFile.get( section, "dependency" )
-                dependency_list = get_parse_list( dependency )
-
-                if len( dependency_list ) > 0:
-
-                    try:
-                        load_order = int( dependency_list[0] )
-
-                        repository_info['issues']     = url + "/issues"
-                        repository_info['load_order'] = load_order
-
-                        release_data['url']  = get_download_url( url )
-                        release_data['base'] = url
-                        release_data['tags'] = True
-
-                        del dependency_list[0]
-                        dependencies.append( repository_info )
-
-                        if len( dependency_list ) > 0:
-                            release_data['dependencies'] = dependency_list
-
-                    except ValueError:
-                        release_data['dependencies'] = dependency_list
-
-                        release_data['url'] = get_download_url( url )
-                        repositories.append( repository_info )
-
-                else:
-                    release_data['url'] = get_download_url( url )
-                    repositories.append( repository_info )
-
-            else:
-                release_data['url'] = get_download_url( url )
-                repositories.append( repository_info )
-
-            release_data = fix_sublime_text_release( release_data )
+            ensure_author_name( user_forker, upstream, repository_info )
+            release_data = sort_dictionary( release_data )
 
             repository_info['name']     = repository_name
             repository_info['releases'] = [ release_data ]
@@ -252,13 +214,58 @@ def get_repositories( all_packages ):
     return sort_list_of_dictionary( repositories) , sort_list_of_dictionary( dependencies )
 
 
-def fix_sublime_text_release(release_data):
+def fix_sublime_text_release(release_data, gitModulesFile, section, repository_info, repositories, dependencies, url):
+    """
+        If it has the dependency option, then it:
+        1. It is a module dependency only
+        2. It is a module dependency and has other dependencies
+        3. It is a package and has dependencies
+    """
+    repository_info['homepage'] = url
+
+    if 'description' not in repository_info:
+        repository_info['description'] = "No description available."
+
+    if gitModulesFile.has_option( section, "dependency" ):
+        dependency      = gitModulesFile.get( section, "dependency" )
+        dependency_list = get_parse_list( dependency )
+
+        if len( dependency_list ) > 0:
+
+            try:
+                load_order = int( dependency_list[0] )
+
+                repository_info['issues']     = url + "/issues"
+                repository_info['load_order'] = load_order
+
+                release_data['url']  = get_download_url( url )
+                release_data['base'] = url
+                release_data['tags'] = True
+
+                del dependency_list[0]
+                dependencies.append( repository_info )
+
+                if len( dependency_list ) > 0:
+                    release_data['dependencies'] = dependency_list
+
+            except ValueError:
+                release_data['dependencies'] = dependency_list
+
+                release_data['url'] = get_download_url( url )
+                repositories.append( repository_info )
+
+        else:
+            release_data['url'] = get_download_url( url )
+            repositories.append( repository_info )
+
+    else:
+        release_data['url'] = get_download_url( url )
+        repositories.append( repository_info )
+
     acceptable_version = 3092
 
     if not is_compatible_version( release_data['sublime_text'], acceptable_version ):
         release_data['sublime_text'] = ">=" +  str( acceptable_version )
-
-    return sort_dictionary( release_data )
 
 
 def is_compatible_version(release_version, acceptable_version):
