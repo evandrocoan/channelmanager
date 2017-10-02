@@ -58,7 +58,9 @@ except:
     from six.moves.configparser import NoOptionError
 
 
-CURRENT_DIRECTORY    = os.path.dirname( os.path.realpath( __file__ ) )
+CURRENT_DIRECTORY = os.path.dirname( os.path.realpath( __file__ ) )
+CHANNEL_SETTINGS  = CURRENT_DIRECTORY + ".sublime-settings"
+
 g_is_already_running = False
 
 # print( "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
@@ -126,9 +128,20 @@ class GenerateChannelThread(threading.Thread):
 
             create_channel_file( repositories, dependencies )
             create_repository_file( repositories, dependencies )
+            create_ignored_packages()
 
             global g_is_already_running
             g_is_already_running = False
+
+
+def create_ignored_packages():
+    studioSettings = {}
+    userSettings   = sublime.load_settings("Preferences.sublime-settings")
+
+    user_ignored_packages = userSettings.get("ignored_packages", [])
+    studioSettings['packages_to_ignore'] = user_ignored_packages
+
+    write_data_file( CHANNEL_SETTINGS, studioSettings )
 
 
 def is_allowed_to_run():

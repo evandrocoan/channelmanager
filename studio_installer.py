@@ -55,8 +55,9 @@ def assert_path(module):
 
 
 CURRENT_DIRECTORY = os.path.dirname( os.path.realpath( __file__ ) )
+CHANNEL_SETTINGS  = CURRENT_DIRECTORY + ".sublime-settings"
 
-# Do not try to install this own package and the Package Control
+# Do not try to install this own package and the Package Control, as they are currently running
 PACKAGES_TO_IGNORE = [ "Package Control", os.path.basename( CURRENT_DIRECTORY ) ]
 
 # print( "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
@@ -121,7 +122,7 @@ class CopyFilesThread(threading.Thread):
         if self.is_development_install:
             clone_sublime_text_studio( command_line_interface, git_executable_path )
 
-        install_submodules( command_line_interface, git_executable_path, self.is_development_install )
+        install_modules( command_line_interface, git_executable_path, self.is_development_install )
 
 
 def clone_sublime_text_studio(command_line_interface, git_executable_path):
@@ -135,7 +136,8 @@ def clone_sublime_text_studio(command_line_interface, git_executable_path):
         raise ValueError("The folder '%s' already exists. You already has some custom studio git installation." % main_git_folder)
 
 
-def install_submodules(command_line_interface, git_executable_path, is_development_install):
+def install_modules(command_line_interface, git_executable_path, is_development_install):
+    log( 2, "PACKAGES_TO_IGNORE: " + str( PACKAGES_TO_IGNORE ) )
 
     if is_development_install:
         clone_submodules( command_line_interface, git_executable_path )
@@ -147,6 +149,29 @@ def install_submodules(command_line_interface, git_executable_path, is_developme
 
         log( 2, "git_packages: " + str( git_packages ) )
         install_sublime_packages( git_packages )
+
+    set_default_settings()
+
+
+def set_default_settings():
+    userSettings   = sublime.load_settings("Preferences.sublime-settings")
+    studioSettings = sublime.load_settings(CHANNEL_SETTINGS)
+
+    studio_ignored_packages = []
+    user_ignored_packages   = userSettings.get("ignored_packages", [])
+    packages_to_ignore      = studioSettings.get("packages_to_ignored", [])
+
+    for package in packages_to_ignore:
+
+        if package not in user_ignored_packages:
+            user_ignored_packages.append(package)
+            studio_ignored_packages.append(package)
+
+    userSettings.set("ignored_packages", user_ignored_packages)
+    studioSettings.set("ignored_packages", studio_ignored_packages)
+
+    sublime.save_settings("Preferences.sublime-settings")
+    sublime.save_settings(CHANNEL_SETTINGS)
 
 
 def install_sublime_packages(git_packages):
@@ -167,6 +192,7 @@ def install_sublime_packages(git_packages):
     # thread.start()
     # thread.join()
 
+    log( 2, "PACKAGES_TO_IGNORE: " + str( PACKAGES_TO_IGNORE ) )
     package_manager = PackageManager()
 
     for package, is_dependency in git_packages:
@@ -220,6 +246,8 @@ def is_dependency(gitModulesFile, section):
             except ValueError:
                 return False
 
+    return False
+
 
 def get_git_modules_url():
     return STUDIO_MAIN_URL.replace("//github.com/", "//raw.githubusercontent.com/") + "/master/.gitmodules"
@@ -266,11 +294,18 @@ def clone_submodules(command_line_interface, git_executable_path):
                     log( 1, output )
 
 
+def check_installed_packages():
+    studioSettings         = sublime.load_settings(CHANNEL_SETTINGS)
+    packageControlSettings = sublime.load_settings("Package Control.sublime-settings")
+
+    # installed_packages =
+
+
 if __name__ == "__main__":
     main()
 
 
 def plugin_loaded():
     # main()
-    pass
+    check_installed_packages()
 
