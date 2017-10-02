@@ -178,17 +178,15 @@ def get_repositories( all_packages ):
             if repository_name in all_packages:
                 repository_info = all_packages[repository_name]
                 release_data    = repository_info['releases'][0]
-
-                ensure_author_name( user_forker, upstream, repository_info )
-
             else:
-                ensure_author_name( user_forker, upstream, repository_info )
 
                 repository_info['details']  = url
                 repository_info['homepage'] = url
 
                 release_data['platforms']    = "*"
                 release_data['sublime_text'] = ">=3126"
+
+            ensure_author_name( user_forker, upstream, repository_info )
 
             release_data['date']    = release_date
             release_data['version'] = get_git_version( release_date )
