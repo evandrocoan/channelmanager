@@ -123,7 +123,8 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 
 
 def main(command=None):
-    log( 1, "Entering on main(0) " + command )
+    log( 1, "Entering on main(0) " + str( command ) )
+    global STUDIO_MAIN_DIRECTORY
 
     argumentsNamespace    = None
     STUDIO_MAIN_DIRECTORY = get_main_directory()
