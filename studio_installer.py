@@ -58,7 +58,7 @@ CURRENT_DIRECTORY = os.path.dirname( os.path.realpath( __file__ ) )
 CHANNEL_SETTINGS  = CURRENT_DIRECTORY + ".sublime-settings"
 
 # Do not try to install this own package and the Package Control, as they are currently running
-PACKAGES_TO_IGNORE = [ "Package Control", os.path.basename( CURRENT_DIRECTORY ) ]
+PACKAGES_TO_IGNORE = [ "Package Control", os.path.basename( CURRENT_DIRECTORY ).rsplit('.', 1)[0] ]
 
 # print( "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools/all' ) )
