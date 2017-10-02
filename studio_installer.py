@@ -60,9 +60,13 @@ CURRENT_DIRECTORY = os.path.dirname( os.path.realpath( __file__ ) )
 assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools/all' ) )
 assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), "Package Control" ) )
 
+
+from .channel_manager import string_convert_list
+
 from package_control import cmd
 from package_control.download_manager import downloader
 
+from package_control.package_manager import PackageManager
 from package_control.thread_progress import ThreadProgress
 from package_control.commands.advanced_install_package_command import AdvancedInstallPackageThread
 
@@ -79,7 +83,7 @@ log( 2, "Debugging" )
 log( 2, "CURRENT_DIRECTORY:     " + CURRENT_DIRECTORY )
 
 
-def main(command=""):
+def main(command="stable"):
     log( 2, "Entering on main(0)" )
 
     global STUDIO_MAIN_URL
@@ -94,7 +98,7 @@ def main(command=""):
     installer_thread = CopyFilesThread( True if command == "development" else False )
     installer_thread.start()
 
-    ThreadProgress( thread, 'Installing Sublime Text Studio %s Packages' % command,
+    ThreadProgress( installer_thread, 'Installing Sublime Text Studio %s Packages' % command,
             'Sublime Text Studio %s was successfully installed.' % command )
 
 
@@ -138,21 +142,35 @@ def install_submodules(command_line_interface, git_executable_path, is_developme
         git_modules_file = download_text_file( git_modules_url )
 
         # print( "download_text_file: " + git_modules_file )
-        git_modules_packages = get_git_modules_packages( git_modules_file )
+        git_packages = get_git_modules_packages( git_modules_file )
 
-        print( "git_modules_packages: " + str( git_modules_packages ) )
-        install_sublime_packages( git_modules_packages )
+        print( "git_packages: " + str( git_packages ) )
+        install_sublime_packages( git_packages )
 
 
-def install_sublime_packages(git_modules_packages):
+def install_sublime_packages(git_packages):
     """
         python multithreading wait till all threads finished
         https://stackoverflow.com/questions/11968689/python-multithreading-wait-till-all-threads-finished
-    """
-    thread = AdvancedInstallPackageThread( git_modules_packages )
 
-    thread.start()
-    thread.join()
+        There is a bug with the AdvancedInstallPackageThread thread which trigger several errors of:
+
+        "It appears a package is trying to ignore itself, causing a loop.
+        Please resolve by removing the offending ignored_packages setting."
+
+        When trying to install several package at once, then here I am installing them one by one.
+    """
+    # Package Control: Advanced Install Package
+    # https://github.com/wbond/package_control/issues/1191
+    # thread = AdvancedInstallPackageThread( git_packages )
+    # thread.start()
+    # thread.join()
+
+    package_manager = PackageManager()
+
+    for package, is_dependency in git_packages:
+        print( "\nInstalling: %s (%s)" % ( str( package ), str( is_dependency ) ) )
+        package_manager.install_package( package, is_dependency )
 
 
 def get_git_modules_packages( git_modules_file ):
@@ -180,9 +198,24 @@ def get_git_modules_packages( git_modules_file ):
             # log( 4, "submodule_absolute_path: " + submodule_absolute_path )
 
             if not os.path.isdir( submodule_absolute_path ):
-                packages.append( os.path.basename( path ) )
+                packages.append( ( os.path.basename( path ), is_dependency( gitModulesFile, section ) ) )
 
     return packages
+
+
+def is_dependency(gitModulesFile, section):
+
+    if gitModulesFile.has_option( section, "dependency" ):
+        dependency_list = string_convert_list( gitModulesFile.get( section, "dependency" ) )
+
+        if len( dependency_list ) > 0:
+
+            try:
+                int( dependency_list[0] )
+                return True
+
+            except ValueError:
+                return False
 
 
 def get_git_modules_url():

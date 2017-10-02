@@ -255,8 +255,7 @@ def fix_sublime_text_release(release_data, gitModulesFile, section, repository_i
         repository_info['description'] = "No description available."
 
     if gitModulesFile.has_option( section, "dependency" ):
-        dependency      = gitModulesFile.get( section, "dependency" )
-        dependency_list = get_parse_list( dependency )
+        dependency_list = string_convert_list( gitModulesFile.get( section, "dependency" ) )
 
         if len( dependency_list ) > 0:
 
@@ -355,7 +354,7 @@ def sort_list_of_dictionary(list_of_dictionaries):
     return sorted( sorted_list, key=lambda k: k['name'].lower() )
 
 
-def get_parse_list( comma_separated_list ):
+def string_convert_list( comma_separated_list ):
 
     if comma_separated_list:
         return [ dependency.strip() for dependency in comma_separated_list.split(',') ]
