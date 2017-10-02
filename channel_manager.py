@@ -58,7 +58,8 @@ except:
     from six.moves.configparser import NoOptionError
 
 
-CURRENT_DIRECTORY = os.path.dirname( os.path.realpath( __file__ ) )
+CURRENT_DIRECTORY    = os.path.dirname( os.path.realpath( __file__ ) )
+g_is_already_running = False
 
 # print( "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), "PythonDebugTools/all" ) )
@@ -105,13 +106,29 @@ def main():
 
 
 def run():
-    all_packages = load_deafault_channel()
 
-    # print_some_repositories(all_packages)
-    repositories, dependencies = get_repositories( all_packages )
+    if is_allowed_to_run():
+        all_packages = load_deafault_channel()
 
-    create_channel_file( repositories, dependencies )
-    create_repository_file( repositories, dependencies )
+        # print_some_repositories(all_packages)
+        repositories, dependencies = get_repositories( all_packages )
+
+        create_channel_file( repositories, dependencies )
+        create_repository_file( repositories, dependencies )
+
+        global g_is_already_running
+        g_is_already_running = False
+
+
+def is_allowed_to_run():
+    global g_is_already_running
+
+    if g_is_already_running:
+        print( "You are already running a command. Wait until it finishes or restart Sublime Text" )
+        return False
+
+    g_is_already_running = True
+    return True
 
 
 def load_deafault_channel():

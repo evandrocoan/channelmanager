@@ -96,6 +96,7 @@ except:
 
 # How many errors are acceptable when the GitHub API request fails
 MAXIMUM_REQUEST_ERRORS = 10
+g_is_already_running   = False
 
 # print_python_envinronment()
 CURRENT_DIRECTORY   = os.path.dirname( os.path.realpath( __file__ ) )
@@ -186,6 +187,17 @@ def attempt_run_find_forks():
         RunBackstrokeThread(True).start()
 
 
+def is_allowed_to_run():
+    global g_is_already_running
+
+    if g_is_already_running:
+        print( "You are already running a command. Wait until it finishes or restart Sublime Text" )
+        return False
+
+    g_is_already_running = True
+    return True
+
+
 def get_main_directory():
     possible_main_directory = os.path.normpath( os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) ) )
 
@@ -214,7 +226,12 @@ class RunGitPullThread(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
-        self.update_submodules()
+
+        if is_allowed_to_run():
+            self.update_submodules()
+
+        global g_is_already_running
+        g_is_already_running = False
 
     def update_submodules(self):
         error_list = []
@@ -262,13 +279,18 @@ class RunBackstrokeThread(threading.Thread):
     def run(self):
         log( 1, "RunBackstrokeThread::run" )
 
-        if self._is_find_forks:
+        if is_allowed_to_run():
 
-            if self.run_find_forks(True):
-                self.run_find_forks()
+            if self._is_find_forks:
 
-        else:
-            self.create_backstroke()
+                if self.run_find_forks(True):
+                    self.run_find_forks()
+
+            else:
+                self.create_backstroke()
+
+        global g_is_already_running
+        g_is_already_running = False
 
         log( 1, "Finished RunBackstrokeThread::run()" )
 
