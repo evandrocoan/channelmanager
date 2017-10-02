@@ -31,6 +31,7 @@ import sys
 import imp
 import shlex
 
+import time
 import argparse
 import unittest
 import importlib
@@ -271,6 +272,10 @@ class RunBackstrokeThread(threading.Thread):
             if start_index > 0:
                 start_index -= 1
                 continue
+
+            # The GitHub API only allows about 30 requests per second for the backstroke call,
+            # then we make it take a little longer so all the requests can be performed in a row.
+            time.sleep(2)
 
             log( 1, "Index: ", successful_resquests, "/", request_index, ", ", section )
             # for (each_key, each_val) in backstrokeConfigs.items(section):
