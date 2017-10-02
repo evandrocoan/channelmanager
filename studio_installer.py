@@ -91,11 +91,11 @@ def main(command=""):
     log( 2, "STUDIO_MAIN_URL:       " + STUDIO_MAIN_URL )
     log( 2, "STUDIO_MAIN_DIRECTORY: " + STUDIO_MAIN_DIRECTORY )
 
-    if command == "development":
-        CopyFilesThread(True).start()
+    installer_thread = CopyFilesThread( True if command == "development" else False )
+    installer_thread.start()
 
-    else:
-        CopyFilesThread(False).start()
+    ThreadProgress( thread, 'Installing Sublime Text Studio %s Packages' % command,
+            'Sublime Text Studio %s was successfully installed.' % command )
 
 
 class CopyFilesThread(threading.Thread):
@@ -145,10 +145,14 @@ def install_submodules(command_line_interface, git_executable_path, is_developme
 
 
 def install_sublime_packages(git_modules_packages):
+    """
+        python multithreading wait till all threads finished
+        https://stackoverflow.com/questions/11968689/python-multithreading-wait-till-all-threads-finished
+    """
     thread = AdvancedInstallPackageThread( git_modules_packages )
-    thread.start()
 
-    ThreadProgress(thread, 'Installing Sublime Text Studio Packages', 'Sublime Text Studio was successfully installed.')
+    thread.start()
+    thread.join()
 
 
 def get_git_modules_packages( git_modules_file ):
@@ -229,6 +233,6 @@ if __name__ == "__main__":
 
 
 def plugin_loaded():
-    main()
+    # main()
     pass
 
