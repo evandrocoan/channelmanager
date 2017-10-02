@@ -67,8 +67,9 @@ assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), "Package Contro
 
 from package_control.package_manager import PackageManager
 from package_control.providers.channel_provider import ChannelProvider
-from package_control import cmd
 
+from package_control import cmd
+from package_control.thread_progress import ThreadProgress
 
 # Import the debugger
 from debug_tools import Debugger
@@ -102,22 +103,32 @@ def main():
     STUDIO_CHANNEL_FILE    = os.path.join( STUDIO_MAIN_DIRECTORY, "StudioChannel", "channel.json" )
     STUDIO_REPOSITORY_FILE = os.path.join( STUDIO_MAIN_DIRECTORY, "StudioChannel", "repository.json" )
 
-    threading.Thread(target=run).start()
+    channel_thread = GenerateChannelThread()
+    channel_thread.start()
+
+    ThreadProgress( channel_thread, "Generating Channel and Repositories files",
+            "Channel and repositories files successfully created." )
 
 
-def run():
+class GenerateChannelThread(threading.Thread):
 
-    if is_allowed_to_run():
-        all_packages = load_deafault_channel()
+    def __init__(self):
+        threading.Thread.__init__(self)
 
-        # print_some_repositories(all_packages)
-        repositories, dependencies = get_repositories( all_packages )
+    def run(self):
+        log( 2, "Entering on run(1)" )
 
-        create_channel_file( repositories, dependencies )
-        create_repository_file( repositories, dependencies )
+        if is_allowed_to_run():
+            all_packages = load_deafault_channel()
 
-        global g_is_already_running
-        g_is_already_running = False
+            # print_some_repositories(all_packages)
+            repositories, dependencies = get_repositories( all_packages )
+
+            create_channel_file( repositories, dependencies )
+            create_repository_file( repositories, dependencies )
+
+            global g_is_already_running
+            g_is_already_running = False
 
 
 def is_allowed_to_run():

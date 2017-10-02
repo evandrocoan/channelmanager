@@ -148,8 +148,7 @@ def install_sublime_packages(git_modules_packages):
     thread = AdvancedInstallPackageThread( git_modules_packages )
     thread.start()
 
-    message = 'Installing packages'
-    ThreadProgress(thread, message, '')
+    ThreadProgress(thread, 'Installing Sublime Text Studio Packages', 'Sublime Text Studio was successfully installed.')
 
 
 def get_git_modules_packages( git_modules_file ):
