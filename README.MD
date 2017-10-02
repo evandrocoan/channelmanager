@@ -25,7 +25,10 @@ the following threads for more information about the `Package Control` channel a
 1. https://packagecontrol.io/docs/dependencies  DOCS - Dependencies
 1. https://packagecontrol.io/docs/channels_and_repositories Channels and Repositories
 1. https://github.com/wbond/package_control/issues/1089 Package dependencies (install dependent sublime packages)
-1. https://forum.sublimetext.com/t/dependencies-in-package-control-3/14646/2 Dependencies in Package Control 3
+1. https://forum.sublimetext.com/t/dependencies-in-package-control-3/14646 Dependencies in Package Control 3
+1. https://github.com/wbond/package_control/issues/1070 [Meta] What to do when a dependency update includes breaking changes?
+1. https://forum.sublimetext.com/t/modules-dependencies-best-practices/21037 Modules + Dependencies : Best Practices?
+
 
 
 ### Submodules Manager

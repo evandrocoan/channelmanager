@@ -314,6 +314,9 @@ class RunBackstrokeThread(threading.Thread):
                     else:
                         continue
 
+            else:
+                print( "\n\n\nMissing backstroke key for upstream: " + upstream )
+
         self.save_session_data( maximum_errors, 'last_backstroke_session', lastSection )
 
     def get_stream_section(self, section, backstrokeConfigs):
@@ -419,6 +422,10 @@ class RunBackstrokeThread(threading.Thread):
                     shlex.split( "sh ../%s/remove_duplicate_branches.sh %s" % ( FIND_FORKS_PATH, forkUser ) ),
                     os.path.join( os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) ), path ),
                 )
+
+            else:
+                print( "\n\n\nMissing upstream key for package path: " + path )
+
 
         self.save_session_data( maximum_errors, 'last_findforks_session', lastSection )
         return True
