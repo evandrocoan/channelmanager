@@ -107,6 +107,9 @@ from debug_tools import Debugger
 # Debugger settings: 0 - disabled, 127 - enabled
 log = Debugger( 127, os.path.basename( __file__ ) )
 
+#log.log_to_file( "Debug.txt" )
+#log.clear_log_file()
+
 log( 1, "..." )
 log( 1, "..." )
 log( 1, "Debugging" )

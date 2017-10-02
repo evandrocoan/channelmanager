@@ -64,7 +64,7 @@ STUDIO_REPOSITORY_FILE = os.path.join( CURRENT_DIRECTORY, "repository.json" )
 
 
 # print( "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
-assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), "PythonDebugTools" ) )
+assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), "PythonDebugTools/all" ) )
 assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), "Package Control" ) )
 
 from package_control.package_manager import PackageManager
@@ -78,13 +78,13 @@ from debug_tools import Debugger
 # Debugger settings: 0 - disabled, 127 - enabled
 log = Debugger( 127, os.path.basename( __file__ ) )
 
-# log.log_to_file( "Debug.txt" )
-# log.clear_log_file()
+#log.log_to_file( "Debug.txt" )
+#log.clear_log_file()
 
-log( 2, "..." )
-log( 2, "..." )
-log( 2, "Debugging" )
-log( 2, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
+# log( 2, "..." )
+# log( 2, "..." )
+# log( 2, "Debugging" )
+# log( 2, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 
 
 def main():
@@ -93,7 +93,6 @@ def main():
 
 
 def run():
-    command_line_interface = cmd.Cli( None, True )
     all_packages = load_deafault_channel()
 
     # print_some_repositoies(all_packages)
@@ -156,6 +155,7 @@ def get_repositories( all_packages ):
     gitModulesFile.read( gitFilePath )
 
     index = 0
+    command_line_interface = cmd.Cli( None, True )
 
     for section in gitModulesFile.sections():
         url      = gitModulesFile.get( section, "url" )
@@ -163,7 +163,7 @@ def get_repositories( all_packages ):
         upstream = gitModulesFile.get( section, "upstream" )
 
         user_forker  = get_user_name( url )
-        release_date = get_git_date( os.path.join( sublimeFolder, path ) )
+        release_date = get_git_date( os.path.join( sublimeFolder, path ), command_line_interface )
 
         # # For quick testing
         # index += 1
@@ -196,8 +196,6 @@ def get_repositories( all_packages ):
             if 'description' not in repository_info:
                 repository_info['description'] = "No description available."
 
-            repository_info['name']     = repository_name
-            repository_info['releases'] = [ release_data ]
 
             # If it has the dependency option, then it:
             # 1. It is a module dependency only
@@ -239,7 +237,10 @@ def get_repositories( all_packages ):
                 release_data['url'] = get_download_url( url )
                 repositories.append( repository_info )
 
-            sort_dictionary( release_data )
+            release_data = sort_dictionary( release_data )
+
+            repository_info['name']     = repository_name
+            repository_info['releases'] = [ release_data ]
 
     return sort_list_of_dictionary( repositories) , sort_list_of_dictionary( dependencies )
 
@@ -278,7 +279,7 @@ def ensure_author_name(user_forker, upstream, repository_info):
 
         if len( upstream ) > 20:
 
-            original_author           = get_user_name( upstream )
+            original_author            = get_user_name( upstream )
             repository_info['authors'] = [ original_author ]
 
         else:
@@ -311,7 +312,7 @@ def get_download_url(url):
     return url.replace("//github.com/", "//codeload.github.com/") + "/zip/master"
 
 
-def get_git_date(repository_path):
+def get_git_date(repository_path, command_line_interface):
     """
         Get timestamp of the last commit in git repository
         https://gist.github.com/bitrut/1494315
@@ -368,5 +369,6 @@ if __name__ == "__main__":
 
 
 def plugin_loaded():
-    main()
+    # main()
+    pass
 
