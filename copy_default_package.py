@@ -173,6 +173,8 @@ if __name__ == "__main__":
 
 def plugin_loaded():
 
-    if is_sublime_text_upgraded():
+    # Not attempt to run when we are running from inside a `.sublime-package`: FileNotFoundError:
+    # '..\\Installed Packages\\ChannelManager.sublime-package\\last_sublime_upgrade.studio-channel'
+    if os.path.isdir( CURRENT_DIRECTORY ) and is_sublime_text_upgraded():
         main()
 
