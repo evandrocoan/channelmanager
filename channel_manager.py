@@ -204,7 +204,6 @@ def get_repositories( all_packages ):
             if 'description' not in repository_info:
                 repository_info['description'] = "No description available."
 
-
             # If it has the dependency option, then it:
             # 1. It is a module dependency only
             # 2. It is a module dependency and has other dependencies
@@ -245,12 +244,60 @@ def get_repositories( all_packages ):
                 release_data['url'] = get_download_url( url )
                 repositories.append( repository_info )
 
-            release_data = sort_dictionary( release_data )
+            release_data = fix_sublime_text_release( release_data )
 
             repository_info['name']     = repository_name
             repository_info['releases'] = [ release_data ]
 
     return sort_list_of_dictionary( repositories) , sort_list_of_dictionary( dependencies )
+
+
+def fix_sublime_text_release(release_data):
+    acceptable_version = 3092
+
+    if not is_compatible_version( release_data['sublime_text'], acceptable_version ):
+        release_data['sublime_text'] = ">=" +  str( acceptable_version )
+
+    return sort_dictionary( release_data )
+
+
+def is_compatible_version(release_version, acceptable_version):
+
+    if release_version == '*':
+        return True
+
+    min_version = float("-inf")
+    max_version = float("inf")
+
+    range_match      = re.match('(\d+) - (\d+)$', release_version)
+    less_than        = re.match('<(\d+)$',        release_version)
+    greater_than     = re.match('>(\d+)$',        release_version)
+    less_or_equal    = re.match('<=(\d+)$',       release_version)
+    greater_or_equal = re.match('>=(\d+)$',       release_version)
+
+    if greater_than:
+        min_version = int(greater_than.group(1)) + 1
+
+    elif greater_or_equal:
+        min_version = int(greater_or_equal.group(1))
+
+    elif less_than:
+        max_version = int(less_than.group(1)) - 1
+
+    elif less_or_equal:
+        max_version = int(less_or_equal.group(1))
+
+    elif range_match:
+        min_version = int(range_match.group(1))
+        max_version = int(range_match.group(2))
+
+    else:
+        return False
+
+    if min_version < acceptable_version or max_version < acceptable_version:
+        return False
+
+    return True
 
 
 def sort_dictionary(dictionary):
