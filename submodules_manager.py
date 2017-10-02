@@ -38,6 +38,7 @@ import importlib
 import threading
 import subprocess
 
+
 try:
     # Allow using this file on the website where the sublime
     # module is unavailable
@@ -47,6 +48,7 @@ try:
 except (ImportError):
     sublime = None
     sublime_plugin = None
+
 
 # # https://stackoverflow.com/questions/9079036/detect-python-version-at-runtime
 if sys.version_info[0] < 3:
@@ -63,6 +65,7 @@ else:
     import urllib.request as urllib
     from urllib.error import HTTPError
 
+
 def assert_path(module):
     """
         Import a module from a relative path
@@ -71,12 +74,15 @@ def assert_path(module):
     if module not in sys.path:
         sys.path.append( module )
 
+
+# sys.tracebacklimit = 10; raise ValueError
 def print_python_envinronment():
     index = 0;
 
     for path in sys.path:
         print(index, path);
         index += 1;
+
 
 # https://stackoverflow.com/questions/14087598/python-3-importerror-no-module-named-configparser
 try:
@@ -93,14 +99,12 @@ MAXIMUM_REQUEST_ERRORS = 10
 
 # print_python_envinronment()
 CURRENT_DIRECTORY   = os.path.dirname( os.path.realpath( __file__ ) )
-STUDIO_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, 'last_session.studio-channel' )
+STUDIO_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, "last_session.studio-channel" )
+FIND_FORKS_PATH     = os.path.join( CURRENT_DIRECTORY, "find_forks" )
 
 # print( "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), "PythonDebugTools/all" ) )
 assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), "Package Control" ) )
-
-# sys.tracebacklimit = 10; raise ValueError
-FIND_FORKS_PATH = "StudioChannel/find_forks"
 
 
 # https://stackoverflow.com/questions/9123517/how-do-you-import-a-file-in-python-with-spaces-in-the-name
@@ -300,7 +304,8 @@ class RunBackstrokeThread(threading.Thread):
         log( 1, "RunBackstrokeThread::sections: " + backstrokeFilePath )
         backstrokeConfigs.read( backstrokeFilePath )
 
-        sections = backstrokeConfigs.sections()
+        index          = 0
+        sections       = backstrokeConfigs.sections()
         sections_count = len( sections )
 
         # https://stackoverflow.com/questions/22068050/iterate-over-sections-in-a-config-file
@@ -311,6 +316,11 @@ class RunBackstrokeThread(threading.Thread):
             if start_index > 0:
                 start_index -= 1
                 continue
+
+            # # For quick testing
+            # index += 1
+            # if index > 30:
+            #     break
 
             # The GitHub API only allows about 30 requests per second for the backstroke call,
             # then we make it take a little longer so all the requests can be performed in a row.
@@ -405,9 +415,9 @@ class RunBackstrokeThread(threading.Thread):
 
         log( 1, "RunBackstrokeThread::sections: " + gitFilePath )
         upstreamsConfigs._read( fakefile, gitFilePath )
-        upstreamsConfigs.read( fakefile, gitFilePath )
 
-        sections = upstreamsConfigs.sections()
+        index          = 0
+        sections       = upstreamsConfigs.sections()
         sections_count = len( sections )
 
         # https://stackoverflow.com/questions/22068050/iterate-over-sections-in-a-config-file
@@ -418,6 +428,11 @@ class RunBackstrokeThread(threading.Thread):
             if start_index > 0:
                 start_index -= 1
                 continue
+
+            # # For quick testing
+            # index += 1
+            # if index > 30:
+            #     break
 
             log( 1, "Index: ", successful_resquests, "/", request_index, " of ", sections_count,", ", section )
             # for (each_key, each_val) in upstreamsConfigs.items(section):
@@ -454,19 +469,20 @@ class RunBackstrokeThread(threading.Thread):
                 # Find all forks, add them as remote and fetch them
                 run_command_line(
                     command_line_interface,
-                    shlex.split( "python ../%s --user=%s --repo=%s" % ( FIND_FORKS_PATH, user, repository ) ),
+                    shlex.split( "python %s --user=%s --repo=%s" % ( FIND_FORKS_PATH, user, repository ) ),
                     os.path.join( STUDIO_MAIN_DIRECTORY, path ),
                 )
 
                 # Clean duplicate branches
                 run_command_line(
                     command_line_interface,
-                    shlex.split( "sh ../%s/remove_duplicate_branches.sh %s" % ( FIND_FORKS_PATH, forkUser ) ),
+                    shlex.split( "sh %s/remove_duplicate_branches.sh %s" % ( FIND_FORKS_PATH, forkUser ) ),
                     os.path.join( STUDIO_MAIN_DIRECTORY, path ),
                 )
 
             else:
-                print( "\n\n\nMissing upstream key for package path: " + path )
+                # print( "Missing upstream key for package path: " + path )
+                pass
 
 
         self.save_session_data( maximum_errors, 'last_findforks_session', lastSection )
