@@ -58,10 +58,7 @@ except:
     from six.moves.configparser import NoOptionError
 
 
-CURRENT_DIRECTORY      = os.path.dirname( os.path.realpath( __file__ ) )
-STUDIO_CHANNEL_FILE    = os.path.join( CURRENT_DIRECTORY, "channel.json" )
-STUDIO_REPOSITORY_FILE = os.path.join( CURRENT_DIRECTORY, "repository.json" )
-
+CURRENT_DIRECTORY = os.path.dirname( os.path.realpath( __file__ ) )
 
 # print( "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), "PythonDebugTools/all" ) )
@@ -89,6 +86,21 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 
 def main():
     log( 2, "Entering on main(0)" )
+
+    global CHANNEL_FILE_URL
+    global DEFAULT_CHANNEL_URL
+
+    global STUDIO_MAIN_DIRECTORY
+    global STUDIO_CHANNEL_FILE
+    global STUDIO_REPOSITORY_FILE
+
+    CHANNEL_FILE_URL    = "https://raw.githubusercontent.com/evandrocoan/SublimeStudioChannel/master/repository.json"
+    DEFAULT_CHANNEL_URL = "https://packagecontrol.io/channel_v3.json"
+
+    STUDIO_MAIN_DIRECTORY  = os.path.join( os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) ) )
+    STUDIO_CHANNEL_FILE    = os.path.join( STUDIO_MAIN_DIRECTORY, "StudioChannel", "channel.json" )
+    STUDIO_REPOSITORY_FILE = os.path.join( STUDIO_MAIN_DIRECTORY, "StudioChannel", "repository.json" )
+
     threading.Thread(target=run).start()
 
 
@@ -104,7 +116,7 @@ def run():
 
 def load_deafault_channel():
     package_manager  = PackageManager()
-    channel_provider = ChannelProvider( "https://packagecontrol.io/channel_v3.json", package_manager.settings )
+    channel_provider = ChannelProvider( DEFAULT_CHANNEL_URL, package_manager.settings )
 
     all_packages = {}
     channel_repositories = channel_provider.get_sources()
@@ -128,26 +140,24 @@ def create_repository_file( repositories, dependencies ):
 
 
 def create_channel_file( repositories, dependencies ):
-    channel_file   = OrderedDict()
-    repository_url = "https://raw.githubusercontent.com/evandrocoan/SublimeTextStudioChannel/master/repository.json"
+    channel_dictionary = OrderedDict()
 
-    channel_file['repositories'] = []
-    channel_file['repositories'].append( repository_url )
+    channel_dictionary['repositories'] = []
+    channel_dictionary['repositories'].append( CHANNEL_FILE_URL )
 
-    channel_file['schema_version'] = "3.0.0"
-    channel_file['packages_cache'] = OrderedDict()
-    channel_file['packages_cache'][repository_url] = repositories
+    channel_dictionary['schema_version'] = "3.0.0"
+    channel_dictionary['packages_cache'] = OrderedDict()
+    channel_dictionary['packages_cache'][CHANNEL_FILE_URL] = repositories
 
-    channel_file['dependencies_cache'] = OrderedDict()
-    channel_file['dependencies_cache'][repository_url] = dependencies
+    channel_dictionary['dependencies_cache'] = OrderedDict()
+    channel_dictionary['dependencies_cache'][CHANNEL_FILE_URL] = dependencies
 
-    # print_data_file( STUDIO_CHANNEL_FILE, channel_file )
-    write_data_file( STUDIO_CHANNEL_FILE, channel_file )
+    # print_data_file( STUDIO_CHANNEL_FILE, channel_dictionary )
+    write_data_file( STUDIO_CHANNEL_FILE, channel_dictionary )
 
 
 def get_repositories( all_packages ):
-    sublimeFolder  = os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) )
-    gitFilePath    = os.path.join( sublimeFolder, '.gitmodules' )
+    gitFilePath    = os.path.join( STUDIO_MAIN_DIRECTORY, '.gitmodules' )
     gitModulesFile = configparser.RawConfigParser()
 
     repositories = []
@@ -163,14 +173,14 @@ def get_repositories( all_packages ):
         upstream = gitModulesFile.get( section, "upstream" )
 
         user_forker  = get_user_name( url )
-        release_date = get_git_date( os.path.join( sublimeFolder, path ), command_line_interface )
+        release_date = get_git_date( os.path.join( STUDIO_MAIN_DIRECTORY, path ), command_line_interface )
 
         # # For quick testing
         # index += 1
         # if index > 7:
         #     break
 
-        if 'Packages' in os.path.dirname( path ):
+        if 'Packages' == path[0:8]:
             release_data    = OrderedDict()
             repository_info = OrderedDict()
             repository_name = os.path.basename( path )
@@ -330,17 +340,18 @@ def get_git_version(release_date):
     return release_date.replace("-", ".")[0:10]
 
 
-def write_data_file(file_path, channel_file):
+def write_data_file(file_path, channel_dictionary):
+    log( 1, "Writing to the data file: " + file_path )
 
     with open(file_path, 'w', encoding='utf-8') as output_file:
-        json.dump( channel_file, output_file, indent=4 )
+        json.dump( channel_dictionary, output_file, indent=4 )
 
 
-def print_data_file(file_path, channel_file):
+def print_data_file(file_path, channel_dictionary):
 
     with open( file_path, 'r', encoding='utf-8' ) as studio_channel_data:
-        channel_file = json.load( studio_channel_data)
-        log( 1, "channel_file: " + json.dumps( channel_file, indent=4, sort_keys=True ) )
+        channel_dictionary = json.load( studio_channel_data)
+        log( 1, "channel_dictionary: " + json.dumps( channel_dictionary, indent=4, sort_keys=True ) )
 
 
 def print_some_repositoies(all_packages):
@@ -356,7 +367,7 @@ def print_some_repositoies(all_packages):
         log( 1, "package: %-20s" %  str( package ) + json.dumps( all_packages[package], indent=4 ) )
 
 
-class StudioChannelGenerateChannelFileCommand( sublime_plugin.TextCommand ):
+class StudioChannelManagerGenerateChannelFileCommand( sublime_plugin.TextCommand ):
 
     def run(self, edit):
         print( 'Calling SublimeTextStudioGenerateChannelFile...' )
