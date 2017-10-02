@@ -56,6 +56,9 @@ def assert_path(module):
 
 CURRENT_DIRECTORY = os.path.dirname( os.path.realpath( __file__ ) )
 
+# Do not try to install this own package and the Package Control
+PACKAGES_TO_IGNORE = [ "Package Control", os.path.basename( CURRENT_DIRECTORY ) ]
+
 # print( "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools/all' ) )
 assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), "Package Control" ) )
@@ -140,11 +143,9 @@ def install_submodules(command_line_interface, git_executable_path, is_developme
     else:
         git_modules_url  = get_git_modules_url()
         git_modules_file = download_text_file( git_modules_url )
+        git_packages     = get_git_modules_packages( git_modules_file )
 
-        # print( "download_text_file: " + git_modules_file )
-        git_packages = get_git_modules_packages( git_modules_file )
-
-        print( "git_packages: " + str( git_packages ) )
+        log( 2, "git_packages: " + str( git_packages ) )
         install_sublime_packages( git_packages )
 
 
@@ -169,8 +170,10 @@ def install_sublime_packages(git_packages):
     package_manager = PackageManager()
 
     for package, is_dependency in git_packages:
-        print( "\nInstalling: %s (%s)" % ( str( package ), str( is_dependency ) ) )
-        package_manager.install_package( package, is_dependency )
+        log( 1, "\nInstalling: %s (%s)" % ( str( package ), str( is_dependency ) ) )
+
+        if package not in PACKAGES_TO_IGNORE:
+            package_manager.install_package( package, is_dependency )
 
 
 def get_git_modules_packages( git_modules_file ):
@@ -243,22 +246,24 @@ def clone_submodules(command_line_interface, git_executable_path):
         url  = gitModulesFile.get( section, "url" )
         path = gitModulesFile.get( section, "path" )
 
-        log( 2, "url:  " + url )
-        log( 2, "path: " + path )
-
         # For quick testing
         index += 1
         if index > 3:
             break
 
-        if 'Packages' == path[0:8]:
-            submodule_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, path )
+        package_name = os.path.basename( path )
+        log( 1, "\nInstalling: %s" % ( package_name ) )
 
-            if not os.path.isdir( submodule_absolute_path ):
-                command = shlex.split( '"%s" clone --recursive "%s" "%s"', git_executable_path, url, path )
-                output  = command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY )
+        if package_name not in PACKAGES_TO_IGNORE:
 
-                log( 1, output )
+            if 'Packages' == path[0:8]:
+                submodule_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, path )
+
+                if not os.path.isdir( submodule_absolute_path ):
+                    command = shlex.split( '"%s" clone --recursive "%s" "%s"', git_executable_path, url, path )
+                    output  = command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY )
+
+                    log( 1, output )
 
 
 if __name__ == "__main__":
