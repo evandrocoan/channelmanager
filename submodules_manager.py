@@ -30,6 +30,7 @@ import io
 import sys
 import imp
 import shlex
+
 import argparse
 import unittest
 import importlib
@@ -110,10 +111,10 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 #log.log_to_file( "Debug.txt" )
 #log.clear_log_file()
 
-log( 1, "..." )
-log( 1, "..." )
-log( 1, "Debugging" )
-log( 1, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
+# log( 1, "..." )
+# log( 1, "..." )
+# log( 1, "Debugging" )
+# log( 1, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 
 def main():
     log( 1, "Entering on main(0)" )
@@ -276,7 +277,7 @@ class RunBackstrokeThread(threading.Thread):
             #     log( 1, each_key + ': ' + each_val )
 
             # https://docs.python.org/3/library/configparser.html#configparser.ConfigParser.get
-            upstream   = backstrokeConfigs.get( section, "upstream" )
+            upstream   = self.get_stream_section( section, backstrokeConfigs )
             backstroke = backstrokeConfigs.get( section, "backstroke" )
 
             # log( 1, upstream )
@@ -309,6 +310,13 @@ class RunBackstrokeThread(threading.Thread):
                         continue
 
         self.save_session_data( maximum_errors, 'last_backstroke_session', lastSection )
+
+    def get_stream_section(self, section, backstrokeConfigs):
+
+        if backstrokeConfigs.has_option( section, "upstream" ):
+            return backstrokeConfigs.get( section, "upstream" )
+
+        return ""
 
     def save_session_data(self, maximum_errors, session_key, lastSection):
 
@@ -370,7 +378,7 @@ class RunBackstrokeThread(threading.Thread):
                 # https://docs.python.org/3/library/configparser.html#configparser.ConfigParser.get
                 path     = upstreamsConfigs.get( section, "path" )
                 forkUrl  = upstreamsConfigs.get( section, "url" )
-                upstream = upstreamsConfigs.get( section, "upstream" )
+                upstream = self.get_stream_section( section, upstreamsConfigs )
 
             except( NoOptionError, KeyError ) as error:
                 maximum_errors -= 1
