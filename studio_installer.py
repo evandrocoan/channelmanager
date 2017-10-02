@@ -54,18 +54,20 @@ def assert_path(module):
         sys.path.append( module )
 
 
-CURRENT_DIRECTORY = os.path.dirname( os.path.realpath( __file__ ) )
-CHANNEL_SETTINGS  = CURRENT_DIRECTORY + ".sublime-settings"
+CURRENT_DIRECTORY    = os.path.dirname( os.path.realpath( __file__ ) )
+CURRENT_PACKAGE_NAME = os.path.basename( CURRENT_DIRECTORY ).rsplit('.', 1)[0]
 
 # Do not try to install this own package and the Package Control, as they are currently running
-PACKAGES_TO_IGNORE = [ "Package Control", os.path.basename( CURRENT_DIRECTORY ).rsplit('.', 1)[0] ]
+PACKAGES_TO_IGNORE = [ "Package Control", CURRENT_PACKAGE_NAME ]
 
 # print( "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools/all' ) )
 assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), "Package Control" ) )
 
 
+from .channel_manager import write_data_file
 from .channel_manager import string_convert_list
+from .submodules_manager import get_main_directory
 
 from package_control import cmd
 from package_control.download_manager import downloader
@@ -167,11 +169,13 @@ def set_default_settings():
             user_ignored_packages.append(package)
             studio_ignored_packages.append(package)
 
-    userSettings.set("ignored_packages", user_ignored_packages)
-    studioSettings.set("ignored_packages", studio_ignored_packages)
+    studioSettings = {}
 
+    userSettings.set("ignored_packages", user_ignored_packages)
+    studioSettings['ignored_packages'] = studio_ignored_packages
+
+    write_data_file( CHANNEL_SETTINGS, studioSettings )
     sublime.save_settings("Preferences.sublime-settings")
-    sublime.save_settings(CHANNEL_SETTINGS)
 
 
 def install_sublime_packages(git_packages):
@@ -306,6 +310,9 @@ if __name__ == "__main__":
 
 
 def plugin_loaded():
+    global CHANNEL_SETTINGS
+    CHANNEL_SETTINGS = os.path.join( get_main_directory(), "Packages", "User", CURRENT_PACKAGE_NAME + ".sublime-settings" )
+
     # main()
     check_installed_packages()
 
