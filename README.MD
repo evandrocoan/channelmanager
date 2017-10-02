@@ -5,7 +5,8 @@ Manages the packages installed.
 
 
 
-### Synced Side Bar Watcher
+___
+## Synced Side Bar Watcher
 
 The package `synced_side_bar_watcher.py` creates the command `synced_side_bar_reveal_in_side_bar`,
 to replace the default context menu command `SyncedSideBarRevealInSideBar`.
@@ -14,7 +15,8 @@ to replace the default context menu command `SyncedSideBarRevealInSideBar`.
 
 
 
-### Channel Manager
+___
+## Channel Manager
 
 The package `channel_manager.py` creates the files `channel.json` and `repository.json` based on the
 `.gitmodules` file on the Sublime Text Data folder (the folder at `Packages/../`).
@@ -31,7 +33,8 @@ the following threads for more information about the `Package Control` channel a
 
 
 
-### Submodules Manager
+___
+## Submodules Manager
 
 The package `submodules_manager.py` run several operations based on the `.gitmodules` file on the
 Sublime Text Data folder (the folder at `Packages/../`) and `Backstroke.gitmodules` file on the
