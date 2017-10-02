@@ -89,8 +89,9 @@ except:
 MAXIMUM_REQUEST_ERRORS = 10
 
 # print_python_envinronment()
-CURRENT_DIRECTORY   = os.path.dirname( os.path.realpath( __file__ ) )
-STUDIO_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, 'last_session.studio-channel' )
+CURRENT_DIRECTORY     = os.path.dirname( os.path.realpath( __file__ ) )
+STUDIO_SESSION_FILE   = os.path.join( CURRENT_DIRECTORY, 'last_session.studio-channel' )
+STUDIO_MAIN_DIRECTORY = os.path.join( os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) ) )
 
 # print( "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), "PythonDebugTools/all" ) )
@@ -177,9 +178,8 @@ class RunGitPullThread(threading.Thread):
         self.update_submodules()
 
     def update_submodules(self):
-        directory  = os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) )
         error_list = []
-        log( 1, "update_submodules::Current directory: " + directory )
+        log( 1, "update_submodules::Current directory: " + STUDIO_MAIN_DIRECTORY )
 
         for _ in range(0, 100):
             error_list.append( "Error! " )
@@ -198,12 +198,12 @@ class RunGitPullThread(threading.Thread):
 
         if sublime:
             command_line_interface = cmd.Cli( None, True )
-            run_command_line( command_line_interface, shlex.split( command ), directory )
+            run_command_line( command_line_interface, shlex.split( command ), STUDIO_MAIN_DIRECTORY )
 
         else:
             # Python os.system() call runs in incorrect directory
             # https://stackoverflow.com/questions/18066278/python-os-system-call-runs-in-incorrect-directory
-            os.chdir( directory )
+            os.chdir( STUDIO_MAIN_DIRECTORY )
 
             # Calling an external command in Python
             # https://stackoverflow.com/questions/89228/calling-an-external-command-in-python
@@ -249,7 +249,7 @@ class RunBackstrokeThread(threading.Thread):
 
     def create_backstroke(self):
         log( 1, "RunBackstrokeThread::create_backstroke" )
-        backstrokeFilePath = os.path.join( os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) ), 'Local', 'Backstroke.gitmodules' )
+        backstrokeFilePath = os.path.join( STUDIO_MAIN_DIRECTORY, 'Local', 'Backstroke.gitmodules' )
 
         request_index        = 0
         successful_resquests = 0
@@ -356,7 +356,7 @@ class RunBackstrokeThread(threading.Thread):
         request_index        = 0
         successful_resquests = 0
 
-        gitFilePath      = os.path.join( os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) ), '.gitmodules' )
+        gitFilePath      = os.path.join( STUDIO_MAIN_DIRECTORY, '.gitmodules' )
         upstreamsConfigs = configparser.RawConfigParser()
 
         # https://stackoverflow.com/questions/45415684/how-to-stop-tabs-on-python-2-7-rawconfigparser-throwing-parsingerror/
@@ -413,14 +413,14 @@ class RunBackstrokeThread(threading.Thread):
                 run_command_line(
                     command_line_interface,
                     shlex.split( "python ../%s --user=%s --repo=%s" % ( FIND_FORKS_PATH, user, repository ) ),
-                    os.path.join( os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) ), path ),
+                    os.path.join( STUDIO_MAIN_DIRECTORY, path ),
                 )
 
                 # Clean duplicate branches
                 run_command_line(
                     command_line_interface,
                     shlex.split( "sh ../%s/remove_duplicate_branches.sh %s" % ( FIND_FORKS_PATH, forkUser ) ),
-                    os.path.join( os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) ), path ),
+                    os.path.join( STUDIO_MAIN_DIRECTORY, path ),
                 )
 
             else:
