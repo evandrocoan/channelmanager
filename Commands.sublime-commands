@@ -1,6 +1,5 @@
 [
-  {
-    "caption": "Studio Channel Manager: Generate Channel File",
-    "command": "studio_channel_manager_generate_channel_file"
-  },
+    { "caption": "Studio Channel Manager: Generate Channel File", "command": "studio_channel_manager_generate_channel_file" },
+    { "caption": "Studio Channel Manager: Run Backstroke Requests", "command": "studio_channel_manager_run", "args": {"run": "-b"} },
+    { "caption": "Studio Channel Manager: Pull & Rebase all Packages", "command": "studio_channel_manager_run", "args": {"run": "-p"} },
 ]

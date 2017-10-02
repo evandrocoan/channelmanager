@@ -42,9 +42,11 @@ try:
     # Allow using this file on the website where the sublime
     # module is unavailable
     import sublime
+    import sublime_plugin
 
 except (ImportError):
     sublime = None
+    sublime_plugin = None
 
 # # https://stackoverflow.com/questions/9079036/detect-python-version-at-runtime
 if sys.version_info[0] < 3:
@@ -85,13 +87,13 @@ except:
     from six.moves import configparser
     from six.moves.configparser import NoOptionError
 
+
 # How many errors are acceptable when the GitHub API request fails
 MAXIMUM_REQUEST_ERRORS = 10
 
 # print_python_envinronment()
-CURRENT_DIRECTORY     = os.path.dirname( os.path.realpath( __file__ ) )
-STUDIO_SESSION_FILE   = os.path.join( CURRENT_DIRECTORY, 'last_session.studio-channel' )
-STUDIO_MAIN_DIRECTORY = os.path.join( os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) ) )
+CURRENT_DIRECTORY   = os.path.dirname( os.path.realpath( __file__ ) )
+STUDIO_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, 'last_session.studio-channel' )
 
 # print( "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), "PythonDebugTools/all" ) )
@@ -99,6 +101,7 @@ assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), "Package Contro
 
 # sys.tracebacklimit = 10; raise ValueError
 FIND_FORKS_PATH = "StudioChannel/find_forks"
+
 
 # https://stackoverflow.com/questions/9123517/how-do-you-import-a-file-in-python-with-spaces-in-the-name
 # cmd = __import__("Package Control.package_control.cmd")
@@ -118,49 +121,80 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 # log( 1, "Debugging" )
 # log( 1, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 
-def main():
-    log( 1, "Entering on main(0)" )
+
+def main(command=None):
+    log( 1, "Entering on main(0) " + command )
+
+    argumentsNamespace    = None
+    STUDIO_MAIN_DIRECTORY = get_main_directory()
 
     # https://stackoverflow.com/questions/6382804/how-to-use-getopt-optarg-in-python-how-to-shift
-    print_command_line_arguments()
-    argumentParser = argparse.ArgumentParser( description='Update Sublime Text Studio' )
+    if not command:
+        print_command_line_arguments()
+        argumentParser = argparse.ArgumentParser( description='Update Sublime Text Studio' )
 
-    argumentParser.add_argument( "-a", "--all", action="store_true",
-            help="Generate all assets" )
+        argumentParser.add_argument( "-a", "--all", action="store_true",
+                help="Generate all assets" )
 
-    argumentParser.add_argument( "-b", "--backstroke", action="store_true",
-            help="Check all backstroke registered repositories updates with their upstream. "
-            "The backstroke URLs are now in a separate file on: Local/Backstroke.gitmodules" )
+        argumentParser.add_argument( "-b", "--backstroke", action="store_true",
+                help="Check all backstroke registered repositories updates with their upstream. "
+                "The backstroke URLs are now in a separate file on: Local/Backstroke.gitmodules" )
 
-    argumentParser.add_argument( "-f", "--find-forks", action="store_true",
-            help="Find all repositories forks, fetch their branches and clean the duplicated branches. "
-            "The upstream data in on the `.gitmodules` file on: Sublime Text `Data` folder" )
+        argumentParser.add_argument( "-f", "--find-forks", action="store_true",
+                help="Find all repositories forks, fetch their branches and clean the duplicated branches. "
+                "The upstream data in on the `.gitmodules` file on: Sublime Text `Data` folder" )
 
-    argumentParser.add_argument( "-p", "--pull", action="store_true",
-            help="Perform a git pull from the remote repositories" )
+        argumentParser.add_argument( "-p", "--pull", action="store_true",
+                help="Perform a git pull from the remote repositories" )
 
-    argumentsNamespace = argumentParser.parse_args()
+        argumentsNamespace = argumentParser.parse_args()
 
     # print( argumentsNamespace )
-    if argumentsNamespace.all:
-        # These are too long operations to run within Sublime Text console
+    if command == "-a" or argumentsNamespace and argumentsNamespace.all:
         RunGitPullThread().start()
         RunBackstrokeThread(False).start()
-        RunBackstrokeThread(True).start()
 
-    elif argumentsNamespace.find_forks:
-        RunBackstrokeThread(True).start()
+        # This are too long operations to run within Sublime Text console
+        attempt_run_find_forks()
 
-    elif argumentsNamespace.backstroke:
+    elif argumentsNamespace and argumentsNamespace.find_forks:
+        attempt_run_find_forks()
+
+    elif command == "-b" or argumentsNamespace and argumentsNamespace.backstroke:
         RunBackstrokeThread(False).start()
 
-    elif argumentsNamespace.pull:
+    elif command == "-p" or argumentsNamespace and argumentsNamespace.pull:
         RunGitPullThread().start()
 
-    else:
+    elif not command:
         argumentParser.print_help()
 
     # unittest.main()
+
+
+def attempt_run_find_forks():
+    if sublime:
+        print( "The find forks command is only available running by the command line, while" )
+        print( "using the Sublime Text Studio Development version." )
+
+    else:
+        RunBackstrokeThread(True).start()
+
+
+def get_main_directory():
+    possible_main_directory = os.path.normpath( os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) ) )
+
+    if sublime:
+        sublime_text_packages = os.path.normpath( os.path.dirname( sublime.packages_path() ) )
+
+        if possible_main_directory == sublime_text_packages:
+            return possible_main_directory
+
+        else:
+            return sublime_text_packages
+
+    return possible_main_directory
+
 
 #
 # Repositories which are a fork from outside the Github, which need manually checking.
@@ -453,15 +487,21 @@ def parse_upstream( upstream ):
 
 
 def print_command_line_arguments():
-    log( 1, "( print_command_line_arguments ) len(sys.argv): " + str( len( sys.argv ) ) )
 
-    for arg in sys.argv:
-        log( 1, "( print_command_line_arguments ) arg: " + str( arg ) )
+    try:
+        log( 1, "( print_command_line_arguments ) len(sys.argv): " + str( len( sys.argv ) ) )
+
+        for arg in sys.argv:
+            log( 1, "( print_command_line_arguments ) arg: " + str( arg ) )
+
+    except AttributeError:
+        pass
 
 
 # Here's our "unit".
 def IsOdd(n):
     return n % 2 == 1
+
 
 class IsOddTests(unittest.TestCase):
 
@@ -469,8 +509,17 @@ class IsOddTests(unittest.TestCase):
         self.failUnless(IsOdd(1))
 
 
+if sublime_plugin:
+
+    class StudioChannelManagerRunCommand( sublime_plugin.TextCommand ):
+
+        def run(self, edit, run):
+            main( run )
+
+
 if __name__ == "__main__":
     main()
+
 
 def plugin_loaded():
     pass
