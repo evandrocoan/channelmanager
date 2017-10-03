@@ -57,7 +57,14 @@ def assert_path(module):
 
 
 g_is_already_running = False
-PACKAGES_TO_INSTALL_LAST = ["Default"]
+
+# Install these packages by last as they were messing with the color scheme settings when installing
+# it on a vanilla install. Todo, fix whatever they are doing and causes the
+# `Preferences.sublime-settings` file to be set to:
+# {
+#     "color_scheme": "Packages/User/SublimeLinter/Monokai (SL).tmTheme"
+# }
+PACKAGES_TO_INSTALL_LAST = ["Default", "SublimeLinter", "SublimeLinter-javac", "A File Icon"]
 
 CURRENT_DIRECTORY    = os.path.dirname( os.path.realpath( __file__ ) )
 CURRENT_PACKAGE_NAME = os.path.basename( CURRENT_DIRECTORY ).rsplit('.', 1)[0]
