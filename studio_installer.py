@@ -103,11 +103,18 @@ def main(command="stable"):
     log( 2, "STUDIO_MAIN_URL:       " + STUDIO_MAIN_URL )
     log( 2, "STUDIO_MAIN_DIRECTORY: " + STUDIO_MAIN_DIRECTORY )
 
+    set_default_settings_before()
+
     installer_thread = InstallStudioFilesThread( True if command == "development" else False )
     installer_thread.start()
 
     ThreadProgress( installer_thread, 'Installing Sublime Text Studio %s Packages' % command,
             'Sublime Text Studio %s was successfully installed.' % command )
+
+    installer_thread.join()
+
+    set_default_settings_after()
+    check_installed_packages()
 
 
 class InstallStudioFilesThread(threading.Thread):
@@ -173,10 +180,24 @@ def install_modules(command_line_interface, git_executable_path, is_development_
         log( 2, "git_packages: " + str( git_packages ) )
         install_sublime_packages( git_packages )
 
-    set_default_settings()
+
+def set_default_settings_before():
+    userSettings   = sublime.load_settings("Preferences.sublime-settings")
+    studioSettings = sublime.load_settings(CHANNEL_SETTINGS)
+
+    user_ignored_packages   = userSettings.get("ignored_packages", [])
+    packages_to_ignore      = studioSettings.get("packages_to_ignore", [])
+
+    for package_name in packages_to_ignore:
+
+        if package_name not in user_ignored_packages:
+            user_ignored_packages.append(package_name)
+
+    userSettings.set("ignored_packages", user_ignored_packages)
+    sublime.save_settings("Preferences.sublime-settings")
 
 
-def set_default_settings():
+def set_default_settings_after():
     userSettings   = sublime.load_settings("Preferences.sublime-settings")
     studioSettings = sublime.load_settings(CHANNEL_SETTINGS)
 
@@ -193,6 +214,8 @@ def set_default_settings():
     studioSettings = {}
     userSettings.set("ignored_packages", user_ignored_packages)
 
+    # `packages_to_uninstall` and `ignored_packages` is to unignore/uninstall they when uninstalling
+    # the studio channel
     studioSettings['ignored_packages']      = studio_ignored_packages
     studioSettings['packages_to_uninstall'] = packages_to_uninstall
 
@@ -343,6 +366,11 @@ def clone_submodules_packages(command_line_interface, git_executable_path):
 
 
 def check_installed_packages():
+    """
+        Compare the current installed packages list with required packages to install, and if they
+        differ, attempt to install they again for some times. If not successful, stop trying and
+        warn the user.
+    """
     studioSettings         = sublime.load_settings(CHANNEL_SETTINGS)
     packageControlSettings = sublime.load_settings("Package Control.sublime-settings")
 
