@@ -33,6 +33,7 @@ import zipfile
 
 import io
 import json
+import shlex
 import threading
 import contextlib
 
@@ -56,7 +57,11 @@ def assert_path(module):
         sys.path.append( module )
 
 
-g_is_already_running = False
+g_is_already_running    = False
+TEMPORARY_FOLDER_TO_USE = "__channel_studio_temp"
+
+CURRENT_DIRECTORY    = os.path.dirname( os.path.realpath( __file__ ) )
+CURRENT_PACKAGE_NAME = os.path.basename( CURRENT_DIRECTORY ).rsplit('.', 1)[0]
 
 # Install these packages by last as they were messing with the color scheme settings when installing
 # it on a vanilla install. Todo, fix whatever they are doing and causes the
@@ -65,9 +70,6 @@ g_is_already_running = False
 #     "color_scheme": "Packages/User/SublimeLinter/Monokai (SL).tmTheme"
 # }
 PACKAGES_TO_INSTALL_LAST = ["Default", "SublimeLinter", "SublimeLinter-javac", "A File Icon"]
-
-CURRENT_DIRECTORY    = os.path.dirname( os.path.realpath( __file__ ) )
-CURRENT_PACKAGE_NAME = os.path.basename( CURRENT_DIRECTORY ).rsplit('.', 1)[0]
 
 # Do not try to install this own package and the Package Control, as they are currently running
 PACKAGES_TO_NOT_INSTALL = [ "Package Control", CURRENT_PACKAGE_NAME ]
@@ -284,7 +286,7 @@ def install_development_packages(git_packages, git_executable_path, command_line
     for package_name in git_packages:
         log( 1, "\n\nInstalling: %s" % ( str( package_name ) ) )
 
-        command = shlex.split( '"%s" clone --recursive "%s" "%s"', git_executable_path, url, path )
+        command = shlex.split( '"%s" clone --recursive "%s" "%s"' % ( git_executable_path, url, path ) )
         output  = command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY )
 
         log( 1, "install_development_packages_, output_: " + output )
@@ -431,6 +433,84 @@ def clone_sublime_text_studio(command_line_interface, git_executable_path):
 
     if os.path.exists( main_git_folder ):
         raise ValueError("The folder '%s' already exists. You already has some custom studio git installation." % main_git_folder)
+
+    download_main_repository( command_line_interface, git_executable_path )
+
+    packages_folder           = os.join.path( STUDIO_MAIN_DIRECTORY, "Packages" )
+    packages_temporary_folder = os.join.path( STUDIO_MAIN_DIRECTORY, TEMPORARY_FOLDER_TO_USE, "Packages" )
+
+    copy_if_not_exists( packages_temporary_folder, packages_folder )
+
+
+def copy_if_not_exists(root_source_folder, root_destine_folder):
+    log( 2, "copy_if_not_exists_, root_source_folder_: " + str( root_source_folder ) )
+    log( 2, "copy_if_not_exists_, root_destine_folder_: " + str( root_destine_folder ) )
+
+    packages_to_install     = get_immediate_subdirectories( root_source_folder )
+    packages_to_not_install = get_immediate_subdirectories( root_destine_folder )
+
+    for package in packages_to_install:
+        log( 2, "Trying to install: " + str( package ) )
+
+        if package not in packages_to_not_install:
+            log( 2, "Installing: " + str( package ) )
+            copy_overrides( package, root_destine_folder, True)
+
+
+def get_immediate_subdirectories(a_dir):
+    """
+        How to get all of the immediate subdirectories in Python
+        https://stackoverflow.com/questions/800197/how-to-get-all-of-the-immediate-subdirectories-in-python
+    """
+    return [ name for name in os.listdir(a_dir) if os.path.isdir( os.path.join( a_dir, name ) ) ]
+
+
+def copy_overrides(root_source_folder, root_destine_folder, move_files=False):
+    """
+        Python How To Copy Or Move Folders Recursively
+        http://techs.studyhorror.com/python-copy-move-sub-folders-recursively-i-92
+
+        Python script recursively rename all files in folder and subfolders
+        https://stackoverflow.com/questions/41861238/python-script-recursively-rename-all-files-in-folder-and-subfolders
+
+        Force Overwrite in Os.Rename
+        https://stackoverflow.com/questions/8107352/force-overwrite-in-os-rename
+    """
+    # Call this if operation only one time, instead of calling the for every file.
+    if move_files:
+        def copy_file():
+            shutil.move( source_file, destine_folder )
+    else:
+        def copy_file():
+            shutil.copy( source_file, destine_folder )
+
+    for source_folder, directories, files in os.walk( root_source_folder ):
+        destine_folder = source_folder.replace( root_source_folder, root_destine_folder)
+
+        if not os.path.exists( destine_folder ):
+            os.mkdir( destine_folder )
+
+        for file in files:
+            source_file  = os.path.join( source_folder, file )
+            destine_file = os.path.join( destine_folder, file )
+
+            if os.path.exists( destine_file ):
+                os.remove( destine_file )
+
+            # print( ( "Moving" if move_files else "Coping" ), "file:", source_file, "to", destine_file )
+            copy_file()
+
+            if file.endswith(".hide"):
+                os.replace( destine_file, destine_file[0:-5] )
+
+
+def download_main_repository(command_line_interface, git_executable_path):
+    log( 1, "download_main_repository_, \n\nInstalling: %s" % ( str( STUDIO_MAIN_URL ) ) )
+
+    command = shlex.split( '"%s" clone --recursive -j8 "%s" "%s"' % ( git_executable_path, STUDIO_MAIN_URL, TEMPORARY_FOLDER_TO_USE ) )
+    output  = command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY, live_output=True )
+
+    log( 1, "download_main_repository_, output_: " + output )
 
 
 def set_default_settings_before(git_packages, is_development_install):
