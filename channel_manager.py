@@ -176,7 +176,7 @@ def create_repository_file( repositories, dependencies ):
     repository_file['packages']     = repositories
     repository_file['dependencies'] = dependencies
 
-    # print_data_file( STUDIO_REPOSITORY_FILE, repository_file )
+    # print_data_file( STUDIO_REPOSITORY_FILE )
     write_data_file( STUDIO_REPOSITORY_FILE, repository_file )
 
 
@@ -193,7 +193,7 @@ def create_channel_file( repositories, dependencies ):
     channel_dictionary['dependencies_cache'] = OrderedDict()
     channel_dictionary['dependencies_cache'][CHANNEL_FILE_URL] = dependencies
 
-    # print_data_file( STUDIO_CHANNEL_FILE, channel_dictionary )
+    # print_data_file( STUDIO_CHANNEL_FILE )
     write_data_file( STUDIO_CHANNEL_FILE, channel_dictionary )
 
 
@@ -441,7 +441,7 @@ def write_data_file(file_path, channel_dictionary):
         json.dump( channel_dictionary, output_file, indent=4 )
 
 
-def print_data_file(file_path, channel_dictionary):
+def print_data_file(file_path):
 
     with open( file_path, 'r', encoding='utf-8' ) as studio_channel_data:
         channel_dictionary = json.load( studio_channel_data)
