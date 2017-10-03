@@ -58,9 +58,7 @@ except:
     from six.moves.configparser import NoOptionError
 
 
-CURRENT_DIRECTORY = os.path.dirname( os.path.realpath( __file__ ) )
-CHANNEL_SETTINGS  = CURRENT_DIRECTORY + ".sublime-settings"
-
+CURRENT_DIRECTORY    = os.path.dirname( os.path.realpath( __file__ ) )
 g_is_already_running = False
 
 # print( "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
@@ -97,6 +95,7 @@ def main():
     global STUDIO_MAIN_DIRECTORY
     global STUDIO_CHANNEL_FILE
     global STUDIO_REPOSITORY_FILE
+    global STUDIO_SETTTINGS_FILE
 
     CHANNEL_FILE_URL    = "https://raw.githubusercontent.com/evandrocoan/SublimeStudioChannel/master/repository.json"
     DEFAULT_CHANNEL_URL = "https://packagecontrol.io/channel_v3.json"
@@ -104,6 +103,7 @@ def main():
     STUDIO_MAIN_DIRECTORY  = os.path.dirname( sublime.packages_path() )
     STUDIO_CHANNEL_FILE    = os.path.join( STUDIO_MAIN_DIRECTORY, "StudioChannel", "channel.json" )
     STUDIO_REPOSITORY_FILE = os.path.join( STUDIO_MAIN_DIRECTORY, "StudioChannel", "repository.json" )
+    STUDIO_SETTTINGS_FILE  = os.path.join( STUDIO_MAIN_DIRECTORY, "StudioChannel", "settings.json" )
 
     channel_thread = GenerateChannelThread()
     channel_thread.start()
@@ -138,10 +138,10 @@ def create_ignored_packages():
     studioSettings = {}
     userSettings   = sublime.load_settings("Preferences.sublime-settings")
 
-    user_ignored_packages = userSettings.get("ignored_packages", [])
+    user_ignored_packages                = userSettings.get("ignored_packages", [])
     studioSettings['packages_to_ignore'] = user_ignored_packages
 
-    write_data_file( CHANNEL_SETTINGS, studioSettings )
+    write_data_file( STUDIO_SETTTINGS_FILE, studioSettings )
 
 
 def is_allowed_to_run():
