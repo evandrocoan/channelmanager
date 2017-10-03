@@ -93,26 +93,35 @@ log( 2, "CURRENT_DIRECTORY:     " + CURRENT_DIRECTORY )
 
 def main(command="stable"):
     log( 2, "Entering on main(0)" )
+    StartInstallStudioThread(command).start()
 
-    global STUDIO_MAIN_URL
-    global STUDIO_MAIN_DIRECTORY
 
-    STUDIO_MAIN_URL       = "https://github.com/evandrocoan/SublimeTextStudio"
-    STUDIO_MAIN_DIRECTORY = os.path.dirname( sublime.packages_path() )
+class StartInstallStudioThread(threading.Thread):
 
-    log( 2, "STUDIO_MAIN_URL:       " + STUDIO_MAIN_URL )
-    log( 2, "STUDIO_MAIN_DIRECTORY: " + STUDIO_MAIN_DIRECTORY )
+    def __init__(self, command):
+        threading.Thread.__init__(self)
+        self.command = command
 
-    installer_thread = InstallStudioFilesThread( True if command == "development" else False )
-    installer_thread.start()
+    def run(self):
+        global STUDIO_MAIN_URL
+        global STUDIO_MAIN_DIRECTORY
 
-    ThreadProgress( installer_thread, 'Installing Sublime Text Studio %s Packages' % command,
-            'Sublime Text Studio %s was successfully installed.' % command )
+        STUDIO_MAIN_URL       = "https://github.com/evandrocoan/SublimeTextStudio"
+        STUDIO_MAIN_DIRECTORY = os.path.dirname( sublime.packages_path() )
 
-    installer_thread.join()
+        log( 2, "STUDIO_MAIN_URL:       " + STUDIO_MAIN_URL )
+        log( 2, "STUDIO_MAIN_DIRECTORY: " + STUDIO_MAIN_DIRECTORY )
 
-    set_default_settings_after()
-    check_installed_packages()
+        installer_thread = InstallStudioFilesThread( True if self.command == "development" else False )
+        installer_thread.start()
+
+        ThreadProgress( installer_thread, 'Installing Sublime Text Studio %s Packages' % self.command,
+                'Sublime Text Studio %s was successfully installed.' % self.command )
+
+        installer_thread.join()
+
+        set_default_settings_after()
+        check_installed_packages()
 
 
 class InstallStudioFilesThread(threading.Thread):
