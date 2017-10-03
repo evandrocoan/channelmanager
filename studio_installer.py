@@ -94,6 +94,13 @@ log( 2, "CURRENT_DIRECTORY:     " + CURRENT_DIRECTORY )
 
 
 def main(command="stable"):
+    """
+        Before calling this installer, the `Package Control` user settings file, must have the
+        Studio Channel file set before the default channel key `channels`.
+
+        Also the current `Package Control` cache must be cleaned, ensuring it is downloading and
+        using the Studio Channel repositories/channel list.
+    """
     log( 2, "Entering on main(0)" )
     StartInstallStudioThread(command).start()
 
@@ -105,27 +112,40 @@ class StartInstallStudioThread(threading.Thread):
         self.command = command
 
     def run(self):
-        global STUDIO_MAIN_URL
-        global STUDIO_MAIN_DIRECTORY
-        global USER_SETTINGS_FILE
+        """
+            Python thread exit code
+            https://stackoverflow.com/questions/986616/python-thread-exit-code
+        """
 
-        STUDIO_MAIN_URL       = "https://github.com/evandrocoan/SublimeTextStudio"
-        STUDIO_MAIN_DIRECTORY = os.path.dirname( sublime.packages_path() )
-        USER_SETTINGS_FILE    = os.path.join( STUDIO_MAIN_DIRECTORY, "Packages", "User", "Preferences.sublime-settings" )
+        if is_allowed_to_run():
+            global USER_SETTINGS_FILE
+            global STUDIO_MAIN_DIRECTORY
+            global CHANNEL_MAIN_FILE_PATH
+            global CHANNEL_MAIN_FILE_URL
+            global STUDIO_MAIN_URL
 
-        log( 2, "STUDIO_MAIN_URL:       " + STUDIO_MAIN_URL )
-        log( 2, "STUDIO_MAIN_DIRECTORY: " + STUDIO_MAIN_DIRECTORY )
+            USER_SETTINGS_FILE     = "Preferences.sublime-settings"
+            STUDIO_MAIN_DIRECTORY  = os.path.dirname( sublime.packages_path() )
+            CHANNEL_MAIN_FILE_PATH = os.path.join( STUDIO_MAIN_DIRECTORY, "StudioChannel", "settings.json" )
+            CHANNEL_MAIN_FILE_URL  = "https://raw.githubusercontent.com/evandrocoan/SublimeStudioChannel/master/settings.json"
+            STUDIO_MAIN_URL        = "https://github.com/evandrocoan/SublimeTextStudio"
 
-        installer_thread = InstallStudioFilesThread( True if self.command == "development" else False )
-        installer_thread.start()
+            log( 2, "STUDIO_MAIN_URL:       " + STUDIO_MAIN_URL )
+            log( 2, "STUDIO_MAIN_DIRECTORY: " + STUDIO_MAIN_DIRECTORY )
 
-        ThreadProgress( installer_thread, 'Installing Sublime Text Studio %s Packages' % self.command,
-                'Sublime Text Studio %s was successfully installed.' % self.command )
+            installer_thread = InstallStudioFilesThread( True if self.command == "development" else False )
+            installer_thread.start()
 
-        installer_thread.join()
+            ThreadProgress( installer_thread, 'Installing Sublime Text Studio %s Packages' % self.command,
+                    'Sublime Text Studio %s was successfully installed.' % self.command )
 
-        set_default_settings_after()
-        check_installed_packages()
+            installer_thread.join()
+
+            set_default_settings_after()
+            check_installed_packages()
+
+        global g_is_already_running
+        g_is_already_running = False
 
 
 class InstallStudioFilesThread(threading.Thread):
@@ -136,23 +156,15 @@ class InstallStudioFilesThread(threading.Thread):
 
     def run(self):
         log( 2, "Entering on run(1)" )
+        global g_packages_to_uninstall
 
-        if is_allowed_to_run():
-            global g_packages_to_uninstall
+        g_packages_to_uninstall = []
+        command_line_interface  = cmd.Cli( None, True )
 
-            g_packages_to_uninstall = []
-            command_line_interface  = cmd.Cli( None, True )
+        git_executable_path = command_line_interface.find_binary( "git.exe" if os.name == 'nt' else "git" )
+        log( 2, "run, git_executable_path: " + str( git_executable_path ) )
 
-            git_executable_path = command_line_interface.find_binary( "git.exe" if os.name == 'nt' else "git" )
-            log( 2, "run, git_executable_path: " + str( git_executable_path ) )
-
-            if self.is_development_install:
-                clone_sublime_text_studio( command_line_interface, git_executable_path )
-
-            install_modules( command_line_interface, git_executable_path, self.is_development_install )
-
-            global g_is_already_running
-            g_is_already_running = False
+        install_modules( command_line_interface, git_executable_path, self.is_development_install )
 
 
 def is_allowed_to_run():
@@ -179,9 +191,10 @@ def clone_sublime_text_studio(command_line_interface, git_executable_path):
 
 def install_modules(command_line_interface, git_executable_path, is_development_install):
     log( 2, "PACKAGES_TO_NOT_INSTALL: " + str( PACKAGES_TO_NOT_INSTALL ) )
-    load_ignored_packages()
+    load_ignored_packages( is_development_install )
 
     if is_development_install:
+        clone_sublime_text_studio( command_line_interface, git_executable_path )
         git_packages = get_submodules_packages()
 
         log( 2, "git_packages: " + str( git_packages ) )
@@ -195,15 +208,27 @@ def install_modules(command_line_interface, git_executable_path, is_development_
         install_sublime_packages( git_packages )
 
 
-def load_ignored_packages():
+def load_ignored_packages( is_development_install ):
+    global g_user_settings
+    global g_studio_settings
+
+    g_user_settings = sublime.load_settings( USER_SETTINGS_FILE )
+
+    if is_development_install:
+        g_studio_settings = load_data_file( CHANNEL_MAIN_FILE_PATH )
+
+    else:
+        channel_settings_file = download_text_file( CHANNEL_MAIN_FILE_URL )
+        g_studio_settings     = json.loads( channel_settings_file )
+
     global g_user_ignored_packages
     global g_packages_to_ignore
 
-    userSettings   = load_data_file(USER_SETTINGS_FILE)
-    studioSettings = load_data_file(CHANNEL_SETTINGS)
+    g_user_ignored_packages = g_user_settings.get( 'ignored_packages', [] )
+    g_packages_to_ignore    = get_dictionary_key( g_studio_settings, 'packages_to_ignore', [] )
 
-    g_user_ignored_packages = get_dictionary_key(userSettings, 'ignored_packages', [])
-    g_packages_to_ignore    = get_dictionary_key(studioSettings, 'packages_to_ignore', [])
+    log( 2, "g_packages_to_ignore:    " + str( g_packages_to_ignore ) )
+    log( 2, "g_user_ignored_packages: " + str( g_user_ignored_packages ) )
 
 
 def get_dictionary_key(dictionary, key, default=None):
@@ -214,6 +239,22 @@ def get_dictionary_key(dictionary, key, default=None):
     return default
 
 
+# def load_settings_file( file_path, settings_key=None ):
+#     dictionary_data = load_data_file(file_path)
+
+#     if settings_key:
+
+#         if settings_key not in dictionary_data:
+#             dictionary_data = get_sublime_default_file( file_path )
+
+
+# def get_sublime_default_file(file_path)
+#     basename      = os.path.basename( file_path )
+#     settings_file = os.path.basename( os.path.dirname( file_path ) )
+
+#     return os.path.join( settings_file, basename )
+
+
 def load_data_file(file_path):
     channel_dictionary = {}
 
@@ -222,12 +263,18 @@ def load_data_file(file_path):
         with open( file_path, 'r', encoding='utf-8' ) as studio_channel_data:
             channel_dictionary = json.load( studio_channel_data)
 
+    else:
+        log( 1, "Error on load_data_file(1), the file '%s' does not exists!" % file_path )
+
     return channel_dictionary
 
 
 def set_default_settings_before(git_packages):
-    # Ensure there is a settings file created, before attempt to open it
-    userSettings = load_data_file(USER_SETTINGS_FILE)
+    """
+        Set some package to be enabled at last due their settings being dependent on other packages
+        which need to be installed first. Also disable almost all packages to not lag/hang/slow down the
+        installation process.
+    """
 
     # Ignore everything except some packages, until it is finished
     if len( git_packages ) > 0 and isinstance( git_packages[0], str ):
@@ -238,7 +285,7 @@ def set_default_settings_before(git_packages):
                 git_packages.remove(package)
                 git_packages.append(package)
 
-        userSettings['ignored_packages'] = git_packages
+        g_user_settings.set('ignored_packages', git_packages)
 
     else:
         packages_to_ignore = []
@@ -250,16 +297,25 @@ def set_default_settings_before(git_packages):
                 git_packages.remove(package)
                 git_packages.append(package)
 
-        userSettings['ignored_packages'] = packages_to_ignore
+        g_user_settings.set('ignored_packages', packages_to_ignore)
 
-    write_data_file( USER_SETTINGS_FILE, userSettings )
+    # Save our changes to the user ignored packages list
+    sublime.save_settings( USER_SETTINGS_FILE )
 
 
 def set_default_settings_after():
-    global g_user_ignored_packages
+    """
+        Populate the global variable `g_user_ignored_packages` with the packages this installation
+        process added to the user's settings files and also save it to the file system. So later
+        when uninstalling this studio we can only remove our packages, keeping the user's original
+        ignored packages intact.
 
+        This also sets the current user's `ignored_packages` settings including all packages already
+        disabled and the new packages to be installed and must be disabled before attempting to
+        install them.
+    """
     studio_ignored_packages = []
-    userSettings = sublime.load_settings("Preferences.sublime-settings")
+    global g_user_ignored_packages
 
     for package in g_packages_to_ignore:
 
@@ -268,15 +324,18 @@ def set_default_settings_after():
             studio_ignored_packages.append(package)
 
     studioSettings = {}
-    userSettings.set("ignored_packages", g_user_ignored_packages)
+    g_user_settings.set("ignored_packages", g_user_ignored_packages)
 
     # `g_packages_to_uninstall` and `ignored_packages` is to unignore/uninstall they when
     # uninstalling the studio channel
     studioSettings['ignored_packages']      = studio_ignored_packages
     studioSettings['packages_to_uninstall'] = g_packages_to_uninstall
 
+    log( 1, "studioSettings: " + json.dumps( studioSettings, indent=4 ) )
+    log( 1, "g_user_settings:   " + str( g_user_settings.get("ignored_packages") ) )
+
     write_data_file( CHANNEL_SETTINGS, studioSettings )
-    sublime.save_settings("Preferences.sublime-settings")
+    sublime.save_settings( USER_SETTINGS_FILE )
 
 
 def install_sublime_packages(git_packages):
@@ -322,11 +381,12 @@ def get_sublime_packages( git_modules_file ):
     gitModulesFile.readfp( io.StringIO( git_modules_file ) )
 
     packages_to_ignore = PACKAGES_TO_NOT_INSTALL + installed_packages + g_user_ignored_packages + g_packages_to_ignore
+    log( 2, "packages_to_ignore: " + str( packages_to_ignore ) )
 
     for section in gitModulesFile.sections():
         # For quick testing
         index += 1
-        if index > 4:
+        if index > 7:
             break
 
         path = gitModulesFile.get( section, "path" )
@@ -336,7 +396,6 @@ def get_sublime_packages( git_modules_file ):
             package_name            = os.path.basename( path )
             submodule_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, path )
 
-            # log( 4, "submodule_absolute_path: " + submodule_absolute_path )
             if not os.path.isdir( submodule_absolute_path ) \
                     and package_name not in packages_to_ignore:
 
@@ -347,11 +406,8 @@ def get_sublime_packages( git_modules_file ):
 
 
 def get_installed_packages():
-    user_setting             = sublime.load_settings("Preferences.sublime-settings")
     package_control_settings = sublime.load_settings("Package Control.sublime-settings")
-
-    ignored_packages = user_setting.get("ignored_packages", [])
-    return package_control_settings.get("installed_packages", []) + ignored_packages
+    return package_control_settings.get("installed_packages", [])
 
 
 def is_dependency(gitModulesFile, section):
