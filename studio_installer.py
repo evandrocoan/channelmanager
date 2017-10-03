@@ -145,7 +145,7 @@ class StartInstallStudioThread(threading.Thread):
 
             installer_thread.join()
 
-            set_default_settings_after( is_development_install )
+            set_default_settings_after()
             check_installed_packages()
 
         global g_is_already_running
@@ -228,8 +228,9 @@ def load_ignored_packages( is_development_install ):
     global g_default_ignored_packages
     global g_packages_to_ignore
 
+    # `g_default_ignored_packages` contains the original user's ignored packages.
     g_default_ignored_packages = g_user_settings.get( 'ignored_packages', [] )
-    g_packages_to_ignore    = get_dictionary_key( g_studio_settings, 'packages_to_ignore', [] )
+    g_packages_to_ignore       = get_dictionary_key( g_studio_settings, 'packages_to_ignore', [] )
 
     log( 2, "load_ignored_packages_, g_packages_to_ignore_:    " + str( g_packages_to_ignore ) )
     log( 2, "load_ignored_packages_, g_user_ignored_packages_: " + str( g_default_ignored_packages ) )
@@ -257,12 +258,18 @@ def load_data_file(file_path):
     return channel_dictionary
 
 
-def set_default_settings_before(git_packages):
+def set_default_settings_before(git_packages, is_development_install):
     """
         Set some package to be enabled at last due their settings being dependent on other packages
-        which need to be installed first. Also disable almost all packages to not lag/hang/slow down the
-        installation process.
+        which need to be installed first.
+
+        This also disables all development disabled packages, when installing the development
+        version. It sets the current user's `ignored_packages` settings including all packages
+        already disabled and the new packages to be installed and must be disabled before attempting
+        to install them.
     """
+    global g_packages_to_unignore
+    g_packages_to_unignore = []
 
     # Ignore everything except some packages, until it is finished
     if len( git_packages ) > 0 and isinstance( git_packages[0], str ):
@@ -270,40 +277,16 @@ def set_default_settings_before(git_packages):
         for package in PACKAGES_TO_INSTALL_LAST:
 
             if package in git_packages:
-                git_packages.remove(package)
-                git_packages.append(package)
-
-        g_user_settings.set('ignored_packages', unique_list_join( git_packages, g_default_ignored_packages ) )
+                git_packages.remove( package )
+                git_packages.append( package )
 
     else:
-        packages_to_ignore = []
 
         for package in git_packages:
-            packages_to_ignore.append( package[0] )
 
             if package[0] in PACKAGES_TO_INSTALL_LAST:
-                git_packages.remove(package)
-                git_packages.append(package)
-
-        g_user_settings.set('ignored_packages', unique_list_join( packages_to_ignore, g_default_ignored_packages ) )
-
-    # Save our changes to the user ignored packages list
-    sublime.save_settings( USER_SETTINGS_FILE )
-
-
-def set_default_settings_after(is_development_install):
-    """
-        Populate the global variable `g_default_ignored_packages` with the packages this installation
-        process added to the user's settings files and also save it to the file system. So later
-        when uninstalling this studio we can only remove our packages, keeping the user's original
-        ignored packages intact.
-
-        This also sets the current user's `ignored_packages` settings including all packages already
-        disabled and the new packages to be installed and must be disabled before attempting to
-        install them.
-    """
-    studioSettings          = {}
-    studio_ignored_packages = []
+                git_packages.remove( package )
+                git_packages.append( package )
 
     if is_development_install:
         global g_default_ignored_packages
@@ -311,46 +294,32 @@ def set_default_settings_after(is_development_install):
         for package in g_packages_to_ignore:
 
             if package not in g_default_ignored_packages:
-                g_default_ignored_packages.append(package)
-                studio_ignored_packages.append(package)
+                g_default_ignored_packages.append( package )
+                g_packages_to_unignore.append( package )
 
+        g_user_settings.set( 'ignored_packages', g_default_ignored_packages )
+
+        # Save our changes to the user ignored packages list
+        log( 1, "set_default_settings_after_, g_user_settings_: " + str( g_user_settings.get("ignored_packages") ) )
+        sublime.save_settings( USER_SETTINGS_FILE )
+
+
+def set_default_settings_after():
+    """
+        Populate the global variable `g_default_ignored_packages` with the packages this installation
+        process added to the user's settings files and also save it to the file system. So later
+        when uninstalling this studio we can only remove our packages, keeping the user's original
+        ignored packages intact.
+    """
+    studioSettings = {}
 
     # `packages_to_uninstall` and `packages_to_unignore` are to uninstall and unignore they when
     # uninstalling the studio channel
     studioSettings['packages_to_uninstall'] = g_packages_to_uninstall
-    studioSettings['packages_to_unignore']  = studio_ignored_packages
+    studioSettings['packages_to_unignore']  = g_packages_to_unignore
 
     log( 1, "set_default_settings_after_, studioSettings_: " + json.dumps( studioSettings, indent=4 ) )
-    log( 1, "set_default_settings_after_, g_user_settings_:   " + str( g_user_settings.get("ignored_packages") ) )
-
     write_data_file( CHANNEL_SETTINGS, studioSettings )
-    slowly_enable_ignored_packages()
-
-
-def slowly_enable_ignored_packages():
-    """
-        `all_ignored_packages` contains all recent installed packages and the old ignored ones.
-        `g_default_ignored_packages` contains the original user's ignored packages.
-    """
-    log( 2, "slowly_enable_ignored_packages_, enabling slowly the packages." )
-    all_ignored_packages  = g_user_settings.get( "ignored_packages", [] )
-
-    log( 2, "slowly_enable_ignored_packages_, all_ignored_packages: " + str( all_ignored_packages ) )
-    user_ignored_packages = list( all_ignored_packages )
-
-    # At the end of it all `all_ignored_packages` will contains only the `g_default_ignored_packages`
-    for ignored_package in all_ignored_packages:
-
-        if ignored_package in g_default_ignored_packages:
-            continue
-
-        time.sleep(2)
-        log( 2, "\n\nslowly_enable_ignored_packages_, enabling the package: " + str( ignored_package ) )
-
-        user_ignored_packages.remove( ignored_package )
-        g_user_settings.set("ignored_packages", user_ignored_packages)
-
-    sublime.save_settings( USER_SETTINGS_FILE )
 
 
 def install_sublime_packages(git_packages):
@@ -365,7 +334,7 @@ def install_sublime_packages(git_packages):
 
         When trying to install several package at once, then here I am installing them one by one.
     """
-    set_default_settings_before( git_packages )
+    set_default_settings_before( git_packages, False )
 
     # Package Control: Advanced Install Package
     # https://github.com/wbond/package_control/issues/1191
@@ -470,7 +439,7 @@ def download_text_file( git_modules_url ):
 
 
 def install_submodules_packages(git_packages, git_executable_path, command_line_interface):
-    set_default_settings_before( git_packages )
+    set_default_settings_before( git_packages, True )
     log( 2, "install_submodules_packages_, PACKAGES_TO_NOT_INSTALL_: " + str( PACKAGES_TO_NOT_INSTALL ) )
 
     for package_name in git_packages:
