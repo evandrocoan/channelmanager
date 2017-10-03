@@ -54,6 +54,8 @@ def assert_path(module):
         sys.path.append( module )
 
 
+g_is_already_running = False
+
 CURRENT_DIRECTORY    = os.path.dirname( os.path.realpath( __file__ ) )
 CURRENT_PACKAGE_NAME = os.path.basename( CURRENT_DIRECTORY ).rsplit('.', 1)[0]
 
@@ -101,14 +103,14 @@ def main(command="stable"):
     log( 2, "STUDIO_MAIN_URL:       " + STUDIO_MAIN_URL )
     log( 2, "STUDIO_MAIN_DIRECTORY: " + STUDIO_MAIN_DIRECTORY )
 
-    installer_thread = CopyFilesThread( True if command == "development" else False )
+    installer_thread = InstallStudioFilesThread( True if command == "development" else False )
     installer_thread.start()
 
     ThreadProgress( installer_thread, 'Installing Sublime Text Studio %s Packages' % command,
             'Sublime Text Studio %s was successfully installed.' % command )
 
 
-class CopyFilesThread(threading.Thread):
+class InstallStudioFilesThread(threading.Thread):
 
     def __init__(self, is_development_install):
         threading.Thread.__init__(self)
@@ -116,15 +118,34 @@ class CopyFilesThread(threading.Thread):
 
     def run(self):
         log( 2, "Entering on run(1)" )
-        command_line_interface = cmd.Cli( None, True )
 
-        git_executable_path = command_line_interface.find_binary( "git.exe" if os.name == 'nt' else "git" )
-        log( 2, "run, git_executable_path: " + str( git_executable_path ) )
+        if is_allowed_to_run():
+            global packages_to_uninstall
 
-        if self.is_development_install:
-            clone_sublime_text_studio( command_line_interface, git_executable_path )
+            packages_to_uninstall  = []
+            command_line_interface = cmd.Cli( None, True )
 
-        install_modules( command_line_interface, git_executable_path, self.is_development_install )
+            git_executable_path = command_line_interface.find_binary( "git.exe" if os.name == 'nt' else "git" )
+            log( 2, "run, git_executable_path: " + str( git_executable_path ) )
+
+            if self.is_development_install:
+                clone_sublime_text_studio( command_line_interface, git_executable_path )
+
+            install_modules( command_line_interface, git_executable_path, self.is_development_install )
+
+            global g_is_already_running
+            g_is_already_running = False
+
+
+def is_allowed_to_run():
+    global g_is_already_running
+
+    if g_is_already_running:
+        print( "You are already running a command. Wait until it finishes or restart Sublime Text" )
+        return False
+
+    g_is_already_running = True
+    return True
 
 
 def clone_sublime_text_studio(command_line_interface, git_executable_path):
@@ -142,12 +163,12 @@ def install_modules(command_line_interface, git_executable_path, is_development_
     log( 2, "PACKAGES_TO_IGNORE: " + str( PACKAGES_TO_IGNORE ) )
 
     if is_development_install:
-        clone_submodules( command_line_interface, git_executable_path )
+        clone_submodules_packages( command_line_interface, git_executable_path )
 
     else:
         git_modules_url  = get_git_modules_url()
         git_modules_file = download_text_file( git_modules_url )
-        git_packages     = get_git_modules_packages( git_modules_file )
+        git_packages     = get_sublime_packages( git_modules_file )
 
         log( 2, "git_packages: " + str( git_packages ) )
         install_sublime_packages( git_packages )
@@ -161,7 +182,7 @@ def set_default_settings():
 
     studio_ignored_packages = []
     user_ignored_packages   = userSettings.get("ignored_packages", [])
-    packages_to_ignore      = studioSettings.get("packages_to_ignored", [])
+    packages_to_ignore      = studioSettings.get("packages_to_ignore", [])
 
     for package in packages_to_ignore:
 
@@ -170,9 +191,10 @@ def set_default_settings():
             studio_ignored_packages.append(package)
 
     studioSettings = {}
-
     userSettings.set("ignored_packages", user_ignored_packages)
-    studioSettings['ignored_packages'] = studio_ignored_packages
+
+    studioSettings['ignored_packages']      = studio_ignored_packages
+    studioSettings['packages_to_uninstall'] = packages_to_uninstall
 
     write_data_file( CHANNEL_SETTINGS, studioSettings )
     sublime.save_settings("Preferences.sublime-settings")
@@ -196,25 +218,26 @@ def install_sublime_packages(git_packages):
     # thread.start()
     # thread.join()
 
-    log( 2, "PACKAGES_TO_IGNORE: " + str( PACKAGES_TO_IGNORE ) )
     package_manager = PackageManager()
+    log( 2, "PACKAGES_TO_IGNORE: " + str( PACKAGES_TO_IGNORE ) )
 
-    for package, is_dependency in git_packages:
-        log( 1, "\nInstalling: %s (%s)" % ( str( package ), str( is_dependency ) ) )
-
-        if package not in PACKAGES_TO_IGNORE:
-            package_manager.install_package( package, is_dependency )
+    for package_name, is_dependency in git_packages:
+        log( 1, "\n\nInstalling: %s (%s)" % ( str( package_name ), str( is_dependency ) ) )
+        package_manager.install_package( package_name, is_dependency )
 
 
-def get_git_modules_packages( git_modules_file ):
+def get_sublime_packages( git_modules_file ):
     """
         python ConfigParser: read configuration from string
         https://stackoverflow.com/questions/27744058/python-configparser-read-configuration-from-string
     """
-    packages = []
-    gitModulesFile = configparser.RawConfigParser()
-
     index = 0
+    packages = []
+
+    gitModulesFile     = configparser.RawConfigParser()
+    installed_packages = get_installed_packages()
+
+    log( 2, "installed_packages: " + str( installed_packages ) )
     gitModulesFile.readfp( io.StringIO( git_modules_file ) )
 
     for section in gitModulesFile.sections():
@@ -227,13 +250,26 @@ def get_git_modules_packages( git_modules_file ):
         log( 2, "path: " + path )
 
         if 'Packages' == path[0:8]:
+            package_name            = os.path.basename( path )
             submodule_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, path )
-            # log( 4, "submodule_absolute_path: " + submodule_absolute_path )
 
-            if not os.path.isdir( submodule_absolute_path ):
-                packages.append( ( os.path.basename( path ), is_dependency( gitModulesFile, section ) ) )
+            # log( 4, "submodule_absolute_path: " + submodule_absolute_path )
+            if not os.path.isdir( submodule_absolute_path ) \
+                    and package_name not in installed_packages \
+                    and package_name not in PACKAGES_TO_IGNORE:
+
+                packages.append( ( package_name, is_dependency( gitModulesFile, section ) ) )
+                packages_to_uninstall.append( package_name )
 
     return packages
+
+
+def get_installed_packages():
+    user_setting             = sublime.load_settings("Preferences.sublime-settings")
+    package_control_settings = sublime.load_settings("Package Control.sublime-settings")
+
+    ignored_packages = user_setting.get("ignored_packages", [])
+    return package_control_settings.get("installed_packages", []) + ignored_packages
 
 
 def is_dependency(gitModulesFile, section):
@@ -267,9 +303,12 @@ def download_text_file( git_modules_url ):
     return downloaded_contents.decode('utf-8')
 
 
-def clone_submodules(command_line_interface, git_executable_path):
+def clone_submodules_packages(command_line_interface, git_executable_path):
     gitFilePath    = os.path.join( STUDIO_MAIN_DIRECTORY, '.gitmodules' )
     gitModulesFile = configparser.RawConfigParser()
+
+    installed_packages = get_installed_packages()
+    log( 2, "installed_packages: " + str( installed_packages ) )
 
     index = 0
     gitModulesFile.read( gitFilePath )
@@ -284,14 +323,19 @@ def clone_submodules(command_line_interface, git_executable_path):
             break
 
         package_name = os.path.basename( path )
-        log( 1, "\nInstalling: %s" % ( package_name ) )
+        log( 1, "\n\nInstalling: %s" % ( package_name ) )
 
         if package_name not in PACKAGES_TO_IGNORE:
 
             if 'Packages' == path[0:8]:
                 submodule_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, path )
 
-                if not os.path.isdir( submodule_absolute_path ):
+                if not os.path.isdir( submodule_absolute_path ) \
+                        and package_name not in installed_packages \
+                        and package_name not in PACKAGES_TO_IGNORE:
+
+                    packages_to_uninstall.append( package_name )
+
                     command = shlex.split( '"%s" clone --recursive "%s" "%s"', git_executable_path, url, path )
                     output  = command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY )
 
