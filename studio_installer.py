@@ -28,6 +28,7 @@ import sublime
 
 import os
 import sys
+import time
 import zipfile
 
 import io
@@ -90,7 +91,7 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 log( 2, "..." )
 log( 2, "..." )
 log( 2, "Debugging" )
-log( 2, "CURRENT_DIRECTORY:     " + CURRENT_DIRECTORY )
+log( 2, "CURRENT_DIRECTORY_:     " + CURRENT_DIRECTORY )
 
 
 def main(command="stable"):
@@ -132,8 +133,8 @@ class StartInstallStudioThread(threading.Thread):
             CHANNEL_MAIN_FILE_URL  = "https://raw.githubusercontent.com/evandrocoan/SublimeStudioChannel/master/settings.json"
             STUDIO_MAIN_URL        = "https://github.com/evandrocoan/SublimeTextStudio"
 
-            log( 2, "STUDIO_MAIN_URL:       " + STUDIO_MAIN_URL )
-            log( 2, "STUDIO_MAIN_DIRECTORY: " + STUDIO_MAIN_DIRECTORY )
+            log( 2, "STUDIO_MAIN_URL_:       " + STUDIO_MAIN_URL )
+            log( 2, "STUDIO_MAIN_DIRECTORY_: " + STUDIO_MAIN_DIRECTORY )
 
             is_development_install = True if self.command == "development" else False
             installer_thread       = InstallStudioFilesThread( is_development_install )
@@ -165,7 +166,7 @@ class InstallStudioFilesThread(threading.Thread):
         command_line_interface  = cmd.Cli( None, True )
 
         git_executable_path = command_line_interface.find_binary( "git.exe" if os.name == 'nt' else "git" )
-        log( 2, "run, git__executable_path: " + str( git_executable_path ) )
+        log( 2, "run, git_executable_path_: " + str( git_executable_path ) )
 
         install_modules( command_line_interface, git_executable_path, self.is_development_install )
 
@@ -193,21 +194,21 @@ def clone_sublime_text_studio(command_line_interface, git_executable_path):
 
 
 def install_modules(command_line_interface, git_executable_path, is_development_install):
-    log( 2, "install__modules, PACKAGES_TO_NOT_INSTALL: " + str( PACKAGES_TO_NOT_INSTALL ) )
+    log( 2, "install_modules_, PACKAGES_TO_NOT_INSTALL_: " + str( PACKAGES_TO_NOT_INSTALL ) )
     load_ignored_packages( is_development_install )
 
     if is_development_install:
         clone_sublime_text_studio( command_line_interface, git_executable_path )
         git_packages = get_submodules_packages()
 
-        log( 2, "install__modules, git_packages: " + str( git_packages ) )
+        log( 2, "install_modules_, git_packages_: " + str( git_packages ) )
         install_submodules_packages( git_packages, git_executable_path, command_line_interface )
 
     else:
         git_modules_file = download_text_file( get_git_modules_url() )
         git_packages     = get_sublime_packages( git_modules_file )
 
-        log( 2, "install__modules, git_packages: " + str( git_packages ) )
+        log( 2, "install_modules_, git_packages_: " + str( git_packages ) )
         install_sublime_packages( git_packages )
 
 
@@ -224,14 +225,14 @@ def load_ignored_packages( is_development_install ):
         channel_settings_file = download_text_file( CHANNEL_MAIN_FILE_URL )
         g_studio_settings     = json.loads( channel_settings_file )
 
-    global g_user_ignored_packages
+    global g_default_ignored_packages
     global g_packages_to_ignore
 
-    g_user_ignored_packages = g_user_settings.get( 'ignored_packages', [] )
+    g_default_ignored_packages = g_user_settings.get( 'ignored_packages', [] )
     g_packages_to_ignore    = get_dictionary_key( g_studio_settings, 'packages_to_ignore', [] )
 
-    log( 2, "load__ignored_packages, g__packages_to_ignore:    " + str( g_packages_to_ignore ) )
-    log( 2, "load__ignored_packages, g__user_ignored_packages: " + str( g_user_ignored_packages ) )
+    log( 2, "load_ignored_packages_, g_packages_to_ignore_:    " + str( g_packages_to_ignore ) )
+    log( 2, "load_ignored_packages_, g_user_ignored_packages_: " + str( g_default_ignored_packages ) )
 
 
 def get_dictionary_key(dictionary, key, default=None):
@@ -251,7 +252,7 @@ def load_data_file(file_path):
             channel_dictionary = json.load( studio_channel_data)
 
     else:
-        log( 1, "Error on load__data_file(1), the file '%s' does not exists!" % file_path )
+        log( 1, "Error on load_data_file_(1), the file '%s' does not exists!" % file_path )
 
     return channel_dictionary
 
@@ -272,7 +273,7 @@ def set_default_settings_before(git_packages):
                 git_packages.remove(package)
                 git_packages.append(package)
 
-        g_user_settings.set('ignored_packages', git_packages)
+        g_user_settings.set('ignored_packages', unique_list_join( git_packages, g_default_ignored_packages ) )
 
     else:
         packages_to_ignore = []
@@ -284,7 +285,7 @@ def set_default_settings_before(git_packages):
                 git_packages.remove(package)
                 git_packages.append(package)
 
-        g_user_settings.set('ignored_packages', packages_to_ignore)
+        g_user_settings.set('ignored_packages', unique_list_join( packages_to_ignore, g_default_ignored_packages ) )
 
     # Save our changes to the user ignored packages list
     sublime.save_settings( USER_SETTINGS_FILE )
@@ -292,7 +293,7 @@ def set_default_settings_before(git_packages):
 
 def set_default_settings_after(is_development_install):
     """
-        Populate the global variable `g_user_ignored_packages` with the packages this installation
+        Populate the global variable `g_default_ignored_packages` with the packages this installation
         process added to the user's settings files and also save it to the file system. So later
         when uninstalling this studio we can only remove our packages, keeping the user's original
         ignored packages intact.
@@ -305,12 +306,12 @@ def set_default_settings_after(is_development_install):
     studio_ignored_packages = []
 
     if is_development_install:
-        global g_user_ignored_packages
+        global g_default_ignored_packages
 
         for package in g_packages_to_ignore:
 
-            if package not in g_user_ignored_packages:
-                g_user_ignored_packages.append(package)
+            if package not in g_default_ignored_packages:
+                g_default_ignored_packages.append(package)
                 studio_ignored_packages.append(package)
 
 
@@ -319,12 +320,36 @@ def set_default_settings_after(is_development_install):
     studioSettings['packages_to_uninstall'] = g_packages_to_uninstall
     studioSettings['packages_to_unignore']  = studio_ignored_packages
 
-    g_user_settings.set("ignored_packages", g_user_ignored_packages)
-
-    log( 1, "set__default_settings_after, studioSettings: " + json.dumps( studioSettings, indent=4 ) )
-    log( 1, "set__default_settings_after, g_user_settings:   " + str( g_user_settings.get("ignored_packages") ) )
+    log( 1, "set_default_settings_after_, studioSettings_: " + json.dumps( studioSettings, indent=4 ) )
+    log( 1, "set_default_settings_after_, g_user_settings_:   " + str( g_user_settings.get("ignored_packages") ) )
 
     write_data_file( CHANNEL_SETTINGS, studioSettings )
+    slowly_enable_ignored_packages()
+
+
+def slowly_enable_ignored_packages():
+    """
+        `all_ignored_packages` contains all recent installed packages and the old ignored ones.
+        `g_default_ignored_packages` contains the original user's ignored packages.
+    """
+    log( 2, "slowly_enable_ignored_packages_, enabling slowly the packages." )
+    all_ignored_packages  = g_user_settings.get( "ignored_packages", [] )
+
+    log( 2, "slowly_enable_ignored_packages_, all_ignored_packages: " + str( all_ignored_packages ) )
+    user_ignored_packages = list( all_ignored_packages )
+
+    # At the end of it all `all_ignored_packages` will contains only the `g_default_ignored_packages`
+    for ignored_package in all_ignored_packages:
+
+        if ignored_package in g_default_ignored_packages:
+            continue
+
+        time.sleep(2)
+        log( 2, "\n\nslowly_enable_ignored_packages_, enabling the package: " + str( ignored_package ) )
+
+        user_ignored_packages.remove( ignored_package )
+        g_user_settings.set("ignored_packages", user_ignored_packages)
+
     sublime.save_settings( USER_SETTINGS_FILE )
 
 
@@ -349,7 +374,7 @@ def install_sublime_packages(git_packages):
     # thread.join()
 
     package_manager = PackageManager()
-    log( 2, "install__sublime_packages, PACKAGES_TO_NOT_INSTALL: " + str( PACKAGES_TO_NOT_INSTALL ) )
+    log( 2, "install_sublime_packages_, PACKAGES_TO_NOT_INSTALL_: " + str( PACKAGES_TO_NOT_INSTALL ) )
 
     for package_name, is_dependency in git_packages:
         log( 1, "\n\nInstalling: %s (%s)" % ( str( package_name ), str( is_dependency ) ) )
@@ -367,11 +392,11 @@ def get_sublime_packages( git_modules_file ):
     gitModulesFile     = configparser.RawConfigParser()
     installed_packages = get_installed_packages()
 
-    log( 2, "get__sublime_packages, installed_packages: " + str( installed_packages ) )
+    log( 2, "get_sublime_packages_, installed_packages_: " + str( installed_packages ) )
     gitModulesFile.readfp( io.StringIO( git_modules_file ) )
 
     packages_to_ignore = unique_list_join( PACKAGES_TO_NOT_INSTALL, installed_packages, g_packages_to_ignore )
-    log( 2, "get__sublime_packages, packages_to_ignore: " + str( packages_to_ignore ) )
+    log( 2, "get_sublime_packages_, packages_to_ignore_: " + str( packages_to_ignore ) )
 
     for section in gitModulesFile.sections():
         # # For quick testing
@@ -380,7 +405,7 @@ def get_sublime_packages( git_modules_file ):
         #     break
 
         path = gitModulesFile.get( section, "path" )
-        log( 2, "get__sublime_packages, path: " + path )
+        log( 2, "get_sublime_packages, path_: " + path )
 
         if 'Packages' == path[0:8]:
             package_name            = os.path.basename( path )
@@ -446,7 +471,7 @@ def download_text_file( git_modules_url ):
 
 def install_submodules_packages(git_packages, git_executable_path, command_line_interface):
     set_default_settings_before( git_packages )
-    log( 2, "install__submodules_packages, PACKAGES_TO_NOT_INSTALL: " + str( PACKAGES_TO_NOT_INSTALL ) )
+    log( 2, "install_submodules_packages_, PACKAGES_TO_NOT_INSTALL_: " + str( PACKAGES_TO_NOT_INSTALL ) )
 
     for package_name in git_packages:
         log( 1, "\n\nInstalling: %s" % ( str( package_name ) ) )
@@ -454,7 +479,7 @@ def install_submodules_packages(git_packages, git_executable_path, command_line_
         command = shlex.split( '"%s" clone --recursive "%s" "%s"', git_executable_path, url, path )
         output  = command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY )
 
-        log( 1, "install__submodules_packages, output: " + output )
+        log( 1, "install_submodules_packages, output_: " + output )
 
 
 def get_submodules_packages():
@@ -465,7 +490,7 @@ def get_submodules_packages():
     installed_packages = get_installed_packages()
 
     packages_to_ignore = unique_list_join( PACKAGES_TO_NOT_INSTALL, installed_packages )
-    log( 2, "get__submodules_packages, packages__to_ignore: " + str( packages_to_ignore ) )
+    log( 2, "get_submodules_packages_, packages_to_ignore_: " + str( packages_to_ignore ) )
 
     packages = []
     gitModulesFile.read( gitFilePath )
@@ -479,7 +504,7 @@ def get_submodules_packages():
         # if index > 3:
         #     break
 
-        log( 2, "get__submodules_packages, path: " + path )
+        log( 2, "get_submodules_packages_, path_: " + path )
 
         if 'Packages' == path[0:8]:
             package_name            = os.path.basename( path )
