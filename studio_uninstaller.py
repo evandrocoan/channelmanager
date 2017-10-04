@@ -175,13 +175,13 @@ class UninstallStudioFilesThread(threading.Thread):
 def uninstall_packages():
     package_manager       = PackageManager()
     package_disabler      = PackageDisabler()
-    packages_to_uninstall = g_channel_manager_settings['packages_to_uninstall']
+    packages_to_uninstall = set( g_channel_manager_settings['packages_to_uninstall'] )
 
     current_index      = 0
     git_packages_count = len( packages_to_uninstall )
 
-    packages     = unique_list_join( package_manager.list_packages(), get_installed_packages() )
-    dependencies = package_manager.list_dependencies()
+    packages     = set( package_manager.list_packages() + get_installed_packages() )
+    dependencies = set( package_manager.list_dependencies() )
 
     for package in packages_to_uninstall:
         is_dependency = is_package_dependency( package, dependencies, packages )
@@ -198,7 +198,7 @@ def uninstall_packages():
         thread = RemovePackageThread( package_manager, package )
 
         thread.start()
-        package_manager.remove_package( package, is_dependency )
+        thread.join()
 
 
 def is_package_dependency(package, dependencies, packages):
