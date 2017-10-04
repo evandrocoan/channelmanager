@@ -103,7 +103,7 @@ from package_control.commands.advanced_install_package_command import AdvancedIn
 from debug_tools import Debugger
 
 # Debugger settings: 0 - disabled, 127 - enabled
-log = Debugger( 127, os.path.basename( __file__ ) )
+log = Debugger( 1, os.path.basename( __file__ ) )
 
 log( 2, "..." )
 log( 2, "..." )
@@ -152,8 +152,8 @@ class StartInstallStudioThread(threading.Thread):
             STUDIO_MAIN_DIRECTORY  = os.path.dirname( sublime.packages_path() )
             CHANNEL_MAIN_FILE_PATH = os.path.join( STUDIO_MAIN_DIRECTORY, "StudioChannel", "settings.json" )
 
-            log( 2, "STUDIO_MAIN_URL_:       " + STUDIO_MAIN_URL )
-            log( 2, "STUDIO_MAIN_DIRECTORY_: " + STUDIO_MAIN_DIRECTORY )
+            log( 2, "STUDIO_MAIN_URL:       " + STUDIO_MAIN_URL )
+            log( 2, "STUDIO_MAIN_DIRECTORY: " + STUDIO_MAIN_DIRECTORY )
 
             is_development_install = True if self.command == "development" else False
             installer_thread       = InstallStudioFilesThread( is_development_install )
@@ -196,13 +196,13 @@ class InstallStudioFilesThread(threading.Thread):
         command_line_interface  = cmd.Cli( None, True )
 
         git_executable_path = command_line_interface.find_binary( "git.exe" if os.name == 'nt' else "git" )
-        log( 2, "run, git_executable_path_: " + str( git_executable_path ) )
+        log( 2, "run, git_executable_path: " + str( git_executable_path ) )
 
         install_modules( command_line_interface, git_executable_path, self.is_development_install )
 
 
 def install_modules(command_line_interface, git_executable_path, is_development_install):
-    log( 2, "install_modules_, PACKAGES_TO_NOT_INSTALL_: " + str( PACKAGES_TO_NOT_INSTALL ) )
+    log( 2, "install_modules_, PACKAGES_TO_NOT_INSTALL: " + str( PACKAGES_TO_NOT_INSTALL ) )
 
     if is_development_install:
         global g_files_to_uninstall
@@ -214,7 +214,7 @@ def install_modules(command_line_interface, git_executable_path, is_development_
         load_ignored_packages(True)
         git_packages = get_development_packages()
 
-        log( 2, "install_modules_, git_packages_: " + str( git_packages ) )
+        log( 2, "install_modules, git_packages: " + str( git_packages ) )
         install_development_packages( git_packages, git_executable_path, command_line_interface )
 
     else:
@@ -223,7 +223,7 @@ def install_modules(command_line_interface, git_executable_path, is_development_
         git_modules_file = download_text_file( get_git_modules_url() )
         git_packages     = get_stable_packages( git_modules_file )
 
-        log( 2, "install_modules_, git_packages_: " + str( git_packages ) )
+        log( 2, "install_modules, git_packages: " + str( git_packages ) )
         install_stable_packages( git_packages )
 
 
@@ -248,7 +248,7 @@ def install_stable_packages(git_packages):
     # thread.join()
 
     package_manager = PackageManager()
-    log( 2, "install_stable_packages_, PACKAGES_TO_NOT_INSTALL_: " + str( PACKAGES_TO_NOT_INSTALL ) )
+    log( 2, "install_stable_packages, PACKAGES_TO_NOT_INSTALL: " + str( PACKAGES_TO_NOT_INSTALL ) )
 
     current_index      = 0
     git_packages_count = len( git_packages )
@@ -271,11 +271,11 @@ def get_stable_packages( git_modules_file ):
     gitModulesFile     = configparser.RawConfigParser()
     installed_packages = get_installed_packages()
 
-    log( 2, "get_stable_packages_, installed_packages_: " + str( installed_packages ) )
+    log( 2, "get_stable_packages, installed_packages: " + str( installed_packages ) )
     gitModulesFile.readfp( io.StringIO( git_modules_file ) )
 
     packages_to_ignore = unique_list_join( PACKAGES_TO_NOT_INSTALL, installed_packages, g_packages_to_ignore )
-    log( 2, "get_stable_packages_, packages_to_ignore_: " + str( packages_to_ignore ) )
+    log( 2, "get_stable_packages, packages_to_ignore: " + str( packages_to_ignore ) )
 
     for section in gitModulesFile.sections():
         # # For quick testing
@@ -284,7 +284,7 @@ def get_stable_packages( git_modules_file ):
         #     break
 
         path = gitModulesFile.get( section, "path" )
-        log( 2, "get_stable_packages_, path_: " + path )
+        log( 2, "get_stable_packages, path: " + path )
 
         if 'Packages' == path[0:8]:
             package_name            = os.path.basename( path )
@@ -301,7 +301,7 @@ def get_stable_packages( git_modules_file ):
 
 def install_development_packages(git_packages, git_executable_path, command_line_interface):
     set_default_settings_before( git_packages, True )
-    log( 2, "install_submodules_packages_, PACKAGES_TO_NOT_INSTALL_: " + str( PACKAGES_TO_NOT_INSTALL ) )
+    log( 2, "install_submodules_packages, PACKAGES_TO_NOT_INSTALL: " + str( PACKAGES_TO_NOT_INSTALL ) )
 
     current_index      = 0
     git_packages_count = len( git_packages )
@@ -313,7 +313,7 @@ def install_development_packages(git_packages, git_executable_path, command_line
         command = shlex.split( '"%s" clone --recursive "%s" "%s"' % ( git_executable_path, url, path ) )
         output  = command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY )
 
-        log( 1, "install_development_packages_, output_: " + str( output ) )
+        log( 1, "install_development_packages, output: " + str( output ) )
 
 
 def get_development_packages():
@@ -324,7 +324,7 @@ def get_development_packages():
     installed_packages = get_installed_packages()
 
     packages_to_ignore = unique_list_join( PACKAGES_TO_NOT_INSTALL, installed_packages )
-    log( 2, "get_development_packages_, packages_to_ignore_: " + str( packages_to_ignore ) )
+    log( 2, "get_development_packages, packages_to_ignore: " + str( packages_to_ignore ) )
 
     packages = []
     gitModulesFile.read( gitFilePath )
@@ -348,7 +348,7 @@ def get_development_packages():
                 packages.append( ( package_name, url, path ) )
                 g_packages_to_uninstall.append( package_name )
 
-                log( 2, "get_development_packages_, path_: " + path )
+                log( 2, "get_development_packages, path: " + path )
 
     return packages
 
@@ -373,8 +373,8 @@ def load_ignored_packages(is_development_install):
     g_default_ignored_packages = g_user_settings.get( 'ignored_packages', [] )
     g_packages_to_ignore       = get_dictionary_key( g_studio_settings, 'packages_to_ignore', [] )
 
-    log( 2, "load_ignored_packages_, g_packages_to_ignore_:    " + str( g_packages_to_ignore ) )
-    log( 2, "load_ignored_packages_, g_user_ignored_packages_: " + str( g_default_ignored_packages ) )
+    log( 2, "load_ignored_packages, g_packages_to_ignore:    " + str( g_packages_to_ignore ) )
+    log( 2, "load_ignored_packages, g_default_ignored_packages: " + str( g_default_ignored_packages ) )
 
 
 def unique_list_join(*lists):
@@ -443,7 +443,7 @@ def load_data_file(file_path):
             channel_dictionary = json.load( studio_channel_data)
 
     else:
-        log( 1, "Error on load_data_file_(1), the file '%s' does not exists!" % file_path )
+        log( 1, "Error on load_data_file(1), the file '%s' does not exists!" % file_path )
 
     return channel_dictionary
 
@@ -541,7 +541,7 @@ def fix_absolute_windows_path(path):
 
 
 def download_main_repository(command_line_interface, git_executable_path):
-    log( 1, "download_main_repository_, \n\nInstalling: %s" % ( str( STUDIO_MAIN_URL ) ) )
+    log( 1, "download_main_repository, \n\nInstalling: %s" % ( str( STUDIO_MAIN_URL ) ) )
     temporary_studio_folder = os.path.join( STUDIO_MAIN_DIRECTORY, TEMPORARY_FOLDER_TO_USE )
 
     if os.path.isdir( temporary_studio_folder ):
@@ -550,11 +550,11 @@ def download_main_repository(command_line_interface, git_executable_path):
     command = shlex.split( '"%s" clone "%s" "%s"' % ( git_executable_path, STUDIO_MAIN_URL, TEMPORARY_FOLDER_TO_USE ) )
     output  = command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY )
 
-    log( 1, "download_main_repository_, output_: " + str( output ) )
+    log( 1, "download_main_repository, output: " + str( output ) )
 
 
 def download_not_packages_submodules(command_line_interface, git_executable_path):
-    log( 1, "download_not_packages_submodules_" )
+    log( 1, "download_not_packages_submodules" )
     temporary_studio_folder = os.path.join( STUDIO_MAIN_DIRECTORY, TEMPORARY_FOLDER_TO_USE )
 
     gitFilePath    = os.path.join( STUDIO_MAIN_DIRECTORY, '.gitmodules' )
@@ -586,13 +586,13 @@ def download_not_packages_submodules(command_line_interface, git_executable_path
                 is_empty = False
 
             if is_empty:
-                log( 1, "download_not_packages_submodules_, \n\nInstalling: %s" % ( str( url ) ) )
+                log( 1, "download_not_packages_submodules, \n\nInstalling: %s" % ( str( url ) ) )
 
                 command = shlex.split( '"%s" clone "%s" "%s"' % ( git_executable_path, url, path ) )
                 output  = command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY )
 
                 g_folders_to_uninstall.append( path )
-                log( 1, "download_not_packages_submodules_, output_: " + str( output ) )
+                log( 1, "download_not_packages_submodules, output: " + str( output ) )
 
 
 def set_default_settings_before(git_packages, is_development_install):
@@ -627,7 +627,7 @@ def set_default_settings_before(git_packages, is_development_install):
         g_user_settings.set( 'ignored_packages', g_default_ignored_packages )
 
         # Save our changes to the user ignored packages list
-        log( 1, "set_default_settings_after_, g_user_settings_: " + str( g_user_settings.get("ignored_packages") ) )
+        log( 1, "set_default_settings_after, g_user_settings: " + str( g_user_settings.get("ignored_packages") ) )
         sublime.save_settings( USER_SETTINGS_FILE )
 
 
@@ -647,7 +647,7 @@ def set_default_settings_after():
     studioSettings['files_to_uninstall']    = g_files_to_uninstall
     studioSettings['folders_to_uninstall']  = g_folders_to_uninstall
 
-    log( 1, "set_default_settings_after_, studioSettings_: " + json.dumps( studioSettings, indent=4 ) )
+    log( 1, "set_default_settings_after, studioSettings: " + json.dumps( studioSettings, indent=4 ) )
     write_data_file( CHANNEL_SETTINGS, studioSettings )
 
 
