@@ -212,12 +212,10 @@ def install_modules(command_line_interface, git_executable_path, is_development_
         download_not_packages_submodules( command_line_interface, git_executable_path )
 
         load_ignored_packages(True)
-
         git_packages = get_development_packages()
-        log( 2, "install_modules_, git_packages_: " + str( git_packages ) )
 
+        log( 2, "install_modules_, git_packages_: " + str( git_packages ) )
         install_development_packages( git_packages, git_executable_path, command_line_interface )
-        install_sublime_text_studio()
 
     else:
         load_ignored_packages(False)
