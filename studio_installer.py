@@ -60,29 +60,9 @@ def assert_path(module):
         sys.path.append( module )
 
 
-g_is_already_running    = False
-TEMPORARY_FOLDER_TO_USE = "__channel_studio_temp"
+g_is_already_running = False
 
-CURRENT_DIRECTORY    = os.path.dirname( os.path.realpath( __file__ ) )
-CURRENT_PACKAGE_NAME = os.path.basename( CURRENT_DIRECTORY ).rsplit('.', 1)[0]
-
-# The package "BetterFindBuffer" is being installed by after "Default" because it is creating the
-# file "Find Results.hidden-tmLanguage" on the folder "Default" causing the installation of the
-# package "Default" to stop.
-#
-# Some of these packages "SublimeLinter", "SublimeLinter-javac", "A File Icon" need to be installed
-# by last as they were messing with the color scheme settings when installing it on a vanilla
-# install. Todo, fix whatever they are doing and causes the `Preferences.sublime-settings` file to
-# be set to:
-# {
-#     "color_scheme": "Packages/User/SublimeLinter/Monokai (SL).tmTheme"
-# }
-PACKAGES_TO_INSTALL_LAST = ["Default", "BetterFindBuffer", "SublimeLinter", "SublimeLinter-javac", "A File Icon"]
-
-# Do not try to install this own package and the Package Control, as they are currently running
-PACKAGES_TO_NOT_INSTALL = [ "Package Control", CURRENT_PACKAGE_NAME ]
-
-# print( "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
+from .settings import *
 assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools/all' ) )
 assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), "Package Control" ) )
 
@@ -138,22 +118,6 @@ class StartInstallStudioThread(threading.Thread):
         """
 
         if is_allowed_to_run():
-            global CHANNEL_MAIN_FILE_URL
-            global STUDIO_MAIN_URL
-
-            CHANNEL_MAIN_FILE_URL  = "https://raw.githubusercontent.com/evandrocoan/SublimeStudioChannel/master/settings.json"
-            STUDIO_MAIN_URL        = "https://github.com/evandrocoan/SublimeTextStudio"
-
-            global USER_SETTINGS_FILE
-            global STUDIO_MAIN_DIRECTORY
-            global CHANNEL_MAIN_FILE_PATH
-
-            USER_SETTINGS_FILE     = "Preferences.sublime-settings"
-            STUDIO_MAIN_DIRECTORY  = os.path.dirname( sublime.packages_path() )
-            CHANNEL_MAIN_FILE_PATH = os.path.join( STUDIO_MAIN_DIRECTORY, "StudioChannel", "settings.json" )
-
-            log( 2, "STUDIO_MAIN_URL:       " + STUDIO_MAIN_URL )
-            log( 2, "STUDIO_MAIN_DIRECTORY: " + STUDIO_MAIN_DIRECTORY )
 
             is_development_install = True if self.command == "development" else False
             installer_thread       = InstallStudioFilesThread( is_development_install )
@@ -646,27 +610,7 @@ def set_default_settings_after():
     studioSettings = {}
 
     if 'Default' in g_packages_to_uninstall:
-
-        studioSettings['default_packages_files'] = \
-        [
-            ".gitignore",
-            "Context.sublime-menu",
-            "Default (Linux).sublime-keymap",
-            "Default (Linux).sublime-mousemap",
-            "Default (OSX).sublime-keymap",
-            "Default (OSX).sublime-mousemap",
-            "Default (Windows).sublime-keymap",
-            "Default (Windows).sublime-mousemap",
-            "Distraction Free.sublime-settings",
-            "Find Results.hidden-tmLanguage",
-            "Preferences (Linux).sublime-settings",
-            "Preferences (OSX).sublime-settings",
-            "Preferences (Windows).sublime-settings",
-            "Preferences.sublime-settings",
-            "README.md",
-            "Tab Context.sublime-menu",
-            "transpose.py"
-        ]
+        studioSettings['default_packages_files'] = DEFAULT_PACKAGES_FILES
 
     # `packages_to_uninstall` and `packages_to_unignore` are to uninstall and unignore they when
     # uninstalling the studio channel
@@ -704,4 +648,5 @@ def plugin_loaded():
 
     # main()
     check_installed_packages()
+
 
