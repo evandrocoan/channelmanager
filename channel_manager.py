@@ -441,11 +441,18 @@ def write_data_file(file_path, channel_dictionary):
         json.dump( channel_dictionary, output_file, indent=4 )
 
 
-def print_data_file(file_path):
+def load_data_file(file_path):
+    channel_dictionary = {}
 
     with open( file_path, 'r', encoding='utf-8' ) as studio_channel_data:
         channel_dictionary = json.load( studio_channel_data)
-        log( 1, "channel_dictionary: " + json.dumps( channel_dictionary, indent=4, sort_keys=True ) )
+
+    return channel_dictionary
+
+
+def print_data_file(file_path):
+    channel_dictionary = load_data_file( file_path )
+    log( 1, "channel_dictionary: " + json.dumps( channel_dictionary, indent=4, sort_keys=True ) )
 
 
 def print_some_repositories(all_packages):
