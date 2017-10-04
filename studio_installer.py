@@ -645,6 +645,29 @@ def set_default_settings_after():
     """
     studioSettings = {}
 
+    if 'Default' in g_packages_to_uninstall:
+
+        studioSettings['default_packages_files'] = \
+        [
+            ".gitignore",
+            "Context.sublime-menu",
+            "Default (Linux).sublime-keymap",
+            "Default (Linux).sublime-mousemap",
+            "Default (OSX).sublime-keymap",
+            "Default (OSX).sublime-mousemap",
+            "Default (Windows).sublime-keymap",
+            "Default (Windows).sublime-mousemap",
+            "Distraction Free.sublime-settings",
+            "Find Results.hidden-tmLanguage",
+            "Preferences (Linux).sublime-settings",
+            "Preferences (OSX).sublime-settings",
+            "Preferences (Windows).sublime-settings",
+            "Preferences.sublime-settings",
+            "README.md",
+            "Tab Context.sublime-menu",
+            "transpose.py"
+        ]
+
     # `packages_to_uninstall` and `packages_to_unignore` are to uninstall and unignore they when
     # uninstalling the studio channel
     studioSettings['packages_to_uninstall'] = g_packages_to_uninstall

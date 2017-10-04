@@ -119,9 +119,13 @@ class StartUninstallStudioThread(threading.Thread):
 
             global USER_SETTINGS_FILE
             global STUDIO_MAIN_DIRECTORY
+            global PACKAGES_TO_UNINSTALL_FIRST
 
             USER_SETTINGS_FILE     = "Preferences.sublime-settings"
             STUDIO_MAIN_DIRECTORY  = os.path.dirname( sublime.packages_path() )
+
+            # Fix the uninstallation order
+            PACKAGES_TO_UNINSTALL_FIRST = reversed( PACKAGES_TO_UNINSTALL_FIRST )
 
             log( 2, "USER_SETTINGS_FILE:    " + USER_SETTINGS_FILE )
             log( 2, "STUDIO_MAIN_DIRECTORY: " + STUDIO_MAIN_DIRECTORY )
@@ -175,13 +179,15 @@ class UninstallStudioFilesThread(threading.Thread):
 def uninstall_packages():
     package_manager       = PackageManager()
     package_disabler      = PackageDisabler()
-    packages_to_uninstall = set( g_channel_manager_settings['packages_to_uninstall'] )
+    packages_to_uninstall = unique_list_join( PACKAGES_TO_UNINSTALL_FIRST, g_channel_manager_settings['packages_to_uninstall'] )
 
     current_index      = 0
     git_packages_count = len( packages_to_uninstall )
 
     packages     = set( package_manager.list_packages() + get_installed_packages() )
     dependencies = set( package_manager.list_dependencies() )
+
+    uninstall_default_package( packages )
 
     for package in packages_to_uninstall:
         is_dependency = is_package_dependency( package, dependencies, packages )
@@ -199,6 +205,22 @@ def uninstall_packages():
 
         thread.start()
         thread.join()
+
+
+def uninstall_default_package(packages):
+
+    if 'Default' in packages:
+        log( 1, "\n\nUninstalling Default Packages files..." )
+        default_packages_path = os.path.join( STUDIO_MAIN_DIRECTORY, "Packages", "Default" )
+
+        packages.remove('Default')
+        files_installed = g_channel_manager_settings['default_packages_files']
+
+        for file in files_installed:
+            file_path = os.path.join( default_packages_path, file )
+
+            if os.path.exists( file_path ):
+                os.remove( file_path )
 
 
 def is_package_dependency(package, dependencies, packages):
