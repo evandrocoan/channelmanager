@@ -250,8 +250,13 @@ def install_stable_packages(git_packages):
     package_manager = PackageManager()
     log( 2, "install_stable_packages_, PACKAGES_TO_NOT_INSTALL_: " + str( PACKAGES_TO_NOT_INSTALL ) )
 
+    current_index      = 0
+    git_packages_count = len( git_packages )
+
     for package_name, is_dependency in git_packages:
-        log( 1, "\n\nInstalling: %s (%s)" % ( str( package_name ), str( is_dependency ) ) )
+        current_index += 1
+        log( 1, "\n\nInstalling %d of %d: %s (%s)" % ( current_index, git_packages_count, str( package_name ), str( is_dependency ) ) )
+
         package_manager.install_package( package_name, is_dependency )
 
 
@@ -298,8 +303,12 @@ def install_development_packages(git_packages, git_executable_path, command_line
     set_default_settings_before( git_packages, True )
     log( 2, "install_submodules_packages_, PACKAGES_TO_NOT_INSTALL_: " + str( PACKAGES_TO_NOT_INSTALL ) )
 
+    current_index      = 0
+    git_packages_count = len( git_packages )
+
     for package_name, url, path in git_packages:
-        log( 1, "\n\nInstalling: %s" % ( str( package_name ) ) )
+        current_index += 1
+        log( 1, "\n\nInstalling %d of %d: %s" % ( current_index, git_packages_count, str( package_name ) ) )
 
         command = shlex.split( '"%s" clone --recursive "%s" "%s"' % ( git_executable_path, url, path ) )
         output  = command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY )
