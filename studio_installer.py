@@ -66,13 +66,18 @@ TEMPORARY_FOLDER_TO_USE = "__channel_studio_temp"
 CURRENT_DIRECTORY    = os.path.dirname( os.path.realpath( __file__ ) )
 CURRENT_PACKAGE_NAME = os.path.basename( CURRENT_DIRECTORY ).rsplit('.', 1)[0]
 
-# Install these packages by last as they were messing with the color scheme settings when installing
-# it on a vanilla install. Todo, fix whatever they are doing and causes the
-# `Preferences.sublime-settings` file to be set to:
+# The package "BetterFindBuffer" is being installed by after "Default" because it is creating the
+# file "Find Results.hidden-tmLanguage" on the folder "Default" causing the installation of the
+# package "Default" to stop.
+#
+# Some of these packages "SublimeLinter", "SublimeLinter-javac", "A File Icon" need to be installed
+# by last as they were messing with the color scheme settings when installing it on a vanilla
+# install. Todo, fix whatever they are doing and causes the `Preferences.sublime-settings` file to
+# be set to:
 # {
 #     "color_scheme": "Packages/User/SublimeLinter/Monokai (SL).tmTheme"
 # }
-PACKAGES_TO_INSTALL_LAST = ["Default", "SublimeLinter", "SublimeLinter-javac", "A File Icon"]
+PACKAGES_TO_INSTALL_LAST = ["Default", "BetterFindBuffer", "SublimeLinter", "SublimeLinter-javac", "A File Icon"]
 
 # Do not try to install this own package and the Package Control, as they are currently running
 PACKAGES_TO_NOT_INSTALL = [ "Package Control", CURRENT_PACKAGE_NAME ]
