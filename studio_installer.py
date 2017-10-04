@@ -103,12 +103,12 @@ from package_control.commands.advanced_install_package_command import AdvancedIn
 from debug_tools import Debugger
 
 # Debugger settings: 0 - disabled, 127 - enabled
-log = Debugger( 1, os.path.basename( __file__ ) )
+log = Debugger( 127, os.path.basename( __file__ ) )
 
-log( 2, "..." )
-log( 2, "..." )
-log( 2, "Debugging" )
-log( 2, "CURRENT_DIRECTORY_:     " + CURRENT_DIRECTORY )
+# log( 2, "..." )
+# log( 2, "..." )
+# log( 2, "Debugging" )
+# log( 2, "CURRENT_DIRECTORY_:     " + CURRENT_DIRECTORY )
 
 
 def main(command="stable"):
@@ -119,7 +119,7 @@ def main(command="stable"):
         Also the current `Package Control` cache must be cleaned, ensuring it is downloading and
         using the Studio Channel repositories/channel list.
     """
-    log( 2, "Entering on main(0)" )
+    log( 2, "Entering on %s main(0)" % CURRENT_PACKAGE_NAME )
 
     installer_thread = StartInstallStudioThread(command)
     installer_thread.start()
@@ -190,9 +190,17 @@ class InstallStudioFilesThread(threading.Thread):
 
     def run(self):
         log( 2, "Entering on run(1)" )
+
         global g_packages_to_uninstall
+        global g_files_to_uninstall
+        global g_folders_to_uninstall
+        global g_packages_to_unignore
 
         g_packages_to_uninstall = []
+        g_files_to_uninstall    = []
+        g_folders_to_uninstall  = []
+        g_packages_to_unignore  = []
+
         command_line_interface  = cmd.Cli( None, True )
 
         git_executable_path = command_line_interface.find_binary( "git.exe" if os.name == 'nt' else "git" )
@@ -205,9 +213,6 @@ def install_modules(command_line_interface, git_executable_path, is_development_
     log( 2, "install_modules_, PACKAGES_TO_NOT_INSTALL: " + str( PACKAGES_TO_NOT_INSTALL ) )
 
     if is_development_install:
-        global g_files_to_uninstall
-        g_files_to_uninstall   = []
-
         clone_sublime_text_studio( command_line_interface, git_executable_path )
         download_not_packages_submodules( command_line_interface, git_executable_path )
 
