@@ -29,11 +29,14 @@ import sublime
 import os
 import sys
 import time
+import shutil
 import zipfile
+import tempfile
 
 import io
 import json
 import shlex
+import stat
 import threading
 import contextlib
 
@@ -195,16 +198,25 @@ class InstallStudioFilesThread(threading.Thread):
 
 def install_modules(command_line_interface, git_executable_path, is_development_install):
     log( 2, "install_modules_, PACKAGES_TO_NOT_INSTALL_: " + str( PACKAGES_TO_NOT_INSTALL ) )
-    load_ignored_packages( is_development_install )
 
     if is_development_install:
-        clone_sublime_text_studio( command_line_interface, git_executable_path )
-        git_packages = get_development_packages()
+        global g_files_to_uninstall
+        g_files_to_uninstall   = []
 
+        clone_sublime_text_studio( command_line_interface, git_executable_path )
+        download_not_packages_submodules( command_line_interface, git_executable_path )
+
+        load_ignored_packages(True)
+
+        git_packages = get_development_packages()
         log( 2, "install_modules_, git_packages_: " + str( git_packages ) )
+
         install_development_packages( git_packages, git_executable_path, command_line_interface )
+        install_sublime_text_studio()
 
     else:
+        load_ignored_packages(False)
+
         git_modules_file = download_text_file( get_git_modules_url() )
         git_packages     = get_stable_packages( git_modules_file )
 
@@ -283,13 +295,13 @@ def install_development_packages(git_packages, git_executable_path, command_line
     set_default_settings_before( git_packages, True )
     log( 2, "install_submodules_packages_, PACKAGES_TO_NOT_INSTALL_: " + str( PACKAGES_TO_NOT_INSTALL ) )
 
-    for package_name in git_packages:
+    for package_name, url, path in git_packages:
         log( 1, "\n\nInstalling: %s" % ( str( package_name ) ) )
 
         command = shlex.split( '"%s" clone --recursive "%s" "%s"' % ( git_executable_path, url, path ) )
         output  = command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY )
 
-        log( 1, "install_development_packages_, output_: " + output )
+        log( 1, "install_development_packages_, output_: " + str( output ) )
 
 
 def get_development_packages():
@@ -300,7 +312,7 @@ def get_development_packages():
     installed_packages = get_installed_packages()
 
     packages_to_ignore = unique_list_join( PACKAGES_TO_NOT_INSTALL, installed_packages )
-    log( 2, "get_submodules_packages_, packages_to_ignore_: " + str( packages_to_ignore ) )
+    log( 2, "get_development_packages_, packages_to_ignore_: " + str( packages_to_ignore ) )
 
     packages = []
     gitModulesFile.read( gitFilePath )
@@ -314,8 +326,6 @@ def get_development_packages():
         # if index > 3:
         #     break
 
-        log( 2, "get_submodules_packages_, path_: " + path )
-
         if 'Packages' == path[0:8]:
             package_name            = os.path.basename( path )
             submodule_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, path )
@@ -323,8 +333,10 @@ def get_development_packages():
             if not os.path.isdir( submodule_absolute_path ) \
                     and package_name not in packages_to_ignore :
 
-                packages.append( package_name )
+                packages.append( ( package_name, url, path ) )
                 g_packages_to_uninstall.append( package_name )
+
+                log( 2, "get_development_packages_, path_: " + path )
 
     return packages
 
@@ -435,26 +447,25 @@ def clone_sublime_text_studio(command_line_interface, git_executable_path):
         raise ValueError("The folder '%s' already exists. You already has some custom studio git installation." % main_git_folder)
 
     download_main_repository( command_line_interface, git_executable_path )
+    studio_temporary_folder = os.path.join( STUDIO_MAIN_DIRECTORY, TEMPORARY_FOLDER_TO_USE )
 
-    packages_folder           = os.join.path( STUDIO_MAIN_DIRECTORY, "Packages" )
-    packages_temporary_folder = os.join.path( STUDIO_MAIN_DIRECTORY, TEMPORARY_FOLDER_TO_USE, "Packages" )
+    studio_temporary_packages_folder = os.path.join( studio_temporary_folder, "Packages" )
+    shutil.rmtree( studio_temporary_packages_folder )
 
-    copy_if_not_exists( packages_temporary_folder, packages_folder )
+    global g_folders_to_uninstall
+    g_folders_to_uninstall = get_immediate_subdirectories( studio_temporary_folder )
+
+    copy_overrides( studio_temporary_folder, STUDIO_MAIN_DIRECTORY )
+    shutil.rmtree( studio_temporary_folder, onerror=delete_read_only_file )
 
 
-def copy_if_not_exists(root_source_folder, root_destine_folder):
-    log( 2, "copy_if_not_exists_, root_source_folder_: " + str( root_source_folder ) )
-    log( 2, "copy_if_not_exists_, root_destine_folder_: " + str( root_destine_folder ) )
-
-    packages_to_install     = get_immediate_subdirectories( root_source_folder )
-    packages_to_not_install = get_immediate_subdirectories( root_destine_folder )
-
-    for package in packages_to_install:
-        log( 2, "Trying to install: " + str( package ) )
-
-        if package not in packages_to_not_install:
-            log( 2, "Installing: " + str( package ) )
-            copy_overrides( package, root_destine_folder, True)
+def delete_read_only_file(action, name, exc):
+    """
+        shutil.rmtree to remove readonly files
+        https://stackoverflow.com/questions/21261132/shutil-rmtree-to-remove-readonly-files
+    """
+    os.chmod(name, stat.S_IWRITE)
+    os.remove(name)
 
 
 def get_immediate_subdirectories(a_dir):
@@ -494,23 +505,82 @@ def copy_overrides(root_source_folder, root_destine_folder, move_files=False):
             source_file  = os.path.join( source_folder, file )
             destine_file = os.path.join( destine_folder, file )
 
+            # print( ( "Moving" if move_files else "Coping" ), "file:", source_file, "to", destine_file )
             if os.path.exists( destine_file ):
                 os.remove( destine_file )
 
-            # print( ( "Moving" if move_files else "Coping" ), "file:", source_file, "to", destine_file )
+            # Python: Get relative path from comparing two absolute paths
+            # https://stackoverflow.com/questions/7287996/python-get-relative-path-from-comparing-two-absolute-paths
+            relative_path = fix_absolute_windows_path(destine_file)
+
+            g_files_to_uninstall.append( relative_path )
             copy_file()
 
-            if file.endswith(".hide"):
-                os.replace( destine_file, destine_file[0:-5] )
+
+def fix_absolute_windows_path(path):
+    relative_path = os.path.commonprefix( [ STUDIO_MAIN_DIRECTORY, path ] )
+    relative_path = os.path.normpath( path.replace( relative_path, "" ) )
+    relative_path = relative_path.replace( "\\", "/" )
+
+    if relative_path.startswith( "/" ):
+        relative_path = relative_path[1:]
+
+    return relative_path
 
 
 def download_main_repository(command_line_interface, git_executable_path):
     log( 1, "download_main_repository_, \n\nInstalling: %s" % ( str( STUDIO_MAIN_URL ) ) )
+    temporary_studio_folder = os.path.join( STUDIO_MAIN_DIRECTORY, TEMPORARY_FOLDER_TO_USE )
 
-    command = shlex.split( '"%s" clone --recursive -j8 "%s" "%s"' % ( git_executable_path, STUDIO_MAIN_URL, TEMPORARY_FOLDER_TO_USE ) )
-    output  = command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY, live_output=True )
+    if os.path.isdir( temporary_studio_folder ):
+        shutil.rmtree( temporary_studio_folder )
 
-    log( 1, "download_main_repository_, output_: " + output )
+    command = shlex.split( '"%s" clone "%s" "%s"' % ( git_executable_path, STUDIO_MAIN_URL, TEMPORARY_FOLDER_TO_USE ) )
+    output  = command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY )
+
+    log( 1, "download_main_repository_, output_: " + str( output ) )
+
+
+def download_not_packages_submodules(command_line_interface, git_executable_path):
+    log( 1, "download_not_packages_submodules_" )
+    temporary_studio_folder = os.path.join( STUDIO_MAIN_DIRECTORY, TEMPORARY_FOLDER_TO_USE )
+
+    gitFilePath    = os.path.join( STUDIO_MAIN_DIRECTORY, '.gitmodules' )
+    gitModulesFile = configparser.RawConfigParser()
+
+    index = 0
+    gitModulesFile.read( gitFilePath )
+
+    for section in gitModulesFile.sections():
+        url  = gitModulesFile.get( section, "url" )
+        path = gitModulesFile.get( section, "path" )
+
+        # # For quick testing
+        # index += 1
+        # if index > 3:
+        #     break
+
+        if 'Packages' != path[0:8]:
+            package_name            = os.path.basename( path )
+            submodule_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, path )
+
+            # How to check to see if a folder contains files using python 3
+            # https://stackoverflow.com/questions/25675352/how-to-check-to-see-if-a-folder-contains-files-using-python-3
+            try:
+                os.rmdir( submodule_absolute_path )
+                is_empty = True
+
+            except OSError:
+                is_empty = False
+
+            if is_empty:
+                log( 1, "download_not_packages_submodules_, \n\nInstalling: %s" % ( str( url ) ) )
+
+                command = shlex.split( '"%s" clone "%s" "%s"' % ( git_executable_path, url, path ) )
+                output  = command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY )
+
+                g_folders_to_uninstall.append( path )
+                log( 1, "download_not_packages_submodules_, output_: " + str( output ) )
 
 
 def set_default_settings_before(git_packages, is_development_install):
@@ -527,21 +597,11 @@ def set_default_settings_before(git_packages, is_development_install):
     g_packages_to_unignore = []
 
     # Ignore everything except some packages, until it is finished
-    if len( git_packages ) > 0 and isinstance( git_packages[0], str ):
+    for package in git_packages:
 
-        for package in PACKAGES_TO_INSTALL_LAST:
-
-            if package in git_packages:
-                git_packages.remove( package )
-                git_packages.append( package )
-
-    else:
-
-        for package in git_packages:
-
-            if package[0] in PACKAGES_TO_INSTALL_LAST:
-                git_packages.remove( package )
-                git_packages.append( package )
+        if package[0] in PACKAGES_TO_INSTALL_LAST:
+            git_packages.remove( package )
+            git_packages.append( package )
 
     if is_development_install:
         global g_default_ignored_packages
@@ -572,6 +632,8 @@ def set_default_settings_after():
     # uninstalling the studio channel
     studioSettings['packages_to_uninstall'] = g_packages_to_uninstall
     studioSettings['packages_to_unignore']  = g_packages_to_unignore
+    studioSettings['files_to_uninstall']    = g_files_to_uninstall
+    studioSettings['folders_to_uninstall']  = g_folders_to_uninstall
 
     log( 1, "set_default_settings_after_, studioSettings_: " + json.dumps( studioSettings, indent=4 ) )
     write_data_file( CHANNEL_SETTINGS, studioSettings )
