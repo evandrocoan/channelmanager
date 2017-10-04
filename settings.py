@@ -27,6 +27,7 @@
 import sublime
 
 import os
+import sys
 import datetime
 
 
@@ -98,5 +99,18 @@ variables = [ "%-30s: %s" % ( variable_name, globals()[variable_name] )
         for variable_name in globals().keys() if variable_name in globals() and isinstance( globals()[variable_name], str ) ]
 
 print("\nImporting %s settings... \n%s" % ( str(datetime.datetime.now())[0:19], "\n".join(sorted(variables)) ))
+
+
+# Assert some paths to import
+def assert_path(module):
+    """
+        Import a module from a relative path
+        https://stackoverflow.com/questions/279237/import-a-module-from-a-relative-path
+    """
+    if module not in sys.path:
+        sys.path.append( module )
+
+assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools/all' ) )
+assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), "Package Control" ) )
 
 
