@@ -90,7 +90,8 @@ MAXIMUM_REQUEST_ERRORS = 10
 g_is_already_running   = False
 
 # print_python_envinronment()
-CURRENT_DIRECTORY   = os.path.dirname( os.path.realpath( __file__ ) )
+from .settings import *
+
 STUDIO_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, "last_session.studio-channel" )
 FIND_FORKS_PATH     = os.path.join( CURRENT_DIRECTORY, "find_forks" )
 
@@ -528,25 +529,6 @@ def print_command_line_arguments():
 
     except AttributeError:
         pass
-
-
-# Here's our "unit".
-def IsOdd(n):
-    return n % 2 == 1
-
-
-class IsOddTests(unittest.TestCase):
-
-    def testOne(self):
-        self.failUnless(IsOdd(1))
-
-
-if sublime_plugin:
-
-    class StudioChannelManagerRunCommand( sublime_plugin.TextCommand ):
-
-        def run(self, edit, run):
-            main( run )
 
 
 if __name__ == "__main__":
