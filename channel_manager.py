@@ -39,15 +39,6 @@ import subprocess
 from collections import OrderedDict
 
 
-def assert_path(module):
-    """
-        Import a module from a relative path
-        https://stackoverflow.com/questions/279237/import-a-module-from-a-relative-path
-    """
-    if module not in sys.path:
-        sys.path.append( module )
-
-
 # https://stackoverflow.com/questions/14087598/python-3-importerror-no-module-named-configparser
 try:
     import configparser
@@ -61,15 +52,11 @@ except:
 CURRENT_DIRECTORY    = os.path.dirname( os.path.realpath( __file__ ) )
 g_is_already_running = False
 
-# print( "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
-assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), "PythonDebugTools/all" ) )
-assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), "Package Control" ) )
+from PackagesManager.packagesmanager.package_manager import PackageManager
+from PackagesManager.packagesmanager.providers.channel_provider import ChannelProvider
 
-from package_control.package_manager import PackageManager
-from package_control.providers.channel_provider import ChannelProvider
-
-from package_control import cmd
-from package_control.thread_progress import ThreadProgress
+from PackagesManager.packagesmanager import cmd
+from PackagesManager.packagesmanager.thread_progress import ThreadProgress
 
 # Import the debugger
 from debug_tools import Debugger

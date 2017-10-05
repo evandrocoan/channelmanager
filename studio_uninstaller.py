@@ -41,26 +41,9 @@ import threading
 import contextlib
 
 
-def assert_path(module):
-    """
-        Import a module from a relative path
-        https://stackoverflow.com/questions/279237/import-a-module-from-a-relative-path
-    """
-    if module not in sys.path:
-        sys.path.append( module )
+from .settings import *
+g_is_already_running = False
 
-
-g_is_already_running    = False
-
-CURRENT_DIRECTORY    = os.path.dirname( os.path.realpath( __file__ ) )
-CURRENT_PACKAGE_NAME = os.path.basename( CURRENT_DIRECTORY ).rsplit('.', 1)[0]
-
-# print( "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
-assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools/all' ) )
-assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), "Package Control" ) )
-
-
-from .studio_installer import PACKAGES_TO_INSTALL_LAST as PACKAGES_TO_UNINSTALL_FIRST
 from .studio_installer import get_installed_packages
 from .studio_installer import unique_list_join
 
@@ -69,13 +52,13 @@ from .channel_manager import write_data_file
 from .channel_manager import string_convert_list
 from .submodules_manager import get_main_directory
 
-from package_control import cmd
-from package_control.download_manager import downloader
+from PackagesManager.packagesmanager import cmd
+from PackagesManager.packagesmanager.download_manager import downloader
 
-from package_control.package_manager import PackageManager
-from package_control.thread_progress import ThreadProgress
-from package_control.package_disabler import PackageDisabler
-from package_control.commands.remove_package_command import RemovePackageThread
+from PackagesManager.packagesmanager.package_manager import PackageManager
+from PackagesManager.packagesmanager.thread_progress import ThreadProgress
+from PackagesManager.packagesmanager.package_disabler import PackageDisabler
+from PackagesManager.packagesmanager.commands.remove_package_command import RemovePackageThread
 
 
 # Import the debugger
@@ -87,7 +70,7 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 log( 2, "..." )
 log( 2, "..." )
 log( 2, "Debugging" )
-log( 2, "CURRENT_DIRECTORY_:     " + CURRENT_DIRECTORY )
+log( 2, "CURRENT_DIRECTORY_: " + CURRENT_DIRECTORY )
 
 
 def main():
@@ -116,19 +99,10 @@ class StartUninstallStudioThread(threading.Thread):
         """
 
         if is_allowed_to_run():
-
-            global USER_SETTINGS_FILE
-            global STUDIO_MAIN_DIRECTORY
             global PACKAGES_TO_UNINSTALL_FIRST
 
-            USER_SETTINGS_FILE     = "Preferences.sublime-settings"
-            STUDIO_MAIN_DIRECTORY  = os.path.dirname( sublime.packages_path() )
-
             # Fix the uninstallation order
-            PACKAGES_TO_UNINSTALL_FIRST = reversed( PACKAGES_TO_UNINSTALL_FIRST )
-
-            log( 2, "USER_SETTINGS_FILE:    " + USER_SETTINGS_FILE )
-            log( 2, "STUDIO_MAIN_DIRECTORY: " + STUDIO_MAIN_DIRECTORY )
+            PACKAGES_TO_UNINSTALL_FIRST = reversed( PACKAGES_TO_INSTALL_LAST )
 
             uninstaller_thread = UninstallStudioFilesThread()
             uninstaller_thread.start()

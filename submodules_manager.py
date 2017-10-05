@@ -66,15 +66,6 @@ else:
     from urllib.error import HTTPError
 
 
-def assert_path(module):
-    """
-        Import a module from a relative path
-        https://stackoverflow.com/questions/279237/import-a-module-from-a-relative-path
-    """
-    if module not in sys.path:
-        sys.path.append( module )
-
-
 # sys.tracebacklimit = 10; raise ValueError
 def print_python_envinronment():
     index = 0;
@@ -103,14 +94,8 @@ CURRENT_DIRECTORY   = os.path.dirname( os.path.realpath( __file__ ) )
 STUDIO_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, "last_session.studio-channel" )
 FIND_FORKS_PATH     = os.path.join( CURRENT_DIRECTORY, "find_forks" )
 
-# print( "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
-assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), "PythonDebugTools/all" ) )
-assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), "Package Control" ) )
 
-
-# https://stackoverflow.com/questions/9123517/how-do-you-import-a-file-in-python-with-spaces-in-the-name
-# cmd = __import__("Package Control.package_control.cmd")
-from package_control import cmd
+from PackagesManager.packagesmanager import cmd
 
 # Import the debugger
 from debug_tools import Debugger
