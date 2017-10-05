@@ -49,7 +49,7 @@ STUDIO_MAIN_DIRECTORY = os.path.dirname( sublime.packages_path() )
 CHANNEL_MAIN_FILE_URL  = "https://raw.githubusercontent.com/evandrocoan/SublimeStudioChannel/master/settings.json"
 
 # The file path to the Channel File `settings.json` to use when installing the development version
-CHANNEL_MAIN_FILE_PATH = os.path.join( STUDIO_MAIN_DIRECTORY, "StudioChannel", "settings.json" )
+CHANNEL_MAIN_FILE_PATH = os.path.join( STUDIO_MAIN_DIRECTORY, "Packages", "StudioChannel", "settings.json" )
 
 
 # The package "BetterFindBuffer" is being installed by after "Default" because it is creating the
