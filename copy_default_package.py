@@ -58,15 +58,20 @@ log( 2, "Debugging" )
 log( 2, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 
 
-def main():
+def main(default_packages_files=[]):
     log( 2, "Entering on main(0)" )
-    CopyFilesThread().start()
+
+    # Not attempt to run when we are running from inside a `.sublime-package`: FileNotFoundError:
+    # '..\\Installed Packages\\ChannelManager.sublime-package\\last_sublime_upgrade.studio-channel'
+    if os.path.isdir( CURRENT_DIRECTORY ) and is_sublime_text_upgraded():
+        CopyFilesThread( default_packages_files ).start()
 
 
 class CopyFilesThread(threading.Thread):
 
-    def __init__(self):
+    def __init__(self, default_packages_files):
         threading.Thread.__init__(self)
+        self.default_packages_files = default_packages_files
 
     def run(self):
         log( 2, "Entering on run(1)" )
@@ -78,10 +83,15 @@ class CopyFilesThread(threading.Thread):
         log( 2, "run, output_folder: " + output_folder )
 
         extract_package( package_path, output_folder )
-        create_git_ignore_file( output_folder )
+        create_git_ignore_file( output_folder, self.default_packages_files )
 
 
-def create_git_ignore_file(output_folder):
+def create_git_ignore_file(output_folder, default_packages_files):
+
+    if len( default_packages_files ) < 1:
+        log( 1, "Skipping creating `.gitignore` file as not files are passed to the main function." )
+        return
+
     gitignore_file = os.path.join( output_folder, ".gitignore" )
     lines_to_write = \
     [
@@ -97,7 +107,7 @@ def create_git_ignore_file(output_folder):
         "# Only accept the unchanged files, need to add new files here manually",
     ]
 
-    for file in DEFAULT_PACKAGES_FILES:
+    for file in default_packages_files:
         lines_to_write.append( "!" + file )
 
     lines_to_write.append("\n")
@@ -184,11 +194,4 @@ def save_session_data(last_section, session_file):
 if __name__ == "__main__":
     main()
 
-
-def plugin_loaded():
-
-    # Not attempt to run when we are running from inside a `.sublime-package`: FileNotFoundError:
-    # '..\\Installed Packages\\ChannelManager.sublime-package\\last_sublime_upgrade.studio-channel'
-    # if os.path.isdir( CURRENT_DIRECTORY ) and is_sublime_text_upgraded():
-        main()
 
