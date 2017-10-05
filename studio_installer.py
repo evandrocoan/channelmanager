@@ -280,6 +280,17 @@ def install_development_packages(git_packages, git_executable_path, command_line
 
         log( 1, "install_development_packages, output: " + str( output ) )
 
+    # check_out_on_master_branch( git_executable_path, command_line_interface )
+
+
+def check_out_on_master_branch(git_executable_path, command_line_interface):
+    log( 1, "\n\nChecking out on their master branches..." )
+
+    main_command      = shlex.split( '"%s" submodule foreach' % ( git_executable_path ) )
+    submodule_command = shlex.split( "'\"%s\" checkout master'" % ( git_executable_path ) )
+
+    output  = command_line_interface.execute( main_command + submodule_command, cwd=STUDIO_MAIN_DIRECTORY, live_output=True )
+
 
 def get_development_packages():
     gitFilePath    = os.path.join( STUDIO_MAIN_DIRECTORY, '.gitmodules' )
