@@ -84,22 +84,22 @@ def main(channel_settings):
 
 
 def unpack_settings(channel_settings):
-    global CHANNEL_FILE_URL
+    global STUDIO_REPOSITORY_URL
     global DEFAULT_CHANNEL_URL
 
     global STUDIO_MAIN_DIRECTORY
     global STUDIO_CHANNEL_FILE
     global STUDIO_REPOSITORY_FILE
-    global STUDIO_SETTTINGS_FILE
+    global STUDIO_INSTALLATION_SETTINGS
 
-    CHANNEL_FILE_URL    = channel_settings['channel_file_url']
-    DEFAULT_CHANNEL_URL = channel_settings['default_channel_url']
+    STUDIO_REPOSITORY_URL = channel_settings['STUDIO_REPOSITORY_URL']
+    DEFAULT_CHANNEL_URL   = channel_settings['DEFAULT_CHANNEL_URL']
 
-    STUDIO_MAIN_DIRECTORY  = channel_settings['studio_main_directory']
-    STUDIO_CHANNEL_FILE    = channel_settings['studio_channel_file']
-    STUDIO_REPOSITORY_FILE = channel_settings['studio_repository_file']
-    STUDIO_SETTTINGS_FILE  = channel_settings['studio_setttings_file']
+    STUDIO_MAIN_DIRECTORY  = channel_settings['STUDIO_MAIN_DIRECTORY']
+    STUDIO_CHANNEL_FILE    = channel_settings['STUDIO_CHANNEL_FILE']
+    STUDIO_REPOSITORY_FILE = channel_settings['STUDIO_REPOSITORY_FILE']
 
+    STUDIO_INSTALLATION_SETTINGS = channel_settings['STUDIO_INSTALLATION_SETTINGS']
     # log( 1, "channel_settings: " + dictionary_to_string_by_line( channel_settings ) )
 
 
@@ -134,7 +134,7 @@ def create_ignored_packages():
     user_ignored_packages                = userSettings.get("ignored_packages", [])
     studioSettings['packages_to_ignore'] = user_ignored_packages
 
-    write_data_file( STUDIO_SETTTINGS_FILE, studioSettings )
+    write_data_file( STUDIO_INSTALLATION_SETTINGS, studioSettings )
 
 
 def is_allowed_to_run():
@@ -177,14 +177,14 @@ def create_channel_file( repositories, dependencies ):
     channel_dictionary = OrderedDict()
 
     channel_dictionary['repositories'] = []
-    channel_dictionary['repositories'].append( CHANNEL_FILE_URL )
+    channel_dictionary['repositories'].append( STUDIO_REPOSITORY_URL )
 
     channel_dictionary['schema_version'] = "3.0.0"
     channel_dictionary['packages_cache'] = OrderedDict()
-    channel_dictionary['packages_cache'][CHANNEL_FILE_URL] = repositories
+    channel_dictionary['packages_cache'][STUDIO_REPOSITORY_URL] = repositories
 
     channel_dictionary['dependencies_cache'] = OrderedDict()
-    channel_dictionary['dependencies_cache'][CHANNEL_FILE_URL] = dependencies
+    channel_dictionary['dependencies_cache'][STUDIO_REPOSITORY_URL] = dependencies
 
     # print_data_file( STUDIO_CHANNEL_FILE )
     write_data_file( STUDIO_CHANNEL_FILE, channel_dictionary )

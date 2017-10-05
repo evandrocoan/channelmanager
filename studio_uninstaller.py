@@ -88,11 +88,11 @@ def main(channel_settings):
 
 
 def unpack_settings(channel_settings):
-    global CHANNEL_SETTINGS
+    global STUDIO_INSTALLATION_SETTINGS
     global PACKAGES_TO_UNINSTALL_FIRST
 
-    CHANNEL_SETTINGS            = channel_settings['channel_settings']
-    PACKAGES_TO_UNINSTALL_FIRST = reversed( channel_settings['packages_to_install_last'] )
+    STUDIO_INSTALLATION_SETTINGS = channel_settings['STUDIO_INSTALLATION_SETTINGS']
+    PACKAGES_TO_UNINSTALL_FIRST  = reversed( channel_settings['PACKAGES_TO_INSTALL_LAST'] )
 
 
 class StartUninstallStudioThread(threading.Thread):
@@ -146,7 +146,7 @@ class UninstallStudioFilesThread(threading.Thread):
         global g_not_found_packages
 
         g_not_found_packages       = []
-        g_channel_manager_settings = load_data_file( CHANNEL_SETTINGS )
+        g_channel_manager_settings = load_data_file( STUDIO_INSTALLATION_SETTINGS )
 
         uninstall_packages()
         # uninstall_files()
@@ -223,7 +223,7 @@ def check_uninstalled_packages():
         they differ, attempt to uninstall they again for some times. If not successful, stop trying
         and warn the user.
     """
-    studioSettings         = sublime.load_settings(CHANNEL_SETTINGS)
+    studioSettings         = sublime.load_settings(STUDIO_INSTALLATION_SETTINGS)
     packageControlSettings = sublime.load_settings("Package Control.sublime-settings")
 
     # installed_packages =
@@ -234,8 +234,8 @@ if __name__ == "__main__":
 
 
 def plugin_loaded():
-    global CHANNEL_SETTINGS
-    CHANNEL_SETTINGS = os.path.join( get_main_directory(), "Packages", "User", CURRENT_PACKAGE_NAME + ".sublime-settings" )
+    global STUDIO_INSTALLATION_SETTINGS
+    STUDIO_INSTALLATION_SETTINGS = os.path.join( get_main_directory(), "Packages", "User", CURRENT_PACKAGE_NAME + ".sublime-settings" )
 
     # main()
     check_uninstalled_packages()

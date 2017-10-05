@@ -102,27 +102,31 @@ def main(channel_settings):
 
 
 def unpack_settings(channel_settings):
-    global IS_DEVELOPMENT_INSTALL
-
-    global CHANNEL_FILE
-    global PACKAGES_TO_INSTALL_LAST
-    global PACKAGES_TO_NOT_INSTALL
-    global TEMPORARY_FOLDER_TO_USE
-    global CHANNEL_MAIN_FILE_URL
-    global CHANNEL_MAIN_FILE_PATH
     global USER_SETTINGS_FILE
     global DEFAULT_PACKAGES_FILES
+    global TEMPORARY_FOLDER_TO_USE
 
-    IS_DEVELOPMENT_INSTALL = True if channel_settings['installation_type'] == "development" else False
+    global PACKAGES_TO_NOT_INSTALL
+    global PACKAGES_TO_INSTALL_LAST
 
-    CHANNEL_FILE             = channel_settings['channel_settings']
-    PACKAGES_TO_INSTALL_LAST = channel_settings['packages_to_install_last']
-    PACKAGES_TO_NOT_INSTALL  = channel_settings['packages_to_not_install']
-    TEMPORARY_FOLDER_TO_USE  = channel_settings['temporary_folder_to_use']
-    CHANNEL_MAIN_FILE_URL    = channel_settings['channel_main_file_url']
-    CHANNEL_MAIN_FILE_PATH   = channel_settings['channel_main_file_path']
-    USER_SETTINGS_FILE       = channel_settings['user_settings_file']
-    DEFAULT_PACKAGES_FILES   = channel_settings['default_packages_files']
+    global STUDIO_SETTINGS_URL
+    global STUDIO_SETTINGS_PATH
+
+    global IS_DEVELOPMENT_INSTALL
+    global STUDIO_INSTALLATION_SETTINGS
+
+    IS_DEVELOPMENT_INSTALL       = True if channel_settings['INSTALLATION_TYPE'] == "development" else False
+    STUDIO_INSTALLATION_SETTINGS = channel_settings['STUDIO_INSTALLATION_SETTINGS']
+
+    STUDIO_SETTINGS_URL  = channel_settings['STUDIO_SETTINGS_URL']
+    STUDIO_SETTINGS_PATH = channel_settings['STUDIO_SETTINGS_PATH']
+
+    USER_SETTINGS_FILE      = channel_settings['USER_SETTINGS_FILE']
+    DEFAULT_PACKAGES_FILES  = channel_settings['DEFAULT_PACKAGES_FILES']
+    TEMPORARY_FOLDER_TO_USE = channel_settings['TEMPORARY_FOLDER_TO_USE']
+
+    PACKAGES_TO_NOT_INSTALL  = channel_settings['PACKAGES_TO_NOT_INSTALL']
+    PACKAGES_TO_INSTALL_LAST = channel_settings['PACKAGES_TO_INSTALL_LAST']
 
 
 class StartInstallStudioThread(threading.Thread):
@@ -359,10 +363,10 @@ def load_ignored_packages():
     g_user_settings = sublime.load_settings( USER_SETTINGS_FILE )
 
     if IS_DEVELOPMENT_INSTALL:
-        g_studio_settings = load_data_file( CHANNEL_MAIN_FILE_PATH )
+        g_studio_settings = load_data_file( STUDIO_SETTINGS_PATH )
 
     else:
-        channel_settings_file = download_text_file( CHANNEL_MAIN_FILE_URL )
+        channel_settings_file = download_text_file( STUDIO_SETTINGS_URL )
         g_studio_settings     = json.loads( channel_settings_file )
 
     global g_default_ignored_packages
@@ -650,7 +654,7 @@ def set_default_settings_after():
     studioSettings['folders_to_uninstall']  = g_folders_to_uninstall
 
     log( 1, "set_default_settings_after, studioSettings: " + json.dumps( studioSettings, indent=4 ) )
-    write_data_file( CHANNEL_FILE, studioSettings )
+    write_data_file( STUDIO_INSTALLATION_SETTINGS, studioSettings )
 
 
 def check_installed_packages():
@@ -662,7 +666,7 @@ def check_installed_packages():
         differ, attempt to install they again for some times. If not successful, stop trying and
         warn the user.
     """
-    # studioSettings         = sublime.load_settings(CHANNEL_FILE)
+    # studioSettings         = sublime.load_settings(STUDIO_INSTALLATION_SETTINGS)
     # packageControlSettings = sublime.load_settings("Package Control.sublime-settings")
 
     # installed_packages =
