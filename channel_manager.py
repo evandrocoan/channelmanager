@@ -100,6 +100,8 @@ def unpack_settings(channel_settings):
     STUDIO_REPOSITORY_FILE = channel_settings['studio_repository_file']
     STUDIO_SETTTINGS_FILE  = channel_settings['studio_setttings_file']
 
+    # log( 1, "channel_settings: " + dictionary_to_string_by_line( channel_settings ) )
+
 
 class GenerateChannelThread(threading.Thread):
 
