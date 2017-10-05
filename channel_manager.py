@@ -49,7 +49,7 @@ except:
     from six.moves.configparser import NoOptionError
 
 
-CURRENT_DIRECTORY    = os.path.dirname( os.path.realpath( __file__ ) )
+from .settings import *
 g_is_already_running = False
 
 from PackagesManager.packagesmanager.package_manager import PackageManager
@@ -73,9 +73,17 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 # log( 2, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 
 
-def main():
+def main(channel_settings):
     log( 2, "Entering on main(0)" )
 
+    channel_thread = GenerateChannelThread(channel_settings)
+    channel_thread.start()
+
+    ThreadProgress( channel_thread, "Generating Channel and Repositories files",
+            "Channel and repositories files successfully created." )
+
+
+def unpack_settings(channel_settings):
     global CHANNEL_FILE_URL
     global DEFAULT_CHANNEL_URL
 
@@ -84,30 +92,26 @@ def main():
     global STUDIO_REPOSITORY_FILE
     global STUDIO_SETTTINGS_FILE
 
-    CHANNEL_FILE_URL    = "https://raw.githubusercontent.com/evandrocoan/SublimeStudioChannel/master/repository.json"
-    DEFAULT_CHANNEL_URL = "https://packagecontrol.io/channel_v3.json"
+    CHANNEL_FILE_URL    = channel_settings['channel_file_url']
+    DEFAULT_CHANNEL_URL = channel_settings['default_channel_url']
 
-    STUDIO_MAIN_DIRECTORY  = os.path.dirname( sublime.packages_path() )
-    STUDIO_CHANNEL_FILE    = os.path.join( STUDIO_MAIN_DIRECTORY, "StudioChannel", "channel.json" )
-    STUDIO_REPOSITORY_FILE = os.path.join( STUDIO_MAIN_DIRECTORY, "StudioChannel", "repository.json" )
-    STUDIO_SETTTINGS_FILE  = os.path.join( STUDIO_MAIN_DIRECTORY, "StudioChannel", "settings.json" )
-
-    channel_thread = GenerateChannelThread()
-    channel_thread.start()
-
-    ThreadProgress( channel_thread, "Generating Channel and Repositories files",
-            "Channel and repositories files successfully created." )
+    STUDIO_MAIN_DIRECTORY  = channel_settings['studio_main_directory']
+    STUDIO_CHANNEL_FILE    = channel_settings['studio_channel_file']
+    STUDIO_REPOSITORY_FILE = channel_settings['studio_repository_file']
+    STUDIO_SETTTINGS_FILE  = channel_settings['studio_setttings_file']
 
 
 class GenerateChannelThread(threading.Thread):
 
-    def __init__(self):
+    def __init__(self, channel_settings):
         threading.Thread.__init__(self)
+        self.channel_settings = channel_settings
 
     def run(self):
         log( 2, "Entering on run(1)" )
 
         if is_allowed_to_run():
+            unpack_settings( self.channel_settings )
             all_packages = load_deafault_channel()
 
             # print_some_repositories(all_packages)
@@ -453,19 +457,4 @@ def print_some_repositories(all_packages):
 
         log( 1, "" )
         log( 1, "package: %-20s" %  str( package ) + json.dumps( all_packages[package], indent=4 ) )
-
-
-class StudioChannelManagerGenerateChannelFileCommand( sublime_plugin.TextCommand ):
-
-    def run(self, edit):
-        main()
-
-
-if __name__ == "__main__":
-    main()
-
-
-def plugin_loaded():
-    # main()
-    pass
 

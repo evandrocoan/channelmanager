@@ -73,7 +73,7 @@ log( 2, "Debugging" )
 log( 2, "CURRENT_DIRECTORY_: " + CURRENT_DIRECTORY )
 
 
-def main():
+def main(channel_settings):
     """
         Before calling this installer, the `Package Control` user settings file, must have the
         Studio Channel file set before the default channel key `channels`.
@@ -83,14 +83,23 @@ def main():
     """
     log( 2, "Entering on %s main(0)" % CURRENT_PACKAGE_NAME )
 
-    installer_thread = StartUninstallStudioThread()
+    installer_thread = StartUninstallStudioThread( channel_settings )
     installer_thread.start()
+
+
+def unpack_settings(channel_settings):
+    global CHANNEL_SETTINGS
+    global PACKAGES_TO_UNINSTALL_FIRST
+
+    CHANNEL_SETTINGS            = channel_settings['channel_settings']
+    PACKAGES_TO_UNINSTALL_FIRST = reversed( channel_settings['packages_to_install_last'] )
 
 
 class StartUninstallStudioThread(threading.Thread):
 
-    def __init__(self):
+    def __init__(self, channel_settings):
         threading.Thread.__init__(self)
+        self.channel_settings = channel_settings
 
     def run(self):
         """
@@ -99,10 +108,7 @@ class StartUninstallStudioThread(threading.Thread):
         """
 
         if is_allowed_to_run():
-            global PACKAGES_TO_UNINSTALL_FIRST
-
-            # Fix the uninstallation order
-            PACKAGES_TO_UNINSTALL_FIRST = reversed( PACKAGES_TO_INSTALL_LAST )
+            unpack_settings(self.channel_settings)
 
             uninstaller_thread = UninstallStudioFilesThread()
             uninstaller_thread.start()
@@ -111,8 +117,6 @@ class StartUninstallStudioThread(threading.Thread):
                     'Sublime Text Studio %s was successfully installed.' )
 
             uninstaller_thread.join()
-
-            # set_default_settings_after()
             check_uninstalled_packages()
 
         global g_is_already_running

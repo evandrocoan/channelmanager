@@ -87,7 +87,7 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 # log( 2, "CURRENT_DIRECTORY_:     " + CURRENT_DIRECTORY )
 
 
-def main(command="stable"):
+def main(channel_settings):
     """
         Before calling this installer, the `Package Control` user settings file, must have the
         Studio Channel file set before the default channel key `channels`.
@@ -97,15 +97,39 @@ def main(command="stable"):
     """
     log( 2, "Entering on %s main(0)" % CURRENT_PACKAGE_NAME )
 
-    installer_thread = StartInstallStudioThread(command)
+    installer_thread = StartInstallStudioThread(channel_settings)
     installer_thread.start()
+
+
+def unpack_settings(channel_settings):
+    global IS_DEVELOPMENT_INSTALL
+
+    global CHANNEL_FILE
+    global PACKAGES_TO_INSTALL_LAST
+    global PACKAGES_TO_NOT_INSTALL
+    global TEMPORARY_FOLDER_TO_USE
+    global CHANNEL_MAIN_FILE_URL
+    global CHANNEL_MAIN_FILE_PATH
+    global USER_SETTINGS_FILE
+    global DEFAULT_PACKAGES_FILES
+
+    IS_DEVELOPMENT_INSTALL = True if channel_settings['installation_type'] == "development" else False
+
+    CHANNEL_FILE             = channel_settings['channel_settings']
+    PACKAGES_TO_INSTALL_LAST = channel_settings['packages_to_install_last']
+    PACKAGES_TO_NOT_INSTALL  = channel_settings['packages_to_not_install']
+    TEMPORARY_FOLDER_TO_USE  = channel_settings['temporary_folder_to_use']
+    CHANNEL_MAIN_FILE_URL    = channel_settings['channel_main_file_url']
+    CHANNEL_MAIN_FILE_PATH   = channel_settings['channel_main_file_path']
+    USER_SETTINGS_FILE       = channel_settings['user_settings_file']
+    DEFAULT_PACKAGES_FILES   = channel_settings['default_packages_files']
 
 
 class StartInstallStudioThread(threading.Thread):
 
-    def __init__(self, command):
+    def __init__(self, channel_settings):
         threading.Thread.__init__(self)
-        self.command = command
+        self.channel_settings = channel_settings
 
     def run(self):
         """
@@ -114,13 +138,14 @@ class StartInstallStudioThread(threading.Thread):
         """
 
         if is_allowed_to_run():
+            unpack_settings(self.channel_settings)
 
-            is_development_install = True if self.command == "development" else False
-            installer_thread       = InstallStudioFilesThread( is_development_install )
+            installer_thread  = InstallStudioFilesThread()
+            installation_type = self.channel_settings['installation_type']
 
             installer_thread.start()
-            ThreadProgress( installer_thread, 'Installing Sublime Text Studio %s Packages' % self.command,
-                    'Sublime Text Studio %s was successfully installed.' % self.command )
+            ThreadProgress( installer_thread, 'Installing Sublime Text Studio %s Packages' % installation_type,
+                    'Sublime Text Studio %s was successfully installed.' % installation_type )
 
             installer_thread.join()
 
@@ -144,9 +169,8 @@ def is_allowed_to_run():
 
 class InstallStudioFilesThread(threading.Thread):
 
-    def __init__(self, is_development_install):
+    def __init__(self):
         threading.Thread.__init__(self)
-        self.is_development_install = is_development_install
 
     def run(self):
         log( 2, "Entering on run(1)" )
@@ -162,17 +186,16 @@ class InstallStudioFilesThread(threading.Thread):
         g_packages_to_unignore  = []
 
         command_line_interface  = cmd.Cli( None, True )
-
         git_executable_path = command_line_interface.find_binary( "git.exe" if os.name == 'nt' else "git" )
+
         log( 2, "run, git_executable_path: " + str( git_executable_path ) )
+        install_modules( command_line_interface, git_executable_path)
 
-        install_modules( command_line_interface, git_executable_path, self.is_development_install )
 
-
-def install_modules(command_line_interface, git_executable_path, is_development_install):
+def install_modules(command_line_interface, git_executable_path):
     log( 2, "install_modules_, PACKAGES_TO_NOT_INSTALL: " + str( PACKAGES_TO_NOT_INSTALL ) )
 
-    if is_development_install:
+    if IS_DEVELOPMENT_INSTALL:
         clone_sublime_text_studio( command_line_interface, git_executable_path )
         download_not_packages_submodules( command_line_interface, git_executable_path )
 
@@ -329,13 +352,13 @@ def get_development_packages():
     return packages
 
 
-def load_ignored_packages(is_development_install):
+def load_ignored_packages():
     global g_user_settings
     global g_studio_settings
 
     g_user_settings = sublime.load_settings( USER_SETTINGS_FILE )
 
-    if is_development_install:
+    if IS_DEVELOPMENT_INSTALL:
         g_studio_settings = load_data_file( CHANNEL_MAIN_FILE_PATH )
 
     else:
@@ -571,7 +594,7 @@ def download_not_packages_submodules(command_line_interface, git_executable_path
                 log( 1, "download_not_packages_submodules, output: " + str( output ) )
 
 
-def set_default_settings_before(git_packages, is_development_install):
+def set_default_settings_before(git_packages):
     """
         Set some package to be enabled at last due their settings being dependent on other packages
         which need to be installed first.
@@ -591,7 +614,7 @@ def set_default_settings_before(git_packages, is_development_install):
             git_packages.remove( package )
             git_packages.append( package )
 
-    if is_development_install:
+    if IS_DEVELOPMENT_INSTALL:
         global g_default_ignored_packages
 
         for package in g_packages_to_ignore:
@@ -627,7 +650,7 @@ def set_default_settings_after():
     studioSettings['folders_to_uninstall']  = g_folders_to_uninstall
 
     log( 1, "set_default_settings_after, studioSettings: " + json.dumps( studioSettings, indent=4 ) )
-    write_data_file( CHANNEL_SETTINGS, studioSettings )
+    write_data_file( CHANNEL_FILE, studioSettings )
 
 
 def check_installed_packages():
@@ -639,10 +662,11 @@ def check_installed_packages():
         differ, attempt to install they again for some times. If not successful, stop trying and
         warn the user.
     """
-    studioSettings         = sublime.load_settings(CHANNEL_SETTINGS)
-    packageControlSettings = sublime.load_settings("Package Control.sublime-settings")
+    # studioSettings         = sublime.load_settings(CHANNEL_FILE)
+    # packageControlSettings = sublime.load_settings("Package Control.sublime-settings")
 
     # installed_packages =
+    pass
 
 
 if __name__ == "__main__":
@@ -650,9 +674,6 @@ if __name__ == "__main__":
 
 
 def plugin_loaded():
-    global CHANNEL_SETTINGS
-    CHANNEL_SETTINGS = os.path.join( get_main_directory(), "Packages", "User", CURRENT_PACKAGE_NAME + ".sublime-settings" )
-
     # main()
     check_installed_packages()
 
