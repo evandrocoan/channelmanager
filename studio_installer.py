@@ -189,8 +189,8 @@ class InstallStudioFilesThread(threading.Thread):
         g_folders_to_uninstall  = []
         g_packages_to_unignore  = []
 
-        command_line_interface  = cmd.Cli( None, True )
-        git_executable_path = command_line_interface.find_binary( "git.exe" if os.name == 'nt' else "git" )
+        command_line_interface = cmd.Cli( None, True )
+        git_executable_path    = command_line_interface.find_binary( "git.exe" if os.name == 'nt' else "git" )
 
         log( 2, "run, git_executable_path: " + str( git_executable_path ) )
         install_modules( command_line_interface, git_executable_path)

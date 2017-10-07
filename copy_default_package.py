@@ -58,12 +58,12 @@ log( 2, "Debugging" )
 log( 2, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 
 
-def main(default_packages_files=[]):
+def main(default_packages_files=[], is_forced=False):
     log( 2, "Entering on main(0)" )
 
     # Not attempt to run when we are running from inside a `.sublime-package`: FileNotFoundError:
     # '..\\Installed Packages\\ChannelManager.sublime-package\\last_sublime_upgrade.studio-channel'
-    if os.path.isdir( CURRENT_DIRECTORY ) and is_sublime_text_upgraded():
+    if is_forced or os.path.isdir( CURRENT_DIRECTORY ) and is_sublime_text_upgraded():
         CopyFilesThread( default_packages_files ).start()
 
 
@@ -111,6 +111,7 @@ def create_git_ignore_file(output_folder, default_packages_files):
         lines_to_write.append( "!" + file )
 
     lines_to_write.append("\n")
+    log( 1, "Writing to gitignore_file: " + str( gitignore_file ) )
 
     with open( gitignore_file, "w" ) as text_file:
         text_file.write( "\n".join( lines_to_write ) )
@@ -148,7 +149,7 @@ def extract_package(package_path, destine_folder):
             log( 1, "Extracting '%s' failed." % package_path)
             return
 
-        log( 2, "The file '%s' was successfully extracted." % package_path)
+        log( 1, "The file '%s' was successfully extracted." % package_path)
 
 
 def is_sublime_text_upgraded():
