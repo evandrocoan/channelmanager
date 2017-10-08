@@ -211,8 +211,9 @@ def get_repositories( all_packages ):
         path     = gitModulesFile.get( section, "path" )
         upstream = gitModulesFile.get( section, "upstream" )
 
-        user_forker  = get_user_name( url )
-        release_date = get_git_date( os.path.join( STUDIO_MAIN_DIRECTORY, path ), command_line_interface )
+        user_forker     = get_user_name( url )
+        repository_path = os.path.join( STUDIO_MAIN_DIRECTORY, path )
+        release_date    = get_git_date( repository_path, command_line_interface )
 
         # # For quick testing
         # index += 1
@@ -238,12 +239,15 @@ def get_repositories( all_packages ):
             release_data['version'] = get_git_version( release_date )
 
             fix_sublime_text_release( release_data, gitModulesFile, section, repository_info, repositories, dependencies, url )
+            tagged_releases = get_old_compatible_versions( release_data, gitModulesFile, section, url, repository_path, command_line_interface )
 
             ensure_author_name( user_forker, upstream, repository_info )
-            release_data = sort_dictionary( release_data )
+
+            tagged_releases.insert( 0, release_data )
+            tagged_releases = sort_list_of_dictionaries( tagged_releases )
 
             repository_info['name']     = repository_name
-            repository_info['releases'] = [ release_data ]
+            repository_info['releases'] = tagged_releases
 
     return sort_list_of_dictionary( repositories) , sort_list_of_dictionary( dependencies )
 
@@ -251,9 +255,17 @@ def get_repositories( all_packages ):
 def fix_sublime_text_release(release_data, gitModulesFile, section, repository_info, repositories, dependencies, url):
     """
         If it has the dependency option, then it:
-        1. It is a module dependency only
-        2. It is a module dependency and has other dependencies
-        3. It is a package and has dependencies
+            1. It is a module dependency only
+            2. It is a module dependency and has other dependencies
+            3. It is a package and has dependencies
+
+        @param release_data      the dictionary with the current release_data information
+        @param gitModulesFile    the current `.gitmodules` configparser interator
+        @param section           the section name on the `.gitmodules` file for the current repository information
+        @param repository_info   the dictionary with the current repository information
+        @param repositories      the dictionary with all repositories
+        @param dependencies      the dictionary with all dependencies
+        @param url               the main repository url as `github.com/user/repo`
     """
     repository_info['homepage'] = url
 
@@ -301,7 +313,70 @@ def fix_sublime_text_release(release_data, gitModulesFile, section, repository_i
         release_data['sublime_text'] = ">=" +  str( acceptable_version )
 
 
+def get_old_compatible_versions(default_release_data, gitModulesFile, section, url, repository_path, command_line_interface):
+    """
+        Check for the existence of the `tags` section on the `gitModulesFile` iterator and add the
+        correct for the listed olde compatible versions.
+
+        The old compatible versions are git tags as `3144` which is the last Sublime Text version
+        where the submodule was compatible with. For example, on Sublime Text development build
+        3147, the package `Notepad++ Color Scheme` stopped working completely:
+            1. https://github.com/SublimeTextIssues/Core/issues/1983)
+
+        However the fix for build 3147 also broke completely the package for Sublime Text stable
+        build 3144. Hence, we must to create a tag named 3144 which targets the last commit which is
+        working for build 3144, then when some user using the stable build 3144 installs the
+        Notepad++, they must install the one from the tag `3144`, and not the one from the master
+        branch, which has the latest fixes for build development build 3147.
+
+        @param others                   @see the function fix_sublime_text_release()
+        @param repository_path          absolute path the the repository to retrieve the tag data
+        @param command_line_interface   a command line object to run the git command
+
+        @return a list of dictionary releases created, otherwise a empty list if not tags exists
+    """
+    greatest_tag    = get_version_number( default_release_data['sublime_text'] )
+    tagged_releases = []
+
+    if gitModulesFile.has_option( section, "tags" ):
+        tags_list = string_convert_list( gitModulesFile.get( section, "tags" ) )
+
+        for tag in tags_list:
+            tag_interger = int( tag )
+
+            release_data = OrderedDict()
+            tag_date     = get_git_tag_date(repository_path, command_line_interface, tag)
+
+            release_data['platforms']    = "*"
+            release_data['sublime_text'] = "<=%s" % tag
+
+            if greatest_tag < tag_interger:
+                greatest_tag = tag_interger
+                default_release_data['sublime_text'] = ">" + tag
+
+            release_data['url']     = get_tag_download_url( url, tag )
+            release_data['date']    = tag_date
+            release_data['version'] = get_git_tag_version( tag_date, tag )
+
+            tagged_releases.append( release_data )
+
+    return tagged_releases
+
+
+def get_version_number(sublime_version_text):
+    number_match = re.match('.+(\d+)$',  sublime_version_text)
+
+    if number_match:
+        return int( number_match.group( 1 ) )
+
+    return 0
+
+
 def is_compatible_version(release_version, acceptable_version):
+    """
+        Returns True when the `release_version` is compatible with the minimum acceptable version
+        `acceptable_version`.
+    """
 
     if release_version == '*':
         return True
@@ -309,27 +384,27 @@ def is_compatible_version(release_version, acceptable_version):
     min_version = float("-inf")
     max_version = float("inf")
 
-    range_match      = re.match('(\d+) - (\d+)$', release_version)
-    less_than        = re.match('<(\d+)$',        release_version)
-    greater_than     = re.match('>(\d+)$',        release_version)
-    less_or_equal    = re.match('<=(\d+)$',       release_version)
-    greater_or_equal = re.match('>=(\d+)$',       release_version)
+    range_match      = re.match('(\d+)\s*-\s*(\d+)$', release_version)
+    less_than        = re.match('<(\d+)$',  release_version)
+    greater_than     = re.match('>(\d+)$',  release_version)
+    less_or_equal    = re.match('<=(\d+)$', release_version)
+    greater_or_equal = re.match('>=(\d+)$', release_version)
 
     if greater_than:
-        min_version = int(greater_than.group(1)) + 1
+        min_version = int( greater_than.group( 1 ) ) + 1
 
     elif greater_or_equal:
-        min_version = int(greater_or_equal.group(1))
+        min_version = int( greater_or_equal.group( 1 ) )
 
     elif less_than:
-        max_version = int(less_than.group(1)) - 1
+        max_version = int( less_than.group( 1 ) ) - 1
 
     elif less_or_equal:
-        max_version = int(less_or_equal.group(1))
+        max_version = int( less_or_equal.group( 1 ) )
 
     elif range_match:
-        min_version = int(range_match.group(1))
-        max_version = int(range_match.group(2))
+        min_version = int( range_match.group( 1 ) )
+        max_version = int( range_match.group( 2 ) )
 
     else:
         return False
@@ -339,6 +414,14 @@ def is_compatible_version(release_version, acceptable_version):
 
     return True
 
+
+def sort_list_of_dictionaries(list_of_dictionaries):
+    sorted_dictionaries = []
+
+    for dictionary in list_of_dictionaries:
+        sorted_dictionaries.append( sort_dictionary( dictionary ) )
+
+    return sorted_dictionaries
 
 def sort_dictionary(dictionary):
     return OrderedDict( sorted( dictionary.items() ) )
@@ -407,6 +490,10 @@ def get_download_url(url):
     return url.replace("//github.com/", "//codeload.github.com/") + "/zip/master"
 
 
+def get_tag_download_url(url, tag):
+    return url.replace("//github.com/", "//codeload.github.com/") + "/zip/%s" % tag
+
+
 def get_git_date(repository_path, command_line_interface):
     """
         Get timestamp of the last commit in git repository
@@ -419,12 +506,33 @@ def get_git_date(repository_path, command_line_interface):
     return output[0:19]
 
 
+def get_git_tag_date(repository_path, command_line_interface, tag):
+    """
+        Get timestamp of the specified tag in git repository
+        https://gist.github.com/bitrut/1494315
+    """
+    # command = shlex.split( "git log -1 --date=iso" )
+    command = shlex.split( "git log -1 --pretty=format:%ci {}".format( tag ) )
+
+    output = command_line_interface.execute( command, repository_path )
+    return output[0:19]
+
+
 def get_git_version(release_date):
     """
         Get timestamp of the last commit in git repository
         https://gist.github.com/bitrut/1494315
     """
     return release_date.replace("-", ".")[0:10]
+
+
+def get_git_tag_version(tag_date, tag):
+    """
+        Get timestamp of the last commit in git repository
+        https://gist.github.com/bitrut/1494315
+    """
+    tag_date = tag_date.replace("-", ".")[0:10]
+    return tag + "." + tag_date[:4] + tag_date[5:]
 
 
 def write_data_file(file_path, channel_dictionary):
