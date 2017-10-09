@@ -162,9 +162,9 @@ class StartInstallStudioThread(threading.Thread):
                     'Sublime Text Studio %s was successfully installed.' % installation_type )
 
             installer_thread.join()
-            set_default_settings_after(1)
-
             uninstall_package_control()
+
+            set_default_settings_after(1)
             check_installed_packages()
 
         global g_is_already_running
@@ -672,7 +672,7 @@ def set_default_settings_before(git_packages):
         g_user_settings.set( 'ignored_packages', g_default_ignored_packages )
 
         # Save our changes to the user ignored packages list
-        log( 1, "set_default_settings_after, g_user_settings: " + str( g_user_settings.get("ignored_packages") ) )
+        log( 1, "set_default_settings_before, g_user_settings: " + str( g_user_settings.get("ignored_packages") ) )
         sublime.save_settings( USER_SETTINGS_FILE )
 
     sync_package_control_and_manager()
@@ -781,6 +781,8 @@ def uninstall_package_control():
     package_name = "Package Control"
 
     if "PackagesManager" in g_package_control_settings['installed_packages']:
+        g_package_control_settings['installed_packages'].remove( package_name )
+
         package_manager  = PackageManager()
         package_disabler = PackageDisabler()
 
