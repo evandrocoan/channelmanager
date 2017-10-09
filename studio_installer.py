@@ -206,14 +206,14 @@ def install_modules(command_line_interface, git_executable_path):
         clone_sublime_text_studio( command_line_interface, git_executable_path )
         download_not_packages_submodules( command_line_interface, git_executable_path )
 
-        load_ignored_packages(True)
+        load_ignored_packages()
         git_packages = get_development_packages()
 
         log( 2, "install_modules, git_packages: " + str( git_packages ) )
         install_development_packages( git_packages, git_executable_path, command_line_interface )
 
     else:
-        load_ignored_packages(False)
+        load_ignored_packages()
 
         git_modules_file = download_text_file( get_git_modules_url() )
         git_packages     = get_stable_packages( git_modules_file )
@@ -234,7 +234,7 @@ def install_stable_packages(git_packages):
 
         When trying to install several package at once, then here I am installing them one by one.
     """
-    set_default_settings_before( git_packages, False )
+    set_default_settings_before( git_packages )
 
     # Package Control: Advanced Install Package
     # https://github.com/wbond/package_control/issues/1191
@@ -295,7 +295,7 @@ def get_stable_packages( git_modules_file ):
 
 
 def install_development_packages(git_packages, git_executable_path, command_line_interface):
-    set_default_settings_before( git_packages, True )
+    set_default_settings_before( git_packages )
     log( 2, "install_submodules_packages, PACKAGES_TO_NOT_INSTALL: " + str( PACKAGES_TO_NOT_INSTALL ) )
 
     current_index      = 0
@@ -305,21 +305,17 @@ def install_development_packages(git_packages, git_executable_path, command_line
         current_index += 1
         log( 1, "\n\nInstalling %d of %d: %s" % ( current_index, git_packages_count, str( package_name ) ) )
 
-        command = shlex.split( '"%s" clone --recursive "%s" "%s"' % ( git_executable_path, url, path ) )
-        output  = command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY )
+        # # For quick testing
+        # if current_index > 3:
+        #     break
+
+        command = shlex.split( '"%s" clone --recursive "%s" "%s"' % ( git_executable_path, url, path) )
+        output = command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY )
+
+        command = shlex.split( '"%s" checkout master' % ( git_executable_path ) )
+        output += "\n" + command_line_interface.execute( command, cwd=os.path.join( STUDIO_MAIN_DIRECTORY, path ) )
 
         log( 1, "install_development_packages, output: " + str( output ) )
-
-    # check_out_on_master_branch( git_executable_path, command_line_interface )
-
-
-def check_out_on_master_branch(git_executable_path, command_line_interface):
-    log( 1, "\n\nChecking out on their master branches..." )
-
-    main_command      = shlex.split( '"%s" submodule foreach' % ( git_executable_path ) )
-    submodule_command = shlex.split( "'\"%s\" checkout master'" % ( git_executable_path ) )
-
-    output  = command_line_interface.execute( main_command + submodule_command, cwd=STUDIO_MAIN_DIRECTORY, live_output=True )
 
 
 def get_development_packages():
@@ -459,22 +455,18 @@ def clone_sublime_text_studio(command_line_interface, git_executable_path):
         Clone the main repository `https://github.com/evandrocoan/SublimeTextStudio`
         and install it on the Sublime Text Data folder.
     """
-    main_git_folder = os.path.join( STUDIO_MAIN_DIRECTORY, ".git" )
-
-    if os.path.exists( main_git_folder ):
-        raise ValueError("The folder '%s' already exists. You already has some custom studio git installation." % main_git_folder)
-
-    download_main_repository( command_line_interface, git_executable_path )
+    main_git_folder         = os.path.join( STUDIO_MAIN_DIRECTORY, ".git" )
     studio_temporary_folder = os.path.join( STUDIO_MAIN_DIRECTORY, TEMPORARY_FOLDER_TO_USE )
 
-    studio_temporary_packages_folder = os.path.join( studio_temporary_folder, "Packages" )
-    shutil.rmtree( studio_temporary_packages_folder )
+    if not os.path.exists( main_git_folder ):
+        log( 1, "The folder '%s' already exists. You already has some custom studio git installation." % main_git_folder)
+        download_main_repository( command_line_interface, git_executable_path, studio_temporary_folder )
 
-    global g_folders_to_uninstall
-    g_folders_to_uninstall = get_immediate_subdirectories( studio_temporary_folder )
+        global g_folders_to_uninstall
+        g_folders_to_uninstall = get_immediate_subdirectories( studio_temporary_folder )
 
-    copy_overrides( studio_temporary_folder, STUDIO_MAIN_DIRECTORY )
-    shutil.rmtree( studio_temporary_folder, onerror=delete_read_only_file )
+        copy_overrides( studio_temporary_folder, STUDIO_MAIN_DIRECTORY )
+        shutil.rmtree( studio_temporary_folder, onerror=delete_read_only_file )
 
 
 def delete_read_only_file(action, name, exc):
@@ -546,22 +538,23 @@ def fix_absolute_windows_path(path):
     return relative_path
 
 
-def download_main_repository(command_line_interface, git_executable_path):
+def download_main_repository(command_line_interface, git_executable_path, studio_temporary_folder):
     log( 1, "download_main_repository, \n\nInstalling: %s" % ( str( STUDIO_MAIN_URL ) ) )
-    temporary_studio_folder = os.path.join( STUDIO_MAIN_DIRECTORY, TEMPORARY_FOLDER_TO_USE )
 
-    if os.path.isdir( temporary_studio_folder ):
-        shutil.rmtree( temporary_studio_folder )
+    if os.path.isdir( studio_temporary_folder ):
+        shutil.rmtree( studio_temporary_folder )
 
     command = shlex.split( '"%s" clone "%s" "%s"' % ( git_executable_path, STUDIO_MAIN_URL, TEMPORARY_FOLDER_TO_USE ) )
     output  = command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY )
 
     log( 1, "download_main_repository, output: " + str( output ) )
+    studio_temporary_packages_folder = os.path.join( studio_temporary_folder, "Packages" )
+
+    shutil.rmtree( studio_temporary_packages_folder )
 
 
 def download_not_packages_submodules(command_line_interface, git_executable_path):
     log( 1, "download_not_packages_submodules" )
-    temporary_studio_folder = os.path.join( STUDIO_MAIN_DIRECTORY, TEMPORARY_FOLDER_TO_USE )
 
     gitFilePath    = os.path.join( STUDIO_MAIN_DIRECTORY, '.gitmodules' )
     gitModulesFile = configparser.RawConfigParser()
