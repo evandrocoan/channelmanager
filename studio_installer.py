@@ -646,13 +646,19 @@ def set_default_settings_before(git_packages):
         already disabled and the new packages to be installed and must be disabled before attempting
         to install them.
     """
+    packages = {}
 
     # Ignore everything except some packages, until it is finished
     for package in git_packages:
 
         if package[0] in PACKAGES_TO_INSTALL_LAST:
+            packages[package[0]] = package
             git_packages.remove( package )
-            git_packages.append( package )
+
+    for package in PACKAGES_TO_INSTALL_LAST:
+
+        if package in packages:
+            git_packages.append( packages[package] )
 
     if IS_DEVELOPMENT_INSTALL:
         global g_default_ignored_packages
