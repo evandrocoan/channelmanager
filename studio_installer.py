@@ -294,67 +294,6 @@ def get_stable_packages( git_modules_file ):
     return packages
 
 
-def install_development_packages(git_packages, git_executable_path, command_line_interface):
-    set_default_settings_before( git_packages )
-    log( 2, "install_submodules_packages, PACKAGES_TO_NOT_INSTALL: " + str( PACKAGES_TO_NOT_INSTALL ) )
-
-    current_index      = 0
-    git_packages_count = len( git_packages )
-
-    for package_name, url, path in git_packages:
-        current_index += 1
-        log( 1, "\n\nInstalling %d of %d: %s" % ( current_index, git_packages_count, str( package_name ) ) )
-
-        # # For quick testing
-        # if current_index > 3:
-        #     break
-
-        command = shlex.split( '"%s" clone --recursive "%s" "%s"' % ( git_executable_path, url, path) )
-        output = command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY )
-
-        command = shlex.split( '"%s" checkout master' % ( git_executable_path ) )
-        output += "\n" + command_line_interface.execute( command, cwd=os.path.join( STUDIO_MAIN_DIRECTORY, path ) )
-
-        log( 1, "install_development_packages, output: " + str( output ) )
-
-
-def get_development_packages():
-    gitFilePath    = os.path.join( STUDIO_MAIN_DIRECTORY, '.gitmodules' )
-    gitModulesFile = configparser.RawConfigParser()
-
-    index = 0
-    installed_packages = get_installed_packages()
-
-    packages_to_ignore = unique_list_join( PACKAGES_TO_NOT_INSTALL, installed_packages )
-    log( 2, "get_development_packages, packages_to_ignore: " + str( packages_to_ignore ) )
-
-    packages = []
-    gitModulesFile.read( gitFilePath )
-
-    for section in gitModulesFile.sections():
-        url  = gitModulesFile.get( section, "url" )
-        path = gitModulesFile.get( section, "path" )
-
-        # # For quick testing
-        # index += 1
-        # if index > 3:
-        #     break
-
-        if 'Packages' == path[0:8]:
-            package_name            = os.path.basename( path )
-            submodule_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, path )
-
-            if not os.path.isdir( submodule_absolute_path ) \
-                    and package_name not in packages_to_ignore :
-
-                packages.append( ( package_name, url, path ) )
-                g_packages_to_uninstall.append( package_name )
-
-                log( 2, "get_development_packages, path: " + path )
-
-    return packages
-
-
 def load_ignored_packages():
     global g_user_settings
     global g_studio_settings
@@ -592,6 +531,67 @@ def download_not_packages_submodules(command_line_interface, git_executable_path
 
                 g_folders_to_uninstall.append( path )
                 log( 1, "download_not_packages_submodules, output: " + str( output ) )
+
+
+def install_development_packages(git_packages, git_executable_path, command_line_interface):
+    set_default_settings_before( git_packages )
+    log( 2, "install_submodules_packages, PACKAGES_TO_NOT_INSTALL: " + str( PACKAGES_TO_NOT_INSTALL ) )
+
+    current_index      = 0
+    git_packages_count = len( git_packages )
+
+    for package_name, url, path in git_packages:
+        current_index += 1
+        log( 1, "\n\nInstalling %d of %d: %s" % ( current_index, git_packages_count, str( package_name ) ) )
+
+        # # For quick testing
+        # if current_index > 3:
+        #     break
+
+        command = shlex.split( '"%s" clone --recursive "%s" "%s"' % ( git_executable_path, url, path) )
+        output = command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY )
+
+        command = shlex.split( '"%s" checkout master' % ( git_executable_path ) )
+        output += "\n" + command_line_interface.execute( command, cwd=os.path.join( STUDIO_MAIN_DIRECTORY, path ) )
+
+        log( 1, "install_development_packages, output: " + str( output ) )
+
+
+def get_development_packages():
+    gitFilePath    = os.path.join( STUDIO_MAIN_DIRECTORY, '.gitmodules' )
+    gitModulesFile = configparser.RawConfigParser()
+
+    index = 0
+    installed_packages = get_installed_packages()
+
+    packages_to_ignore = unique_list_join( PACKAGES_TO_NOT_INSTALL, installed_packages )
+    log( 2, "get_development_packages, packages_to_ignore: " + str( packages_to_ignore ) )
+
+    packages = []
+    gitModulesFile.read( gitFilePath )
+
+    for section in gitModulesFile.sections():
+        url  = gitModulesFile.get( section, "url" )
+        path = gitModulesFile.get( section, "path" )
+
+        # # For quick testing
+        # index += 1
+        # if index > 3:
+        #     break
+
+        if 'Packages' == path[0:8]:
+            package_name            = os.path.basename( path )
+            submodule_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, path )
+
+            if not os.path.isdir( submodule_absolute_path ) \
+                    and package_name not in packages_to_ignore :
+
+                packages.append( ( package_name, url, path ) )
+                g_packages_to_uninstall.append( package_name )
+
+                log( 2, "get_development_packages, path: " + path )
+
+    return packages
 
 
 def set_default_settings_before(git_packages):
