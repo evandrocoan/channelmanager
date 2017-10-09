@@ -91,6 +91,7 @@ g_is_already_running   = False
 
 # print_python_envinronment()
 from .settings import *
+from .studio_utilities import get_main_directory
 
 STUDIO_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, "last_session.studio-channel" )
 FIND_FORKS_PATH     = os.path.join( CURRENT_DIRECTORY, "find_forks" )
@@ -118,7 +119,7 @@ def main(command=None):
     global STUDIO_MAIN_DIRECTORY
 
     argumentsNamespace    = None
-    STUDIO_MAIN_DIRECTORY = get_main_directory()
+    STUDIO_MAIN_DIRECTORY = get_main_directory( CURRENT_DIRECTORY )
 
     # https://stackoverflow.com/questions/6382804/how-to-use-getopt-optarg-in-python-how-to-shift
     if not command:
@@ -182,21 +183,6 @@ def is_allowed_to_run():
 
     g_is_already_running = True
     return True
-
-
-def get_main_directory():
-    possible_main_directory = os.path.normpath( os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) ) )
-
-    if sublime:
-        sublime_text_packages = os.path.normpath( os.path.dirname( sublime.packages_path() ) )
-
-        if possible_main_directory == sublime_text_packages:
-            return possible_main_directory
-
-        else:
-            return sublime_text_packages
-
-    return possible_main_directory
 
 
 #

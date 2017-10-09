@@ -47,10 +47,10 @@ g_is_already_running = False
 from .studio_installer import get_installed_packages
 from .studio_installer import unique_list_join
 
-from .channel_manager import load_data_file
-from .channel_manager import write_data_file
-from .channel_manager import string_convert_list
-from .submodules_manager import get_main_directory
+from .studio_utilities import load_data_file
+from .studio_utilities import write_data_file
+from .studio_utilities import string_convert_list
+from .studio_utilities import get_main_directory
 
 from PackagesManager.packagesmanager import cmd
 from PackagesManager.packagesmanager.download_manager import downloader
@@ -235,7 +235,8 @@ if __name__ == "__main__":
 
 def plugin_loaded():
     global STUDIO_INSTALLATION_SETTINGS
-    STUDIO_INSTALLATION_SETTINGS = os.path.join( get_main_directory(), "Packages", "User", CURRENT_PACKAGE_NAME + ".sublime-settings" )
+    STUDIO_INSTALLATION_SETTINGS = os.path.join( get_main_directory( CURRENT_DIRECTORY ),
+            "Packages", "User", CURRENT_PACKAGE_NAME + ".sublime-settings" )
 
     # main()
     check_uninstalled_packages()

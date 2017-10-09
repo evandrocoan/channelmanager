@@ -63,16 +63,15 @@ def assert_path(module):
 from .settings import *
 g_is_already_running = False
 
-from .channel_manager import write_data_file
-from .channel_manager import string_convert_list
-from .submodules_manager import get_main_directory
+from .studio_utilities import write_data_file
+from .studio_utilities import string_convert_list
 
-from PackagesManager.packagesmanager import cmd
-from PackagesManager.packagesmanager.download_manager import downloader
+from package_control import cmd
+from package_control.download_manager import downloader
 
-from PackagesManager.packagesmanager.package_manager import PackageManager
-from PackagesManager.packagesmanager.thread_progress import ThreadProgress
-from PackagesManager.packagesmanager.commands.advanced_install_package_command import AdvancedInstallPackageThread
+from package_control.package_manager import PackageManager
+from package_control.thread_progress import ThreadProgress
+from package_control.commands.advanced_install_package_command import AdvancedInstallPackageThread
 
 
 # Import the debugger

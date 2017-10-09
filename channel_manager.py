@@ -52,6 +52,11 @@ except:
 from .settings import *
 g_is_already_running = False
 
+from .studio_utilities import write_data_file
+from .studio_utilities import string_convert_list
+from .studio_utilities import load_data_file
+from .studio_utilities import print_data_file
+
 from PackagesManager.packagesmanager.package_manager import PackageManager
 from PackagesManager.packagesmanager.providers.channel_provider import ChannelProvider
 
@@ -443,14 +448,6 @@ def sort_list_of_dictionary(list_of_dictionaries):
     return sorted( sorted_list, key=lambda k: k['name'].lower() )
 
 
-def string_convert_list( comma_separated_list ):
-
-    if comma_separated_list:
-        return [ dependency.strip() for dependency in comma_separated_list.split(',') ]
-
-    return []
-
-
 def ensure_author_name(user_forker, upstream, repository_info):
 
     if 'authors' not in repository_info:
@@ -533,27 +530,6 @@ def get_git_tag_version(tag_date, tag):
     """
     tag_date = tag_date.replace("-", ".")[0:10]
     return tag + "." + tag_date[:4] + tag_date[5:]
-
-
-def write_data_file(file_path, channel_dictionary):
-    log( 1, "Writing to the data file: " + file_path )
-
-    with open(file_path, 'w', encoding='utf-8') as output_file:
-        json.dump( channel_dictionary, output_file, indent=4 )
-
-
-def load_data_file(file_path):
-    channel_dictionary = {}
-
-    with open( file_path, 'r', encoding='utf-8' ) as studio_channel_data:
-        channel_dictionary = json.load( studio_channel_data)
-
-    return channel_dictionary
-
-
-def print_data_file(file_path):
-    channel_dictionary = load_data_file( file_path )
-    log( 1, "channel_dictionary: " + json.dumps( channel_dictionary, indent=4, sort_keys=True ) )
 
 
 def print_some_repositories(all_packages):
