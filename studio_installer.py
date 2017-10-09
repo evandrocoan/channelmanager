@@ -144,7 +144,7 @@ class StartInstallStudioThread(threading.Thread):
             unpack_settings(self.channel_settings)
 
             installer_thread  = InstallStudioFilesThread()
-            installation_type = self.channel_settings['installation_type']
+            installation_type = self.channel_settings['INSTALLATION_TYPE']
 
             installer_thread.start()
             ThreadProgress( installer_thread, 'Installing Sublime Text Studio %s Packages' % installation_type,
