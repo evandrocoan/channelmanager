@@ -202,9 +202,9 @@ def load_installation_settings_file():
     g_studioSettings = load_data_file( STUDIO_INSTALLATION_SETTINGS )
 
     g_packages_to_uninstall = load_list_if_exists( g_studioSettings, 'packages_to_uninstall', [] )
-    g_files_to_uninstall    = load_list_if_exists( g_studioSettings, 'packages_to_unignore', [] )
-    g_folders_to_uninstall  = load_list_if_exists( g_studioSettings, 'files_to_uninstall', [] )
-    g_packages_to_unignore  = load_list_if_exists( g_studioSettings, 'folders_to_uninstall', [] )
+    g_packages_to_unignore  = load_list_if_exists( g_studioSettings, 'packages_to_unignore', [] )
+    g_files_to_uninstall    = load_list_if_exists( g_studioSettings, 'files_to_uninstall', [] )
+    g_folders_to_uninstall  = load_list_if_exists( g_studioSettings, 'folders_to_uninstall', [] )
 
 
 def load_list_if_exists(dictionary_to_search, item_to_load, default_value):
@@ -427,6 +427,11 @@ def clone_sublime_text_studio(command_line_interface, git_executable_path):
         download_main_repository( command_line_interface, git_executable_path, studio_temporary_folder )
 
         copy_overrides( studio_temporary_folder, STUDIO_MAIN_DIRECTORY )
+        folders_copied = get_immediate_subdirectories( studio_temporary_folder )
+
+        for folder in folders_copied:
+            add_item_if_not_exists( g_folders_to_uninstall, folder )
+
         shutil.rmtree( studio_temporary_folder, onerror=delete_read_only_file )
 
         # Progressively saves the installation data, in case the user closes Sublime Text
@@ -485,13 +490,14 @@ def copy_overrides(root_source_folder, root_destine_folder, move_files=False):
 
             # Python: Get relative path from comparing two absolute paths
             # https://stackoverflow.com/questions/7287996/python-get-relative-path-from-comparing-two-absolute-paths
-            relative_path = fix_absolute_windows_path(destine_file)
-
-            add_item_if_not_exists( g_files_to_uninstall, relative_path )
+            relative_path = convert_absolute_path_to_relative(destine_file)
             copy_file()
 
+            if not relative_path.startswith( ".git" ):
+                add_item_if_not_exists( g_files_to_uninstall, relative_path )
 
-def fix_absolute_windows_path(path):
+
+def convert_absolute_path_to_relative(path):
     relative_path = os.path.commonprefix( [ STUDIO_MAIN_DIRECTORY, path ] )
     relative_path = os.path.normpath( path.replace( relative_path, "" ) )
     relative_path = relative_path.replace( "\\", "/" )
