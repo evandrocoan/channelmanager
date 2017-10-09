@@ -91,8 +91,12 @@ def unpack_settings(channel_settings):
     global STUDIO_INSTALLATION_SETTINGS
     global PACKAGES_TO_UNINSTALL_FIRST
 
+    global STUDIO_MAIN_DIRECTORY
+
     STUDIO_INSTALLATION_SETTINGS = channel_settings['STUDIO_INSTALLATION_SETTINGS']
     PACKAGES_TO_UNINSTALL_FIRST  = reversed( channel_settings['PACKAGES_TO_INSTALL_LAST'] )
+
+    STUDIO_MAIN_DIRECTORY = channel_settings['STUDIO_MAIN_DIRECTORY']
 
 
 class StartUninstallStudioThread(threading.Thread):
