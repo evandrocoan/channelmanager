@@ -156,7 +156,7 @@ class StartInstallStudioThread(threading.Thread):
 
             installer_thread.join()
 
-            set_default_settings_after()
+            set_default_settings_after(1)
             check_installed_packages()
 
         global g_is_already_running
@@ -181,22 +181,42 @@ class InstallStudioFilesThread(threading.Thread):
 
     def run(self):
         log( 2, "Entering on run(1)" )
-
-        global g_packages_to_uninstall
-        global g_files_to_uninstall
-        global g_folders_to_uninstall
-        global g_packages_to_unignore
-
-        g_packages_to_uninstall = []
-        g_files_to_uninstall    = []
-        g_folders_to_uninstall  = []
-        g_packages_to_unignore  = []
+        load_installation_settings_file()
 
         command_line_interface = cmd.Cli( None, True )
         git_executable_path    = command_line_interface.find_binary( "git.exe" if os.name == 'nt' else "git" )
 
         log( 2, "run, git_executable_path: " + str( git_executable_path ) )
         install_modules( command_line_interface, git_executable_path)
+
+
+def load_installation_settings_file():
+    global g_packages_to_uninstall
+    global g_files_to_uninstall
+    global g_folders_to_uninstall
+    global g_packages_to_unignore
+
+    global g_studioSettings
+    g_studioSettings = load_data_file( STUDIO_INSTALLATION_SETTINGS )
+
+    g_packages_to_uninstall = load_list_if_exists( g_studioSettings, 'packages_to_uninstall', [] )
+    g_files_to_uninstall    = load_list_if_exists( g_studioSettings, 'packages_to_unignore', [] )
+    g_folders_to_uninstall  = load_list_if_exists( g_studioSettings, 'files_to_uninstall', [] )
+    g_packages_to_unignore  = load_list_if_exists( g_studioSettings, 'folders_to_uninstall', [] )
+
+
+def load_list_if_exists(dictionary_to_search, item_to_load, default_value):
+
+    if item_to_load in dictionary_to_search:
+        return dictionary_to_search[item_to_load]
+
+    return default_value
+
+
+def add_item_if_not_exists(list_to_append, item):
+
+    if item not in list_to_append:
+        list_to_append.append( item )
 
 
 def install_modules(command_line_interface, git_executable_path):
@@ -253,6 +273,10 @@ def install_stable_packages(git_packages):
         log( 1, "\n\nInstalling %d of %d: %s (%s)" % ( current_index, git_packages_count, str( package_name ), str( is_dependency ) ) )
 
         package_manager.install_package( package_name, is_dependency )
+        add_item_if_not_exists( g_packages_to_uninstall, package_name )
+
+        # Progressively saves the installation data, in case the user closes Sublime Text
+        set_default_settings_after()
 
 
 def get_stable_packages( git_modules_file ):
@@ -403,6 +427,9 @@ def clone_sublime_text_studio(command_line_interface, git_executable_path):
         copy_overrides( studio_temporary_folder, STUDIO_MAIN_DIRECTORY )
         shutil.rmtree( studio_temporary_folder, onerror=delete_read_only_file )
 
+        # Progressively saves the installation data, in case the user closes Sublime Text
+        set_default_settings_after()
+
 
 def delete_read_only_file(action, name, exc):
     """
@@ -458,7 +485,7 @@ def copy_overrides(root_source_folder, root_destine_folder, move_files=False):
             # https://stackoverflow.com/questions/7287996/python-get-relative-path-from-comparing-two-absolute-paths
             relative_path = fix_absolute_windows_path(destine_file)
 
-            g_files_to_uninstall.append( relative_path )
+            add_item_if_not_exists( g_files_to_uninstall, relative_path )
             copy_file()
 
 
@@ -525,8 +552,11 @@ def download_not_packages_submodules(command_line_interface, git_executable_path
                 command = shlex.split( '"%s" clone "%s" "%s"' % ( git_executable_path, url, path ) )
                 output  = command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY )
 
-                g_folders_to_uninstall.append( path )
+                add_item_if_not_exists( g_folders_to_uninstall, path )
                 log( 1, "download_not_packages_submodules, output: " + str( output ) )
+
+                # Progressively saves the installation data, in case the user closes Sublime Text
+                set_default_settings_after()
 
 
 def install_development_packages(git_packages, git_executable_path, command_line_interface):
@@ -550,8 +580,11 @@ def install_development_packages(git_packages, git_executable_path, command_line
         command = shlex.split( '"%s" checkout master' % ( git_executable_path ) )
         output += "\n" + command_line_interface.execute( command, cwd=os.path.join( STUDIO_MAIN_DIRECTORY, path ) )
 
-        g_packages_to_uninstall.append( package_name )
+        add_item_if_not_exists( g_packages_to_uninstall, package_name )
         log( 1, "install_development_packages, output: " + str( output ) )
+
+        # Progressively saves the installation data, in case the user closes Sublime Text
+        set_default_settings_after()
 
 
 def get_development_packages():
@@ -584,8 +617,6 @@ def get_development_packages():
                     and package_name not in packages_to_ignore :
 
                 packages.append( ( package_name, url, path ) )
-                g_packages_to_uninstall.append( package_name )
-
                 log( 2, "get_development_packages, path: " + path )
 
     return packages
@@ -601,8 +632,6 @@ def set_default_settings_before(git_packages):
         already disabled and the new packages to be installed and must be disabled before attempting
         to install them.
     """
-    global g_packages_to_unignore
-    g_packages_to_unignore = []
 
     # Ignore everything except some packages, until it is finished
     for package in git_packages:
@@ -618,7 +647,7 @@ def set_default_settings_before(git_packages):
 
             if package not in g_default_ignored_packages:
                 g_default_ignored_packages.append( package )
-                g_packages_to_unignore.append( package )
+                add_item_if_not_exists( g_packages_to_unignore, package )
 
         g_user_settings.set( 'ignored_packages', g_default_ignored_packages )
 
@@ -627,27 +656,27 @@ def set_default_settings_before(git_packages):
         sublime.save_settings( USER_SETTINGS_FILE )
 
 
-def set_default_settings_after():
+def set_default_settings_after(print_settings=0):
     """
         Populate the global variable `g_default_ignored_packages` with the packages this installation
         process added to the user's settings files and also save it to the file system. So later
         when uninstalling this studio we can only remove our packages, keeping the user's original
         ignored packages intact.
     """
-    studioSettings = {}
+    global g_studioSettings
 
     if 'Default' in g_packages_to_uninstall:
-        studioSettings['default_packages_files'] = DEFAULT_PACKAGES_FILES
+        g_studioSettings['default_packages_files'] = DEFAULT_PACKAGES_FILES
 
     # `packages_to_uninstall` and `packages_to_unignore` are to uninstall and unignore they when
     # uninstalling the studio channel
-    studioSettings['packages_to_uninstall'] = g_packages_to_uninstall
-    studioSettings['packages_to_unignore']  = g_packages_to_unignore
-    studioSettings['files_to_uninstall']    = g_files_to_uninstall
-    studioSettings['folders_to_uninstall']  = g_folders_to_uninstall
+    g_studioSettings['packages_to_uninstall'] = g_packages_to_uninstall
+    g_studioSettings['packages_to_unignore']  = g_packages_to_unignore
+    g_studioSettings['files_to_uninstall']    = g_files_to_uninstall
+    g_studioSettings['folders_to_uninstall']  = g_folders_to_uninstall
 
-    log( 1, "set_default_settings_after, studioSettings: " + json.dumps( studioSettings, indent=4 ) )
-    write_data_file( STUDIO_INSTALLATION_SETTINGS, studioSettings )
+    log( 1 & print_settings, "set_default_settings_after, g_studioSettings: " + json.dumps( g_studioSettings, indent=4 ) )
+    write_data_file( STUDIO_INSTALLATION_SETTINGS, g_studioSettings )
 
 
 def check_installed_packages():
