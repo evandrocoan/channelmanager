@@ -66,6 +66,8 @@ g_is_already_running = False
 from .studio_utilities import write_data_file
 from .studio_utilities import string_convert_list
 
+from collections import OrderedDict
+
 from package_control import cmd
 from package_control.download_manager import downloader
 
@@ -675,8 +677,14 @@ def set_default_settings_after(print_settings=0):
     g_studioSettings['files_to_uninstall']    = g_files_to_uninstall
     g_studioSettings['folders_to_uninstall']  = g_folders_to_uninstall
 
+    g_studioSettings = sort_dictionary( g_studioSettings )
+
     log( 1 & print_settings, "set_default_settings_after, g_studioSettings: " + json.dumps( g_studioSettings, indent=4 ) )
     write_data_file( STUDIO_INSTALLATION_SETTINGS, g_studioSettings )
+
+
+def sort_dictionary(dictionary):
+    return OrderedDict( sorted( dictionary.items() ) )
 
 
 def check_installed_packages():
