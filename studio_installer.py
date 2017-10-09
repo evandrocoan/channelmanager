@@ -108,15 +108,18 @@ def unpack_settings(channel_settings):
     global PACKAGES_TO_NOT_INSTALL
     global PACKAGES_TO_INSTALL_LAST
 
+    global STUDIO_MAIN_URL
     global STUDIO_SETTINGS_URL
     global STUDIO_SETTINGS_PATH
 
+    global STUDIO_MAIN_DIRECTORY
     global IS_DEVELOPMENT_INSTALL
     global STUDIO_INSTALLATION_SETTINGS
 
     IS_DEVELOPMENT_INSTALL       = True if channel_settings['INSTALLATION_TYPE'] == "development" else False
     STUDIO_INSTALLATION_SETTINGS = channel_settings['STUDIO_INSTALLATION_SETTINGS']
 
+    STUDIO_MAIN_URL      = channel_settings['STUDIO_MAIN_URL']
     STUDIO_SETTINGS_URL  = channel_settings['STUDIO_SETTINGS_URL']
     STUDIO_SETTINGS_PATH = channel_settings['STUDIO_SETTINGS_PATH']
 
@@ -124,6 +127,7 @@ def unpack_settings(channel_settings):
     DEFAULT_PACKAGES_FILES  = channel_settings['DEFAULT_PACKAGES_FILES']
     TEMPORARY_FOLDER_TO_USE = channel_settings['TEMPORARY_FOLDER_TO_USE']
 
+    STUDIO_MAIN_DIRECTORY    = channel_settings['STUDIO_MAIN_DIRECTORY']
     PACKAGES_TO_NOT_INSTALL  = channel_settings['PACKAGES_TO_NOT_INSTALL']
     PACKAGES_TO_INSTALL_LAST = channel_settings['PACKAGES_TO_INSTALL_LAST']
 
