@@ -289,7 +289,6 @@ def get_stable_packages( git_modules_file ):
                     and package_name not in packages_to_ignore:
 
                 packages.append( ( package_name, is_dependency( gitModulesFile, section ) ) )
-                g_packages_to_uninstall.append( package_name )
 
     return packages
 
@@ -400,9 +399,6 @@ def clone_sublime_text_studio(command_line_interface, git_executable_path):
     if not os.path.exists( main_git_folder ):
         log( 1, "The folder '%s' already exists. You already has some custom studio git installation." % main_git_folder)
         download_main_repository( command_line_interface, git_executable_path, studio_temporary_folder )
-
-        global g_folders_to_uninstall
-        g_folders_to_uninstall = get_immediate_subdirectories( studio_temporary_folder )
 
         copy_overrides( studio_temporary_folder, STUDIO_MAIN_DIRECTORY )
         shutil.rmtree( studio_temporary_folder, onerror=delete_read_only_file )
@@ -554,6 +550,7 @@ def install_development_packages(git_packages, git_executable_path, command_line
         command = shlex.split( '"%s" checkout master' % ( git_executable_path ) )
         output += "\n" + command_line_interface.execute( command, cwd=os.path.join( STUDIO_MAIN_DIRECTORY, path ) )
 
+        g_packages_to_uninstall.append( package_name )
         log( 1, "install_development_packages, output: " + str( output ) )
 
 
