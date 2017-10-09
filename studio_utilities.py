@@ -30,6 +30,13 @@ import json
 import sublime
 
 
+# Import the debugger
+from debug_tools import Debugger
+
+# Debugger settings: 0 - disabled, 127 - enabled
+log = Debugger( 127, os.path.basename( __file__ ) )
+
+
 def write_data_file(file_path, channel_dictionary):
     log( 1, "Writing to the data file: " + file_path )
 
