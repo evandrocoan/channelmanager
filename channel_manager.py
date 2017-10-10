@@ -57,11 +57,17 @@ from .studio_utilities import string_convert_list
 from .studio_utilities import load_data_file
 from .studio_utilities import print_data_file
 
-from PackagesManager.packagesmanager.package_manager import PackageManager
-from PackagesManager.packagesmanager.providers.channel_provider import ChannelProvider
+# When there is an ImportError, means that Package Control is installed instead of PackagesManager,
+# or vice-versa. Which means we cannot do nothing as this is only compatible with PackagesManager.
+try:
+    from PackagesManager.packagesmanager.package_manager import PackageManager
+    from PackagesManager.packagesmanager.providers.channel_provider import ChannelProvider
 
-from PackagesManager.packagesmanager import cmd
-from PackagesManager.packagesmanager.thread_progress import ThreadProgress
+    from PackagesManager.packagesmanager import cmd
+    from PackagesManager.packagesmanager.thread_progress import ThreadProgress
+
+except ImportError:
+    pass
 
 # Import the debugger
 from debug_tools import Debugger

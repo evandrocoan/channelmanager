@@ -64,19 +64,28 @@ from .settings import *
 g_is_already_running = False
 
 from .studio_utilities import write_data_file
+from .studio_utilities import get_dictionary_key
 from .studio_utilities import string_convert_list
+from .studio_utilities import add_item_if_not_exists
 
 from collections import OrderedDict
 
-from package_control import cmd
-from package_control.download_manager import downloader
 
-from package_control.package_manager import PackageManager
-from package_control.package_disabler import PackageDisabler
-from package_control.commands.remove_package_command import RemovePackageThread
+# When there is an ImportError, means that Package Control is installed instead of PackagesManager,
+# or vice-versa. Which means we cannot do nothing as this is only compatible with PackagesManager.
+try:
+    from package_control import cmd
+    from package_control.download_manager import downloader
 
-from package_control.thread_progress import ThreadProgress
-from package_control.commands.advanced_install_package_command import AdvancedInstallPackageThread
+    from package_control.package_manager import PackageManager
+    from package_control.package_disabler import PackageDisabler
+    from package_control.commands.remove_package_command import RemovePackageThread
+
+    from package_control.thread_progress import ThreadProgress
+    from package_control.commands.advanced_install_package_command import AdvancedInstallPackageThread
+
+except ImportError:
+    pass
 
 
 # Import the debugger
@@ -221,12 +230,6 @@ def load_list_if_exists(dictionary_to_search, item_to_load, default_value):
     return default_value
 
 
-def add_item_if_not_exists(list_to_append, item):
-
-    if item not in list_to_append:
-        list_to_append.append( item )
-
-
 def install_modules(command_line_interface, git_executable_path):
     log( 2, "install_modules_, PACKAGES_TO_NOT_INSTALL: " + str( PACKAGES_TO_NOT_INSTALL ) )
 
@@ -279,9 +282,9 @@ def install_stable_packages(git_packages):
     for package_name, is_dependency in git_packages:
         current_index += 1
 
-        # # For quick testing
-        # if current_index > 3:
-        #     break
+        # For quick testing
+        if current_index > 3:
+            break
 
         log( 1, "\n\nInstalling %d of %d: %s (%s)" % ( current_index, git_packages_count, str( package_name ), str( is_dependency ) ) )
 
@@ -398,14 +401,6 @@ def download_text_file( git_modules_url ):
         downloaded_contents = manager.fetch( git_modules_url, 'Error downloading git_modules_url: ' + git_modules_url )
 
     return downloaded_contents.decode('utf-8')
-
-
-def get_dictionary_key(dictionary, key, default=None):
-
-    if key in dictionary:
-        default = dictionary[key]
-
-    return default
 
 
 def load_data_file(file_path):
@@ -778,19 +773,27 @@ def uninstall_package_control():
         Uninstals package control only if PackagesManager was installed, otherwise the user will end
         up with no package manager.
     """
-    package_name = "Package Control"
 
     if "PackagesManager" in g_package_control_settings['installed_packages']:
-        g_package_control_settings['installed_packages'].remove( package_name )
 
-        package_manager  = PackageManager()
-        package_disabler = PackageDisabler()
+        packages = [ "Package Control", "0_package_control_loader" ]
+        g_package_control_settings['installed_packages'].remove( packages[0] )
 
-        package_disabler.disable_packages( package_name, "remove" )
-        thread = RemovePackageThread( package_manager, package_name )
+        for package_name in packages:
 
-        thread.start()
-        thread.join()
+            package_manager  = PackageManager()
+            package_disabler = PackageDisabler()
+
+            package_disabler.disable_packages( package_name, "remove" )
+            thread = RemovePackageThread( package_manager, package_name )
+
+            thread.start()
+            thread.join()
+
+        package_control_name = "Packages Control.sublime-settings"
+        package_control      = os.path.join( USER_FOLDER_PATH, package_control_name )
+
+        os.remove( package_control )
 
 
 def check_installed_packages():

@@ -97,7 +97,14 @@ STUDIO_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, "last_session.studio-chan
 FIND_FORKS_PATH     = os.path.join( CURRENT_DIRECTORY, "find_forks" )
 
 
-from PackagesManager.packagesmanager import cmd
+# When there is an ImportError, means that Package Control is installed instead of PackagesManager.
+# Which means we cannot do nothing as this is only compatible with PackagesManager.
+try:
+    from PackagesManager.packagesmanager import cmd
+
+except ImportError:
+    pass
+
 
 # Import the debugger
 from debug_tools import Debugger

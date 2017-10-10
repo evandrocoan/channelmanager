@@ -54,8 +54,8 @@ from .studio_utilities import get_main_directory
 from .studio_utilities import get_dictionary_key
 from .studio_utilities import remove_if_exists
 
-# When there is an ImportError, means that Package Control is installed instead of PackagesManager.
-# Which means we cannot do nothing as this is only compatible with PackagesManager.
+# When there is an ImportError, means that Package Control is installed instead of PackagesManager,
+# or vice-versa. Which means we cannot do nothing as this is only compatible with PackagesManager.
 try:
     from PackagesManager.packagesmanager import cmd
     from PackagesManager.packagesmanager.download_manager import downloader
