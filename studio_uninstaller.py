@@ -256,7 +256,7 @@ def uninstall_packagesmanger():
         Uninstals PackagesManager only if Control was installed, otherwise the user will end up with
         no package manager.
     """
-    packages = [ ("PackagesManager", False), ("0_packagesmanager_loader", True) ]
+    packages = [ ("PackagesManager", False), ("0_packagesmanager_loader", None) ]
 
     package_manager  = PackageManager()
     package_disabler = PackageDisabler()
@@ -278,7 +278,14 @@ def uninstall_packagesmanger():
 
 
 def get_packages_to_uninstall():
-    packages = unique_list_join( PACKAGES_TO_UNINSTALL_FIRST, g_channel_manager_settings['packages_to_uninstall'] )
+    packages              = []
+    packages_to_uninstall = g_channel_manager_settings['packages_to_uninstall']
+
+    # Only merges the packages which are actually being uninstalled
+    for package in PACKAGES_TO_UNINSTALL_FIRST:
+
+        if package in packages_to_uninstall:
+            packages.append( package )
 
     # Ignore everything except some packages, until it is finished
     for package in PACKAGES_TO_UNINSTALL_LAST:
