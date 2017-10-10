@@ -81,3 +81,24 @@ def print_data_file(file_path):
     log( 1, "channel_dictionary: " + json.dumps( channel_dictionary, indent=4, sort_keys=True ) )
 
 
+def get_dictionary_key(dictionary, key, default=None):
+
+    if key in dictionary:
+        default = dictionary[key]
+
+    return default
+
+
+def remove_if_exists(items_list, item):
+
+    if item in items_list:
+        items_list.remove( item )
+
+
+def add_item_if_not_exists(list_to_append, item):
+
+    if item not in list_to_append:
+        list_to_append.append( item )
+
+
+
