@@ -232,6 +232,7 @@ def load_list_if_exists(dictionary_to_search, item_to_load, default_value):
 
 def install_modules(command_line_interface, git_executable_path):
     log( 2, "install_modules_, PACKAGES_TO_NOT_INSTALL: " + str( PACKAGES_TO_NOT_INSTALL ) )
+    sync_package_control_and_manager()
 
     if IS_DEVELOPMENT_INSTALL:
         clone_sublime_text_studio( command_line_interface, git_executable_path )
@@ -677,12 +678,10 @@ def set_default_settings_before(git_packages):
                 add_item_if_not_exists( g_packages_to_unignore, package )
 
         g_user_settings.set( 'ignored_packages', g_default_ignored_packages )
+        log( 1, "set_default_settings_before, g_user_settings: " + str( g_user_settings.get("ignored_packages") ) )
 
         # Save our changes to the user ignored packages list
-        log( 1, "set_default_settings_before, g_user_settings: " + str( g_user_settings.get("ignored_packages") ) )
         sublime.save_settings( USER_SETTINGS_FILE )
-
-    sync_package_control_and_manager()
 
 
 def sync_package_control_and_manager():
@@ -707,13 +706,13 @@ def sync_package_control_and_manager():
     package_control = os.path.join( USER_FOLDER_PATH, package_control_name )
 
     g_package_control_settings = load_data_file( package_control )
-    ensure_installed_packages_names( g_package_control_settings )
+    ensure_installed_packages_name( g_package_control_settings )
 
     packagesmanager = os.path.join( USER_FOLDER_PATH, packagesmanager_name )
     write_data_file( packagesmanager, g_package_control_settings )
 
 
-def ensure_installed_packages_names(package_control_settings):
+def ensure_installed_packages_name(package_control_settings):
     """
         Ensure the installed packages names are on the settings files.
     """
