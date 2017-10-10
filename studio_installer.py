@@ -282,9 +282,9 @@ def install_stable_packages(git_packages):
     for package_name, is_dependency in git_packages:
         current_index += 1
 
-        # For quick testing
-        if current_index > 3:
-            break
+        # # For quick testing
+        # if current_index > 3:
+        #     break
 
         log( 1, "\n\nInstalling %d of %d: %s (%s)" % ( current_index, git_packages_count, str( package_name ), str( is_dependency ) ) )
 
@@ -328,6 +328,17 @@ def get_stable_packages( git_modules_file ):
                 packages.append( ( package_name, is_dependency( gitModulesFile, section ) ) )
 
     return packages
+    # return \
+    # [
+    #     ('Active View Jump Back', False),
+    #     ('amxmodx', False),
+    #     ('Amxx Pawn', False),
+    #     ('Clear Cursors Carets', False),
+    #     ('Indent and braces', False),
+    #     ('Invert Selection', False),
+    #     ('PackagesManager', False),
+    #     ('Toggle Words', False)
+    # ]
 
 
 def load_ignored_packages():
@@ -775,25 +786,68 @@ def uninstall_package_control():
     """
 
     if "PackagesManager" in g_package_control_settings['installed_packages']:
+        g_package_control_settings['installed_packages'].remove( "Package Control" )
 
-        packages = [ "Package Control", "0_package_control_loader" ]
-        g_package_control_settings['installed_packages'].remove( packages[0] )
+        # Sublime Text is waiting the current thread to finish before loading the just installed
+        # PackagesManager, therefore run a new thread delayed which finishes the job
+        sublime.set_timeout_async( complete_package_control, 2000 )
 
-        for package_name in packages:
 
-            package_manager  = PackageManager()
-            package_disabler = PackageDisabler()
+def complete_package_control(maximum_attempts=3):
+    log(1, "Finishing Package Control Uninstallation... maximum_attempts: " + str( maximum_attempts ) )
 
-            package_disabler.disable_packages( package_name, "remove" )
-            thread = RemovePackageThread( package_manager, package_name )
+    # Import the recent installed PackagesManager
+    try:
+        from PackagesManager.packagesmanager.show_error import silence_error_message_box
+        from PackagesManager.packagesmanager.package_manager import PackageManager
+        from PackagesManager.packagesmanager.package_disabler import PackageDisabler
+        from PackagesManager.packagesmanager.commands.remove_package_command import RemovePackageThread
 
-            thread.start()
-            thread.join()
+    except ImportError:
 
-        package_control_name = "Packages Control.sublime-settings"
-        package_control      = os.path.join( USER_FOLDER_PATH, package_control_name )
+        if maximum_attempts > 0:
+            maximum_attempts -= 1
 
-        os.remove( package_control )
+            sublime.set_timeout_async( lambda: complete_package_control( maximum_attempts ), 2000 )
+            return
+
+        else:
+            log( 1, "Error! Could not complete the Package Control uninstalling, missing import for `PackagesManager`." )
+
+    silence_error_message_box()
+    packages = [ ("Package Control", False), ("0_package_control_loader", None) ]
+
+    package_manager  = PackageManager()
+    package_disabler = PackageDisabler()
+
+    for package_name, is_dependency in packages:
+        log( 1, "\n\nUninstalling: %s" % str( package_name ) )
+
+        package_disabler.disable_packages( package_name, "remove" )
+        thread = RemovePackageThread( package_manager, package_name, is_dependency )
+
+        thread.start()
+        thread.join()
+
+    clean_package_control_settings()
+
+
+def clean_package_control_settings(maximum_attempts=3):
+    """
+        Clean it a few times because Package Control is kinda running and still flushing stuff down
+        to its settings file.
+    """
+    maximum_attempts -= 1
+
+    package_control_name = "Package Control.sublime-settings"
+    package_control      = os.path.join( USER_FOLDER_PATH, package_control_name )
+
+    # If we do not write nothing to package_control file, Sublime Text will create another
+    write_data_file( package_control, {} )
+    os.remove( package_control )
+
+    if maximum_attempts > 0:
+        sublime.set_timeout_async( lambda: clean_package_control_settings( maximum_attempts ), 2000 )
 
 
 def check_installed_packages():
