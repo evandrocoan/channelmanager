@@ -307,8 +307,8 @@ def get_stable_packages( git_modules_file ):
     log( 2, "get_stable_packages, installed_packages: " + str( installed_packages ) )
     gitModulesFile.readfp( io.StringIO( git_modules_file ) )
 
-    packages_to_ignore = unique_list_join( PACKAGES_TO_NOT_INSTALL, installed_packages, g_packages_to_ignore )
-    log( 2, "get_stable_packages, packages_to_ignore: " + str( packages_to_ignore ) )
+    packages_tonot_install = unique_list_join( PACKAGES_TO_NOT_INSTALL, installed_packages, g_packages_to_ignore )
+    log( 2, "get_stable_packages, packages_tonot_install: " + str( packages_tonot_install ) )
 
     for section in gitModulesFile.sections():
         # # For quick testing
@@ -324,7 +324,7 @@ def get_stable_packages( git_modules_file ):
             submodule_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, path )
 
             if not os.path.isdir( submodule_absolute_path ) \
-                    and package_name not in packages_to_ignore:
+                    and package_name not in packages_tonot_install:
 
                 packages.append( ( package_name, is_dependency( gitModulesFile, section ) ) )
 
@@ -616,8 +616,8 @@ def get_development_packages():
     index = 0
     installed_packages = get_installed_packages()
 
-    packages_to_ignore = unique_list_join( PACKAGES_TO_NOT_INSTALL, installed_packages )
-    log( 2, "get_development_packages, packages_to_ignore: " + str( packages_to_ignore ) )
+    packages_tonot_install = unique_list_join( PACKAGES_TO_NOT_INSTALL, installed_packages )
+    log( 2, "get_development_packages, packages_tonot_install: " + str( packages_tonot_install ) )
 
     packages = []
     gitModulesFile.read( gitFilePath )
@@ -636,7 +636,7 @@ def get_development_packages():
             submodule_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, path )
 
             if not os.path.isdir( submodule_absolute_path ) \
-                    and package_name not in packages_to_ignore :
+                    and package_name not in packages_tonot_install :
 
                 packages.append( ( package_name, url, path ) )
                 log( 2, "get_development_packages, path: " + path )
