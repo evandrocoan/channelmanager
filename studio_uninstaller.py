@@ -117,14 +117,14 @@ def unpack_settings(channel_settings):
 
 def setup_packages_to_uninstall_last_and_first(channel_settings):
     global PACKAGES_TO_UNINSTALL_FIRST
-    global PACKAGES_TO_UNINSTALL_LAST
+    global PACKAGES_TO_IGNORE_UNINSTALLATION
     global USER_FOLDER_PATH
 
-    PACKAGES_TO_UNINSTALL_LAST  = ["PackagesManager"]
-    PACKAGES_TO_UNINSTALL_FIRST = list( reversed( channel_settings['PACKAGES_TO_INSTALL_LAST'] ) )
+    PACKAGES_TO_IGNORE_UNINSTALLATION  = [ "PackagesManager" ]
+    PACKAGES_TO_UNINSTALL_FIRST        = list( reversed( channel_settings['PACKAGES_TO_INSTALL_LAST'] ) )
 
     # We need to remove it by last, after installing Package Control back
-    for package in PACKAGES_TO_UNINSTALL_LAST:
+    for package in PACKAGES_TO_IGNORE_UNINSTALLATION:
 
         if package in PACKAGES_TO_UNINSTALL_FIRST:
             PACKAGES_TO_UNINSTALL_FIRST.remove( package )
@@ -183,15 +183,41 @@ class UninstallStudioFilesThread(threading.Thread):
         g_not_found_packages       = []
         g_channel_manager_settings = load_data_file( STUDIO_INSTALLATION_SETTINGS )
 
+        log( 1, "Loaded g_channel_manager_settings: " + str( g_channel_manager_settings ) )
         load_package_manager_settings()
-        uninstall_packages()
 
+        uninstall_packages()
         install_package_control()
+
+        remove_studio_channel()
         uninstall_packagesmanger()
 
-        # uninstall_files()
-        # uninstall_folders()
-        # restore_ignored_packages()
+        unignore_user_packages()
+        uninstall_files()
+        uninstall_folders()
+
+        delete_channel_settings_file()
+
+
+def uninstall_folders():
+    folders_to_remove = get_dictionary_key( g_channel_manager_settings, "folders_to_uninstall", [] )
+
+    for folder in folders_to_remove:
+        folder_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, folder )
+        os.remove( folder_absolute_path )
+
+
+def uninstall_files():
+    files_to_remove = get_dictionary_key( g_channel_manager_settings, "files_to_uninstall", [] )
+
+    for file in files_to_remove:
+        file_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, file )
+        os.remove( file_absolute_path )
+
+
+def delete_channel_settings_file():
+    write_data_file( STUDIO_INSTALLATION_SETTINGS, {} )
+    os.remove( STUDIO_INSTALLATION_SETTINGS )
 
 
 def install_package_control():
@@ -218,13 +244,11 @@ def load_package_manager_settings():
     PACKAGESMANAGER = os.path.join( USER_FOLDER_PATH, packagesmanager_name )
     PACKAGE_CONTROL = os.path.join( USER_FOLDER_PATH, package_control_name )
 
-    g_package_control_settings = load_data_file( PACKAGESMANAGER )
-    g_installed_packages       = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
-
     g_user_settings    = sublime.load_settings( USER_SETTINGS_FILE )
     g_ignored_packages = g_user_settings.get( "ignored_packages", [] )
 
-    remove_studio_channel()
+    g_package_control_settings = load_data_file( PACKAGESMANAGER )
+    g_installed_packages       = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
 
 
 def remove_studio_channel():
@@ -248,6 +272,21 @@ def remove_package_from_list(package_name):
     remove_if_exists( g_installed_packages, package_name )
 
     save_package_control_settings()
+
+
+def unignore_user_packages():
+    """
+        There is a bug with the uninstalling several packages, which trigger several errors of:
+
+        "It appears a package is trying to ignore itself, causing a loop.
+        Please resolve by removing the offending ignored_packages setting."
+
+        When trying to uninstall several package at once, then here I am unignoring them all at once.
+
+        Package Control: Advanced Install Package
+        https://github.com/wbond/package_control/issues/1191
+    """
+    g_user_settings.set( "ignored_packages", g_ignored_packages )
     sublime.save_settings( USER_SETTINGS_FILE )
 
 
@@ -270,36 +309,57 @@ def uninstall_packagesmanger():
         thread.start()
         thread.join()
 
-        remove_package_from_list("PackagesManager")
+        remove_package_from_list( package_name )
 
-    # If we do not write nothing to PACKAGESMANAGER file, Sublime Text will create another
+    clean_packagesmanager_settings()
+
+
+def clean_packagesmanager_settings(maximum_attempts=3):
+    """
+        Clean it a few times because PackagesManager is kinda running and still flushing stuff down
+        to its settings file.
+    """
+    maximum_attempts -= 1
+
+    # If we do not write nothing to package_control file, Sublime Text will create another
     write_data_file( PACKAGESMANAGER, {} )
     os.remove( PACKAGESMANAGER )
 
+    if maximum_attempts > 0:
+        sublime.set_timeout_async( lambda: clean_packagesmanager_settings( maximum_attempts ), 2000 )
+
 
 def get_packages_to_uninstall():
-    packages              = []
+    filtered_packages     = []
     packages_to_uninstall = g_channel_manager_settings['packages_to_uninstall']
 
     # Only merges the packages which are actually being uninstalled
-    for package in PACKAGES_TO_UNINSTALL_FIRST:
+    for package_name in PACKAGES_TO_UNINSTALL_FIRST:
 
-        if package in packages_to_uninstall:
-            packages.append( package )
+        if package_name in packages_to_uninstall:
+            filtered_packages.append( package_name )
+
+    # Add the actual packages after the packages to install first
+    for package_name in packages_to_uninstall:
+
+        if package_name not in filtered_packages:
+            filtered_packages.append( package_name )
 
     # Ignore everything except some packages, until it is finished
-    for package in PACKAGES_TO_UNINSTALL_LAST:
+    for package_name in PACKAGES_TO_IGNORE_UNINSTALLATION:
 
-        if package in packages:
-            packages.remove( package )
+        if package_name in filtered_packages:
+            filtered_packages.remove( package_name )
 
-    return packages
+    return filtered_packages
 
 
 def uninstall_packages():
-    package_manager       = PackageManager()
-    package_disabler      = PackageDisabler()
+    package_manager  = PackageManager()
+    package_disabler = PackageDisabler()
+
     packages_to_uninstall = get_packages_to_uninstall()
+    log( 2, "Packages to uninstall: " + str( packages_to_uninstall ) )
 
     current_index      = 0
     git_packages_count = len( packages_to_uninstall )

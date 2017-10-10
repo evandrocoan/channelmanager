@@ -327,7 +327,6 @@ def get_stable_packages( git_modules_file ):
 
                 packages.append( ( package_name, is_dependency( gitModulesFile, section ) ) )
 
-    return packages
     # return \
     # [
     #     ('Active View Jump Back', False),
@@ -339,6 +338,8 @@ def get_stable_packages( git_modules_file ):
     #     ('PackagesManager', False),
     #     ('Toggle Words', False)
     # ]
+
+    return packages
 
 
 def load_ignored_packages():
