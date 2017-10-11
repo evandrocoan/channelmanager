@@ -259,13 +259,13 @@ def load_package_manager_settings():
     global g_installed_packages
 
     global g_user_settings
-    global g_ignored_packages
+    global g_user_ignored_packages
 
     PACKAGESMANAGER = os.path.join( USER_FOLDER_PATH, packagesmanager_name )
     PACKAGE_CONTROL = os.path.join( USER_FOLDER_PATH, package_control_name )
 
-    g_user_settings    = sublime.load_settings( USER_SETTINGS_FILE )
-    g_ignored_packages = g_user_settings.get( "ignored_packages", [] )
+    g_user_settings         = sublime.load_settings( USER_SETTINGS_FILE )
+    g_user_ignored_packages = g_user_settings.get( "ignored_packages", [] )
 
     g_package_control_settings = load_data_file( PACKAGESMANAGER )
     g_installed_packages       = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
@@ -288,7 +288,7 @@ def save_package_control_settings():
 
 
 def remove_package_from_list(package_name):
-    remove_if_exists( g_ignored_packages, package_name )
+    remove_if_exists( g_user_ignored_packages, package_name )
     remove_if_exists( g_installed_packages, package_name )
 
     save_package_control_settings()
@@ -306,16 +306,16 @@ def unignore_user_packages():
         Package Control: Advanced Install Package
         https://github.com/wbond/package_control/issues/1191
     """
-    log( 1, "\n\nUninstalling ignored packages: %s" % str( g_ignored_packages ) )
+    log( 1, "\n\nUninstalling ignored packages: %s" % str( g_user_ignored_packages ) )
     packages_to_unignore = get_dictionary_key( g_channel_manager_settings, "packages_to_unignore", [] )
 
     for package_name in packages_to_unignore:
 
-        if package_name in g_ignored_packages:
+        if package_name in g_user_ignored_packages:
             log( 1, "Unignoring the package: %s" % package_name )
-            g_installed_packages.remove( package_name )
+            g_user_ignored_packages.remove( package_name )
 
-    g_user_settings.set( "ignored_packages", g_ignored_packages )
+    g_user_settings.set( "ignored_packages", g_user_ignored_packages )
     sublime.save_settings( USER_SETTINGS_FILE )
 
 
@@ -434,7 +434,7 @@ def ignore_all_packages(packages):
         https://github.com/wbond/package_control/issues/1191
     """
     log( 1, "\n\nAdding all packages to be uninstalled to the `ignored_packages` setting list." )
-    ignored_packages = unique_list_join( g_ignored_packages, packages )
+    ignored_packages = unique_list_join( g_user_ignored_packages, packages )
 
     # We never can ignore the Default package, otherwise several errors/anomalies show up
     if "Default" in ignored_packages:
