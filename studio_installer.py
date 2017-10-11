@@ -475,12 +475,12 @@ def copy_overrides(root_source_folder, root_destine_folder, move_files=False):
     if move_files:
         def copy_file(source_file, destine_folder):
             shutil.move( source_file, destine_folder )
-            add_item_if_not_exists( installed_files, relative_file_path )
+            add_path_if_not_exists( installed_files, relative_file_path )
     else:
 
         def copy_file(source_file, destine_folder):
             shutil.copy( source_file, destine_folder )
-            add_item_if_not_exists( installed_files, relative_file_path )
+            add_path_if_not_exists( installed_files, relative_file_path )
 
     for source_folder, directories, files in os.walk( root_source_folder ):
         destine_folder = source_folder.replace( root_source_folder, root_destine_folder)
@@ -503,10 +503,16 @@ def copy_overrides(root_source_folder, root_destine_folder, move_files=False):
 
             copy_file(source_file, destine_folder)
 
-            add_item_if_not_exists( g_files_to_uninstall, relative_file_path )
-            add_item_if_not_exists( g_folders_to_uninstall, relative_folder_path )
+            add_path_if_not_exists( g_files_to_uninstall, relative_file_path )
+            add_path_if_not_exists( g_folders_to_uninstall, relative_folder_path )
 
     log( 1, "installed_files: " + str( installed_files ) )
+
+
+def add_path_if_not_exists(list_to_add, path):
+
+    if path != "." and path != "..":
+        add_item_if_not_exists( list_to_add, path )
 
 
 def convert_absolute_path_to_relative(path):
@@ -526,7 +532,7 @@ def convert_to_unix_path(relative_path):
 
 
 def add_folders_and_files_for_removal(root_source_folder, relative_path):
-    add_item_if_not_exists( g_folders_to_uninstall, relative_path )
+    add_path_if_not_exists( g_folders_to_uninstall, relative_path )
 
     for source_folder, directories, files in os.walk( root_source_folder ):
 
@@ -534,13 +540,13 @@ def add_folders_and_files_for_removal(root_source_folder, relative_path):
             source_file   = os.path.join( source_folder, folder )
             relative_path = convert_absolute_path_to_relative( source_file )
 
-            add_item_if_not_exists( g_folders_to_uninstall, relative_path )
+            add_path_if_not_exists( g_folders_to_uninstall, relative_path )
 
         for file in files:
             source_file   = os.path.join( source_folder, file )
             relative_path = convert_absolute_path_to_relative( source_file )
 
-            add_item_if_not_exists( g_files_to_uninstall, relative_path )
+            add_path_if_not_exists( g_files_to_uninstall, relative_path )
 
 
 def download_main_repository(command_line_interface, git_executable_path, studio_temporary_folder):
