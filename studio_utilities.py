@@ -111,12 +111,3 @@ def delete_read_only_file(action, name, exc):
     os.remove( name )
 
 
-def safe_remove(path):
-
-    try:
-        os.remove( path )
-
-    except Exception as e:
-        log( 1, "Failed to remove `%s`\nError is: %s" % ( path, e) )
-
-

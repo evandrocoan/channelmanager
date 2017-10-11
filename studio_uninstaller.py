@@ -54,7 +54,6 @@ from .studio_utilities import get_main_directory
 from .studio_utilities import get_dictionary_key
 from .studio_utilities import remove_if_exists
 from .studio_utilities import delete_read_only_file
-from .studio_utilities import safe_remove
 
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
@@ -210,16 +209,39 @@ def uninstall_folders():
         log( 1, "Uninstalling folder: %s" % str( folder ) )
         folder_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, folder )
 
-        try:
-            os.rmdir( folder_absolute_path )
-            is_empty = True
+        folders_not_empty = []
+        recursively_delete_empty_folders( folder_absolute_path, folders_not_empty )
 
-        except OSError:
-            is_empty = False
-
-        if not is_empty:
+        if len( folders_not_empty ) > 0:
             log( 1, "The installed folder `%s` could not be removed because is it not empty." % folder_absolute_path )
-            log( 1, "Its files contents are: \n" + str( os.listdir( folder_absolute_path ) ) )
+            log( 1, "Its files contents are: " + str( os.listdir( folder_absolute_path ) ) )
+
+            for folder in folders_not_empty:
+                log( 1, str( folder ) )
+
+
+def recursively_delete_empty_folders(root_folder, folders_not_empty):
+    """
+        Recursively descend the directory tree rooted at top,
+        calling the callback function for each regular file.
+    """
+    children_folders = os.listdir( root_folder )
+
+    for child_folder in children_folders:
+        child_path = os.path.join( root_folder, child_folder )
+
+        if os.path.isdir( child_path ):
+            recursively_delete_empty_folders( child_path, folders_not_empty )
+
+            try:
+                os.rmdir( root_folder )
+                is_empty = True
+
+            except OSError:
+                is_empty = False
+
+            if not is_empty:
+                folders_not_empty.append( child_path )
 
 
 def uninstall_files():
@@ -231,6 +253,21 @@ def uninstall_files():
         file_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, file )
 
         safe_remove( file_absolute_path )
+
+
+def safe_remove(path):
+
+    try:
+        os.remove( path )
+
+    except Exception as error:
+        log( 1, "Failed to remove `%s`. Error is: %s" % ( path, error) )
+
+        try:
+            delete_read_only_file(name=path)
+
+        except Exception as error:
+            log( 1, "Failed to remove `%s`. Error is: %s" % ( path, error) )
 
 
 def delete_channel_settings_file():

@@ -33,6 +33,9 @@ import shutil
 import zipfile
 import tempfile
 
+import re
+import textwrap
+
 import io
 import json
 import shlex
@@ -125,6 +128,7 @@ def unpack_settings(channel_settings):
     global STUDIO_MAIN_URL
     global STUDIO_SETTINGS_URL
     global STUDIO_SETTINGS_PATH
+    global STUDIO_PACKAGE_NAME
 
     global STUDIO_MAIN_DIRECTORY
     global IS_DEVELOPMENT_INSTALL
@@ -137,6 +141,7 @@ def unpack_settings(channel_settings):
     STUDIO_MAIN_URL      = channel_settings['STUDIO_MAIN_URL']
     STUDIO_SETTINGS_URL  = channel_settings['STUDIO_SETTINGS_URL']
     STUDIO_SETTINGS_PATH = channel_settings['STUDIO_SETTINGS_PATH']
+    STUDIO_PACKAGE_NAME  = channel_settings['STUDIO_PACKAGE_NAME']
 
     USER_SETTINGS_FILE      = channel_settings['USER_SETTINGS_FILE']
     DEFAULT_PACKAGES_FILES  = channel_settings['DEFAULT_PACKAGES_FILES']
@@ -161,6 +166,9 @@ class StartInstallStudioThread(threading.Thread):
         """
 
         if is_allowed_to_run():
+            global g_is_installation_complete
+            g_is_installation_complete = False
+
             unpack_settings(self.channel_settings)
 
             installer_thread  = InstallStudioFilesThread()
@@ -499,21 +507,40 @@ def copy_overrides(root_source_folder, root_destine_folder, move_files=False):
             # Python: Get relative path from comparing two absolute paths
             # https://stackoverflow.com/questions/7287996/python-get-relative-path-from-comparing-two-absolute-paths
             relative_path = convert_absolute_path_to_relative( destine_file )
-            copy_file()
 
-            if not relative_path.startswith( ".git" ):
-                add_item_if_not_exists( g_files_to_uninstall, relative_path )
+            copy_file()
+            add_item_if_not_exists( g_files_to_uninstall, relative_path )
 
 
 def convert_absolute_path_to_relative(path):
     relative_path = os.path.commonprefix( [ STUDIO_MAIN_DIRECTORY, path ] )
     relative_path = os.path.normpath( path.replace( relative_path, "" ) )
+
+    return convert_to_unix_path(relative_path)
+
+
+def convert_to_unix_path(relative_path):
     relative_path = relative_path.replace( "\\", "/" )
 
     if relative_path.startswith( "/" ):
         relative_path = relative_path[1:]
 
     return relative_path
+
+
+def add_folders_and_files_for_removal(absolute_path, relative_path):
+    add_item_if_not_exists( g_folders_to_uninstall, relative_path )
+    files = os.listdir( absolute_path )
+
+    for file_path in files:
+        absolute_file_path = os.path.join( absolute_path, file_path )
+
+        if os.path.isfile( absolute_file_path ):
+            full_relative_path = os.path.join( relative_path, file_path )
+            add_item_if_not_exists( g_files_to_uninstall, convert_to_unix_path( full_relative_path ) )
+
+        elif os.path.isdir( absolute_file_path ):
+            add_folders_and_files_for_removal( relative_path, file_path )
 
 
 def download_main_repository(command_line_interface, git_executable_path, studio_temporary_folder):
@@ -568,7 +595,7 @@ def download_not_packages_submodules(command_line_interface, git_executable_path
                 command = shlex.split( '"%s" clone "%s" "%s"' % ( git_executable_path, url, path ) )
                 output  = command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY )
 
-                add_item_if_not_exists( g_folders_to_uninstall, path )
+                add_folders_and_files_for_removal( submodule_absolute_path, path )
                 log( 1, "download_not_packages_submodules, output: " + str( output ) )
 
                 # Progressively saves the installation data, in case the user closes Sublime Text
@@ -633,16 +660,16 @@ def get_development_packages():
                 packages.append( ( package_name, url, path ) )
                 log( 2, "get_development_packages, path: " + path )
 
-    # return \
-    # [
-    #     ('Active View Jump Back', 'https://github.com/evandrocoan/SublimeActiveViewJumpBack', 'Packages/Active View Jump Back'),
-    #     ('amxmodx', 'https://github.com/evandrocoan/SublimeAMXX_Editor', 'Packages/amxmodx'),
-    #     ('Amxx Pawn', 'https://github.com/evandrocoan/SublimeAmxxPawn', 'Packages/Amxx Pawn'),
-    #     ('Clear Cursors Carets', 'https://github.com/evandrocoan/ClearCursorsCarets', 'Packages/Clear Cursors Carets'),
-    #     ('Notepad++ Color Scheme', 'https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme', 'Packages/Notepad++ Color Scheme'),
-    #     ('PackagesManager', 'https://github.com/evandrocoan/package_control', 'Packages/PackagesManager'),
-    #     ('Toggle Words', 'https://github.com/evandrocoan/ToggleWords', 'Packages/Toggle Words')
-    # ]
+    return \
+    [
+        ('Active View Jump Back', 'https://github.com/evandrocoan/SublimeActiveViewJumpBack', 'Packages/Active View Jump Back'),
+        ('amxmodx', 'https://github.com/evandrocoan/SublimeAMXX_Editor', 'Packages/amxmodx'),
+        ('Amxx Pawn', 'https://github.com/evandrocoan/SublimeAmxxPawn', 'Packages/Amxx Pawn'),
+        ('Clear Cursors Carets', 'https://github.com/evandrocoan/ClearCursorsCarets', 'Packages/Clear Cursors Carets'),
+        ('Notepad++ Color Scheme', 'https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme', 'Packages/Notepad++ Color Scheme'),
+        ('PackagesManager', 'https://github.com/evandrocoan/package_control', 'Packages/PackagesManager'),
+        ('Toggle Words', 'https://github.com/evandrocoan/ToggleWords', 'Packages/Toggle Words')
+    ]
 
     return packages
 
@@ -886,13 +913,13 @@ def check_installed_packages(maximum_attempts=10):
 
     else:
         sublime.error_message( wrap_text( """\
-                The installation could not be successfully completed.
+                The %s installation could not be successfully completed.
 
                 Check you Sublime Text Console for more information.
 
                 If you want help fixing the problem, please, save your Sublime Text Console output
                 so later others can know what happened and how to fix it.
-                """ ) )
+                """ % STUDIO_PACKAGE_NAME ) )
         sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
 
 
