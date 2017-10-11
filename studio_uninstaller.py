@@ -230,26 +230,60 @@ def uninstall_folders():
 
 def recursively_delete_empty_folders(root_folder, folders_not_empty):
     """
-        Recursively descend the directory tree rooted at top,
-        calling the callback function for each regular file.
+        Recursively descend the directory tree rooted at top, calling the callback function for each
+        regular file.
+
+        Python script: Recursively remove empty folders/directories
+        https://www.jacobtomlinson.co.uk/2014/02/16/python-script-recursively-remove-empty-folders-directories/
     """
-    children_folders = os.listdir( root_folder )
 
-    for child_folder in children_folders:
-        child_path = os.path.join( root_folder, child_folder )
+    try:
+        children_folders = os.listdir( root_folder )
 
-        if os.path.isdir( child_path ):
-            recursively_delete_empty_folders( child_path, folders_not_empty )
+        for child_folder in children_folders:
+            child_path = os.path.join( root_folder, child_folder )
 
-            try:
-                os.rmdir( root_folder )
-                is_empty = True
+            if os.path.isdir( child_path ):
+                recursively_delete_empty_folders( child_path, folders_not_empty )
 
-            except OSError:
-                is_empty = False
+                try:
+                    os.removedirs( root_folder )
+                    is_empty = True
 
-            if not is_empty:
-                folders_not_empty.append( child_path )
+                except OSError:
+                    is_empty = False
+
+                    try:
+                        removeEmptyFolders( root_folder )
+
+                    except:
+                        pass
+
+                if not is_empty:
+                    folders_not_empty.append( child_path )
+
+        os.rmdir( root_folder )
+
+    except:
+        pass
+
+
+def removeEmptyFolders(path):
+
+    if not os.path.isdir( path ):
+        return
+
+    files = os.listdir( path )
+
+    if len( files ):
+
+        for file in files:
+            fullpath = os.path.join( path, file )
+
+            if os.path.isdir( fullpath ):
+                removeEmptyFolders( fullpath )
+
+    os.rmdir( path )
 
 
 def uninstall_files():
@@ -545,7 +579,7 @@ def check_uninstalled_packages(maximum_attempts=10):
         return
 
     if maximum_attempts > 0:
-        sublime.set_timeout_async( lambda: check_installed_packages( maximum_attempts ), 2000 )
+        sublime.set_timeout_async( lambda: check_uninstalled_packages( maximum_attempts ), 2000 )
 
     else:
         sublime.error_message( wrap_text( """\
