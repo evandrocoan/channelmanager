@@ -452,23 +452,10 @@ def clone_sublime_text_studio(command_line_interface, git_executable_path):
         download_main_repository( command_line_interface, git_executable_path, studio_temporary_folder )
 
         copy_overrides( studio_temporary_folder, STUDIO_MAIN_DIRECTORY )
-        folders_copied = get_immediate_subdirectories( studio_temporary_folder )
-
-        for folder in folders_copied:
-            add_item_if_not_exists( g_folders_to_uninstall, folder )
-
         shutil.rmtree( studio_temporary_folder, onerror=delete_read_only_file )
 
         # Progressively saves the installation data, in case the user closes Sublime Text
         set_default_settings_after()
-
-
-def get_immediate_subdirectories(a_dir):
-    """
-        How to get all of the immediate subdirectories in Python
-        https://stackoverflow.com/questions/800197/how-to-get-all-of-the-immediate-subdirectories-in-python
-    """
-    return [ name for name in os.listdir(a_dir) if os.path.isdir( os.path.join( a_dir, name ) ) ]
 
 
 def copy_overrides(root_source_folder, root_destine_folder, move_files=False):
@@ -482,13 +469,18 @@ def copy_overrides(root_source_folder, root_destine_folder, move_files=False):
         Force Overwrite in Os.Rename
         https://stackoverflow.com/questions/8107352/force-overwrite-in-os-rename
     """
+    installed_files = []
+
     # Call this if operation only one time, instead of calling the for every file.
     if move_files:
-        def copy_file():
+        def copy_file(source_file, destine_folder):
             shutil.move( source_file, destine_folder )
+            add_item_if_not_exists( installed_files, relative_file_path )
     else:
-        def copy_file():
+
+        def copy_file(source_file, destine_folder):
             shutil.copy( source_file, destine_folder )
+            add_item_if_not_exists( installed_files, relative_file_path )
 
     for source_folder, directories, files in os.walk( root_source_folder ):
         destine_folder = source_folder.replace( root_source_folder, root_destine_folder)
@@ -506,10 +498,15 @@ def copy_overrides(root_source_folder, root_destine_folder, move_files=False):
 
             # Python: Get relative path from comparing two absolute paths
             # https://stackoverflow.com/questions/7287996/python-get-relative-path-from-comparing-two-absolute-paths
-            relative_path = convert_absolute_path_to_relative( destine_file )
+            relative_file_path   = convert_absolute_path_to_relative( destine_file )
+            relative_folder_path = convert_absolute_path_to_relative( destine_folder )
 
-            copy_file()
-            add_item_if_not_exists( g_files_to_uninstall, relative_path )
+            copy_file(source_file, destine_folder)
+
+            add_item_if_not_exists( g_files_to_uninstall, relative_file_path )
+            add_item_if_not_exists( g_folders_to_uninstall, relative_folder_path )
+
+    log( 1, "installed_files: " + str( installed_files ) )
 
 
 def convert_absolute_path_to_relative(path):
@@ -901,13 +898,14 @@ def check_installed_packages(maximum_attempts=10):
 
     if g_is_installation_complete:
         sublime.message_dialog( wrap_text( """\
-                The installation was successfully completed.
+                The %s installation was successfully completed.
 
                 You need to restart Sublime Text to load the installed packages and finish
                 installing their missing dependencies.
 
                 Check you Sublime Text Console for more information.
-                """ ) )
+                """ % STUDIO_PACKAGE_NAME ) )
+
         sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
         return
 
@@ -923,6 +921,7 @@ def check_installed_packages(maximum_attempts=10):
                 If you want help fixing the problem, please, save your Sublime Text Console output
                 so later others can know what happened and how to fix it.
                 """ % STUDIO_PACKAGE_NAME ) )
+
         sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
 
 

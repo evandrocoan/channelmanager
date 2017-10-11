@@ -111,3 +111,11 @@ def delete_read_only_file(action, name, exc):
     os.remove( name )
 
 
+def get_immediate_subdirectories(a_dir):
+    """
+        How to get all of the immediate subdirectories in Python
+        https://stackoverflow.com/questions/800197/how-to-get-all-of-the-immediate-subdirectories-in-python
+    """
+    return [ name for name in os.listdir(a_dir) if os.path.isdir( os.path.join( a_dir, name ) ) ]
+
+
