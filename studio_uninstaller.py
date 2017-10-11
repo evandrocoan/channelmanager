@@ -53,6 +53,9 @@ from .studio_utilities import string_convert_list
 from .studio_utilities import get_main_directory
 from .studio_utilities import get_dictionary_key
 from .studio_utilities import remove_if_exists
+from .studio_utilities import delete_read_only_file
+from .studio_utilities import safe_remove
+
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
 # or vice-versa. Which means we cannot do nothing as this is only compatible with PackagesManager.
@@ -201,23 +204,40 @@ class UninstallStudioFilesThread(threading.Thread):
 
 def uninstall_folders():
     folders_to_remove = get_dictionary_key( g_channel_manager_settings, "folders_to_uninstall", [] )
+    log( 1, "\n\nUninstalling added folders: %s" % str( folders_to_remove ) )
 
     for folder in folders_to_remove:
+        log( 1, "Uninstalling folder: %s" % str( folder ) )
         folder_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, folder )
-        os.remove( folder_absolute_path )
+
+        try:
+            os.rmdir( folder_absolute_path )
+            is_empty = True
+
+        except OSError:
+            is_empty = False
+
+        if not is_empty:
+            log( 1, "The installed folder `%s` could not be removed because is it not empty." % folder_absolute_path )
+            log( 1, "Its files contents are: \n" + str( os.listdir( folder_absolute_path ) ) )
 
 
 def uninstall_files():
     files_to_remove = get_dictionary_key( g_channel_manager_settings, "files_to_uninstall", [] )
+    log( 1, "\n\nUninstalling added files: %s" % str( files_to_remove ) )
 
     for file in files_to_remove:
+        log( 1, "Uninstalling file: %s" % str( file ) )
         file_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, file )
-        os.remove( file_absolute_path )
+
+        safe_remove( file_absolute_path )
 
 
 def delete_channel_settings_file():
+    log( 1, "\n\nUninstalling channel settings file: %s" % str( STUDIO_INSTALLATION_SETTINGS ) )
+
     write_data_file( STUDIO_INSTALLATION_SETTINGS, {} )
-    os.remove( STUDIO_INSTALLATION_SETTINGS )
+    safe_remove( STUDIO_INSTALLATION_SETTINGS )
 
 
 def install_package_control():
@@ -286,6 +306,15 @@ def unignore_user_packages():
         Package Control: Advanced Install Package
         https://github.com/wbond/package_control/issues/1191
     """
+    log( 1, "\n\nUninstalling ignored packages: %s" % str( g_ignored_packages ) )
+    packages_to_unignore = get_dictionary_key( g_channel_manager_settings, "packages_to_unignore", [] )
+
+    for package_name in packages_to_unignore:
+
+        if package_name in g_ignored_packages:
+            log( 1, "Unignoring the package: %s" % package_name )
+            g_installed_packages.remove( package_name )
+
     g_user_settings.set( "ignored_packages", g_ignored_packages )
     sublime.save_settings( USER_SETTINGS_FILE )
 
@@ -323,7 +352,7 @@ def clean_packagesmanager_settings(maximum_attempts=3):
 
     # If we do not write nothing to package_control file, Sublime Text will create another
     write_data_file( PACKAGESMANAGER, {} )
-    os.remove( PACKAGESMANAGER )
+    safe_remove( PACKAGESMANAGER )
 
     if maximum_attempts > 0:
         sublime.set_timeout_async( lambda: clean_packagesmanager_settings( maximum_attempts ), 2000 )
@@ -428,7 +457,7 @@ def uninstall_default_package(packages):
             file_path = os.path.join( default_packages_path, file )
 
             if os.path.exists( file_path ):
-                os.remove( file_path )
+                safe_remove( file_path )
 
 
 def is_package_dependency(package, dependencies, packages):
