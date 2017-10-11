@@ -36,7 +36,6 @@ import tempfile
 import io
 import json
 import shlex
-import stat
 import threading
 import contextlib
 
@@ -67,6 +66,7 @@ from .studio_utilities import write_data_file
 from .studio_utilities import get_dictionary_key
 from .studio_utilities import string_convert_list
 from .studio_utilities import add_item_if_not_exists
+from .studio_utilities import delete_read_only_file
 
 from collections import OrderedDict
 
@@ -171,7 +171,6 @@ class StartInstallStudioThread(threading.Thread):
                     'Sublime Text Studio %s was successfully installed.' % installation_type )
 
             installer_thread.join()
-            uninstall_package_control()
 
             set_default_settings_after(1)
             check_installed_packages()
@@ -252,6 +251,8 @@ def install_modules(command_line_interface, git_executable_path):
 
         log( 2, "install_modules, git_packages: " + str( git_packages ) )
         install_stable_packages( git_packages )
+
+    uninstall_package_control()
 
 
 def install_stable_packages(git_packages):
@@ -454,15 +455,6 @@ def clone_sublime_text_studio(command_line_interface, git_executable_path):
         set_default_settings_after()
 
 
-def delete_read_only_file(action, name, exc):
-    """
-        shutil.rmtree to remove readonly files
-        https://stackoverflow.com/questions/21261132/shutil-rmtree-to-remove-readonly-files
-    """
-    os.chmod(name, stat.S_IWRITE)
-    os.remove(name)
-
-
 def get_immediate_subdirectories(a_dir):
     """
         How to get all of the immediate subdirectories in Python
@@ -506,7 +498,7 @@ def copy_overrides(root_source_folder, root_destine_folder, move_files=False):
 
             # Python: Get relative path from comparing two absolute paths
             # https://stackoverflow.com/questions/7287996/python-get-relative-path-from-comparing-two-absolute-paths
-            relative_path = convert_absolute_path_to_relative(destine_file)
+            relative_path = convert_absolute_path_to_relative( destine_file )
             copy_file()
 
             if not relative_path.startswith( ".git" ):
@@ -640,6 +632,17 @@ def get_development_packages():
 
                 packages.append( ( package_name, url, path ) )
                 log( 2, "get_development_packages, path: " + path )
+
+    # return \
+    # [
+    #     ('Active View Jump Back', 'https://github.com/evandrocoan/SublimeActiveViewJumpBack', 'Packages/Active View Jump Back'),
+    #     ('amxmodx', 'https://github.com/evandrocoan/SublimeAMXX_Editor', 'Packages/amxmodx'),
+    #     ('Amxx Pawn', 'https://github.com/evandrocoan/SublimeAmxxPawn', 'Packages/Amxx Pawn'),
+    #     ('Clear Cursors Carets', 'https://github.com/evandrocoan/ClearCursorsCarets', 'Packages/Clear Cursors Carets'),
+    #     ('Notepad++ Color Scheme', 'https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme', 'Packages/Notepad++ Color Scheme'),
+    #     ('PackagesManager', 'https://github.com/evandrocoan/package_control', 'Packages/PackagesManager'),
+    #     ('Toggle Words', 'https://github.com/evandrocoan/ToggleWords', 'Packages/Toggle Words')
+    # ]
 
     return packages
 

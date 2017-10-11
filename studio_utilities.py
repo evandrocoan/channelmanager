@@ -26,6 +26,7 @@
 
 import os
 import json
+import stat
 
 import sublime
 
@@ -100,5 +101,22 @@ def add_item_if_not_exists(list_to_append, item):
     if item not in list_to_append:
         list_to_append.append( item )
 
+
+def delete_read_only_file(action, name, exc):
+    """
+        shutil.rmtree to remove readonly files
+        https://stackoverflow.com/questions/21261132/shutil-rmtree-to-remove-readonly-files
+    """
+    os.chmod( name, stat.S_IWRITE )
+    os.remove( name )
+
+
+def safe_remove(path):
+
+    try:
+        os.remove( path )
+
+    except Exception as e:
+        log( 1, "Failed to remove `%s`\nError is: %s" % ( path, e) )
 
 
