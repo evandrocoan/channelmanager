@@ -94,9 +94,13 @@ def unpack_settings(channel_settings):
 
     global USER_SETTINGS_FILE
     global STUDIO_CHANNEL_URL
+    global STUDIO_CHANNEL_URL
 
     global STUDIO_MAIN_DIRECTORY
     global USER_FOLDER_PATH
+    global STUDIO_PACKAGE_NAME
+
+    STUDIO_PACKAGE_NAME = channel_settings['STUDIO_PACKAGE_NAME']
 
     STUDIO_INSTALLATION_SETTINGS = channel_settings['STUDIO_INSTALLATION_SETTINGS']
     setup_packages_to_uninstall_last_and_first( channel_settings )
@@ -169,10 +173,11 @@ class UninstallStudioFilesThread(threading.Thread):
 
     def run(self):
         log( 2, "Entering on %s run(1)" % self.__class__.__name__ )
-
-        global g_channel_manager_settings
+        global g_is_installation_complete
         global g_not_found_packages
+        global g_channel_manager_settings
 
+        g_is_installation_complete = False
         g_not_found_packages       = []
         g_channel_manager_settings = load_data_file( STUDIO_INSTALLATION_SETTINGS )
 
@@ -190,8 +195,6 @@ class UninstallStudioFilesThread(threading.Thread):
         uninstall_folders()
 
         delete_channel_settings_file()
-
-        global g_is_installation_complete
         g_is_installation_complete = True
 
 
@@ -199,11 +202,25 @@ def uninstall_folders():
     folders_to_remove = get_dictionary_key( g_channel_manager_settings, "folders_to_uninstall", [] )
     log( 1, "\n\nUninstalling added folders: %s" % str( folders_to_remove ) )
 
-    for folder in folders_to_remove:
-        log( 1, "Uninstalling folder: %s" % str( folder ) )
-        folder_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, folder )
-
+    for folder in reversed( folders_to_remove ):
         folders_not_empty = []
+        log( 1, "Uninstalling folder: %s" % str( folder ) )
+
+        folder_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, folder )
+        recursively_delete_empty_folders( folder_absolute_path, folders_not_empty )
+
+    for folder in folders_to_remove:
+        folders_not_empty = []
+        log( 1, "Uninstalling folder: %s" % str( folder ) )
+
+        folder_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, folder )
+        recursively_delete_empty_folders( folder_absolute_path, folders_not_empty )
+
+    for folder in folders_to_remove:
+        folders_not_empty = []
+        log( 1, "Uninstalling folder: %s" % str( folder ) )
+
+        folder_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, folder )
         recursively_delete_empty_folders( folder_absolute_path, folders_not_empty )
 
         if len( folders_not_empty ) > 0:
