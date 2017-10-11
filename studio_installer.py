@@ -528,19 +528,22 @@ def convert_to_unix_path(relative_path):
     return relative_path
 
 
-def add_folders_and_files_for_removal(absolute_path, relative_path):
+def add_folders_and_files_for_removal(root_source_folder, relative_path):
     add_item_if_not_exists( g_folders_to_uninstall, relative_path )
-    files = os.listdir( absolute_path )
 
-    for file_path in files:
-        absolute_file_path = os.path.join( absolute_path, file_path )
+    for source_folder, directories, files in os.walk( root_source_folder ):
 
-        if os.path.isfile( absolute_file_path ):
-            full_relative_path = os.path.join( relative_path, file_path )
-            add_item_if_not_exists( g_files_to_uninstall, convert_to_unix_path( full_relative_path ) )
+        for folder in directories:
+            source_file   = os.path.join( source_folder, folder )
+            relative_path = convert_absolute_path_to_relative( source_file )
 
-        elif os.path.isdir( absolute_file_path ):
-            add_folders_and_files_for_removal( relative_path, file_path )
+            add_item_if_not_exists( g_folders_to_uninstall, relative_path )
+
+        for file in files:
+            source_file   = os.path.join( source_folder, file )
+            relative_path = convert_absolute_path_to_relative( source_file )
+
+            add_item_if_not_exists( g_files_to_uninstall, relative_path )
 
 
 def download_main_repository(command_line_interface, git_executable_path, studio_temporary_folder):
