@@ -27,18 +27,8 @@
 import sublime
 
 import os
-import sys
-import time
-import shutil
-import zipfile
-import tempfile
-
-import io
 import json
-import shlex
-import stat
 import threading
-import contextlib
 
 
 from .settings import *
@@ -53,7 +43,8 @@ from .studio_utilities import string_convert_list
 from .studio_utilities import get_main_directory
 from .studio_utilities import get_dictionary_key
 from .studio_utilities import remove_if_exists
-from .studio_utilities import delete_read_only_file
+from .studio_utilities import _delete_read_only_file
+from .studio_utilities import wrap_text
 
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
@@ -200,6 +191,9 @@ class UninstallStudioFilesThread(threading.Thread):
 
         delete_channel_settings_file()
 
+        global g_is_installation_complete
+        g_is_installation_complete = True
+
 
 def uninstall_folders():
     folders_to_remove = get_dictionary_key( g_channel_manager_settings, "folders_to_uninstall", [] )
@@ -215,9 +209,6 @@ def uninstall_folders():
         if len( folders_not_empty ) > 0:
             log( 1, "The installed folder `%s` could not be removed because is it not empty." % folder_absolute_path )
             log( 1, "Its files contents are: " + str( os.listdir( folder_absolute_path ) ) )
-
-            for folder in folders_not_empty:
-                log( 1, str( folder ) )
 
 
 def recursively_delete_empty_folders(root_folder, folders_not_empty):
@@ -264,7 +255,7 @@ def safe_remove(path):
         log( 1, "Failed to remove `%s`. Error is: %s" % ( path, error) )
 
         try:
-            delete_read_only_file(name=path)
+            _delete_read_only_file(path)
 
         except Exception as error:
             log( 1, "Failed to remove `%s`. Error is: %s" % ( path, error) )
@@ -385,6 +376,7 @@ def clean_packagesmanager_settings(maximum_attempts=3):
         Clean it a few times because PackagesManager is kinda running and still flushing stuff down
         to its settings file.
     """
+    log( 1, "Finishing PackagesManager Uninstallation... maximum_attempts: " + str( maximum_attempts ) )
     maximum_attempts -= 1
 
     # If we do not write nothing to package_control file, Sublime Text will create another
@@ -510,7 +502,7 @@ def is_package_dependency(package, dependencies, packages):
     return None
 
 
-def check_uninstalled_packages():
+def check_uninstalled_packages(maximum_attempts=10):
     """
         Display warning when the uninstallation process is finished or ask the user to restart
         Sublime Text to finish the uninstallation.
@@ -519,21 +511,35 @@ def check_uninstalled_packages():
         they differ, attempt to uninstall they again for some times. If not successful, stop trying
         and warn the user.
     """
-    studioSettings         = sublime.load_settings(STUDIO_INSTALLATION_SETTINGS)
-    packageControlSettings = sublime.load_settings("Package Control.sublime-settings")
+    log( 1, "Finishing Uninstallation... maximum_attempts: " + str( maximum_attempts ) )
+    maximum_attempts -= 1
 
-    # installed_packages =
+    if g_is_installation_complete:
+        sublime.message_dialog( wrap_text( """\
+                The %s uninstallation was successfully completed.
 
+                You need to restart Sublime Text to unload the uninstalled packages and finish
+                uninstalling the unused dependencies.
 
-if __name__ == "__main__":
-    main()
+                Check you Sublime Text Console for more information.
+                """ % STUDIO_PACKAGE_NAME ) )
 
+        sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+        return
 
-def plugin_loaded():
-    global STUDIO_INSTALLATION_SETTINGS
-    STUDIO_INSTALLATION_SETTINGS = os.path.join( get_main_directory( CURRENT_DIRECTORY ),
-            "Packages", "User", CURRENT_PACKAGE_NAME + ".sublime-settings" )
+    if maximum_attempts > 0:
+        sublime.set_timeout_async( lambda: check_installed_packages( maximum_attempts ), 2000 )
 
-    # main()
-    check_uninstalled_packages()
+    else:
+        sublime.error_message( wrap_text( """\
+                The %s uninstallation could not be successfully completed.
+
+                Check you Sublime Text Console for more information.
+
+                If you want help fixing the problem, please, save your Sublime Text Console output
+                so later others can see what happened try to fix it.
+                """ % STUDIO_PACKAGE_NAME ) )
+
+        sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+
 

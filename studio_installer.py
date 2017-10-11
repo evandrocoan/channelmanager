@@ -27,20 +27,12 @@
 import sublime
 
 import os
-import sys
-import time
 import shutil
-import zipfile
-import tempfile
-
-import re
-import textwrap
 
 import io
 import json
 import shlex
 import threading
-import contextlib
 
 
 # https://stackoverflow.com/questions/14087598/python-3-importerror-no-module-named-configparser
@@ -53,15 +45,6 @@ except:
     from six.moves.configparser import NoOptionError
 
 
-def assert_path(module):
-    """
-        Import a module from a relative path
-        https://stackoverflow.com/questions/279237/import-a-module-from-a-relative-path
-    """
-    if module not in sys.path:
-        sys.path.append( module )
-
-
 from .settings import *
 g_is_already_running = False
 
@@ -70,6 +53,7 @@ from .studio_utilities import get_dictionary_key
 from .studio_utilities import string_convert_list
 from .studio_utilities import add_item_if_not_exists
 from .studio_utilities import delete_read_only_file
+from .studio_utilities import wrap_text
 
 from collections import OrderedDict
 
@@ -925,13 +909,9 @@ def check_installed_packages(maximum_attempts=10):
                 Check you Sublime Text Console for more information.
 
                 If you want help fixing the problem, please, save your Sublime Text Console output
-                so later others can know what happened and how to fix it.
+                so later others can see what happened try to fix it.
                 """ % STUDIO_PACKAGE_NAME ) )
 
         sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
-
-
-def wrap_text(text):
-    return re.sub( r"(?<!\n)\n(?!\n)", " ", textwrap.dedent( text ).strip( " " ) )
 
 

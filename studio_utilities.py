@@ -28,6 +28,9 @@ import os
 import json
 import stat
 
+import re
+import textwrap
+
 import sublime
 
 
@@ -102,6 +105,10 @@ def add_item_if_not_exists(list_to_append, item):
         list_to_append.append( item )
 
 
+def _delete_read_only_file(path):
+    delete_read_only_file( None, path, None )
+
+
 def delete_read_only_file(action, name, exc):
     """
         shutil.rmtree to remove readonly files
@@ -117,5 +124,9 @@ def get_immediate_subdirectories(a_dir):
         https://stackoverflow.com/questions/800197/how-to-get-all-of-the-immediate-subdirectories-in-python
     """
     return [ name for name in os.listdir(a_dir) if os.path.isdir( os.path.join( a_dir, name ) ) ]
+
+
+def wrap_text(text):
+    return re.sub( r"(?<!\n)\n(?!\n)", " ", textwrap.dedent( text ).strip( " " ) )
 
 
