@@ -840,6 +840,7 @@ def clean_package_control_settings(maximum_attempts=3):
         Clean it a few times because Package Control is kinda running and still flushing stuff down
         to its settings file.
     """
+    log( 1, "Finishing Package Control Uninstallation... maximum_attempts: " + str( maximum_attempts ) )
     maximum_attempts -= 1
 
     package_control_name = "Package Control.sublime-settings"
@@ -852,8 +853,11 @@ def clean_package_control_settings(maximum_attempts=3):
     if maximum_attempts > 0:
         sublime.set_timeout_async( lambda: clean_package_control_settings( maximum_attempts ), 2000 )
 
+    global g_is_installation_complete
+    g_is_installation_complete = True
 
-def check_installed_packages():
+
+def check_installed_packages(maximum_attempts=10):
     """
         Display warning when the installation process is finished or ask the user to restart
         Sublime Text to finish the installation.
@@ -862,18 +866,37 @@ def check_installed_packages():
         differ, attempt to install they again for some times. If not successful, stop trying and
         warn the user.
     """
-    # studioSettings         = sublime.load_settings(STUDIO_INSTALLATION_SETTINGS)
-    # packageControlSettings = sublime.load_settings("Package Control.sublime-settings")
+    log( 1, "Finishing installation... maximum_attempts: " + str( maximum_attempts ) )
+    maximum_attempts -= 1
 
-    # installed_packages =
+    if g_is_installation_complete:
+        sublime.message_dialog( wrap_text( """\
+                The installation was successfully completed.
+
+                You need to restart Sublime Text to load the installed packages and finish
+                installing their missing dependencies.
+
+                Check you Sublime Text Console for more information.
+                """ ) )
+        sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+        return
+
+    if maximum_attempts > 0:
+        sublime.set_timeout_async( lambda: check_installed_packages( maximum_attempts ), 2000 )
+
+    else:
+        sublime.error_message( wrap_text( """\
+                The installation could not be successfully completed.
+
+                Check you Sublime Text Console for more information.
+
+                If you want help fixing the problem, please, save your Sublime Text Console output
+                so later others can know what happened and how to fix it.
+                """ ) )
+        sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
 
 
-if __name__ == "__main__":
-    main()
-
-
-def plugin_loaded():
-    # main()
-    check_installed_packages()
+def wrap_text(text):
+    return re.sub( r"(?<!\n)\n(?!\n)", " ", textwrap.dedent( text ).strip( " " ) )
 
 
