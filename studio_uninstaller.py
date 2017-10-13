@@ -34,9 +34,8 @@ import threading
 from .settings import *
 g_is_already_running = False
 
-from .studio_installer import get_installed_packages
-from .studio_installer import unique_list_join
-
+from .studio_utilities import get_installed_packages
+from .studio_utilities import unique_list_join
 from .studio_utilities import load_data_file
 from .studio_utilities import write_data_file
 from .studio_utilities import string_convert_list
@@ -473,7 +472,7 @@ def uninstall_packages():
     current_index      = 0
     git_packages_count = len( packages_to_uninstall )
 
-    packages     = set( package_manager.list_packages() + get_installed_packages() )
+    packages     = set( package_manager.list_packages( list_everything=True ) + get_installed_packages( "PackagesManager.sublime-settings" ) )
     dependencies = set( package_manager.list_dependencies() )
 
     ignore_all_packages( packages_to_uninstall )

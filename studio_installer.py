@@ -48,6 +48,8 @@ except:
 from .settings import *
 g_is_already_running = False
 
+from .studio_utilities import get_installed_packages
+from .studio_utilities import unique_list_join
 from .studio_utilities import write_data_file
 from .studio_utilities import get_dictionary_key
 from .studio_utilities import string_convert_list
@@ -295,7 +297,7 @@ def get_stable_packages( git_modules_file ):
     packages = []
 
     gitModulesFile     = configparser.RawConfigParser()
-    installed_packages = get_installed_packages()
+    installed_packages = get_installed_packages( "Package Control.sublime-settings" )
 
     log( 2, "get_stable_packages, installed_packages: " + str( installed_packages ) )
     gitModulesFile.readfp( io.StringIO( git_modules_file ) )
@@ -358,24 +360,6 @@ def load_ignored_packages():
 
     log( 2, "load_ignored_packages, g_packages_to_ignore:    " + str( g_packages_to_ignore ) )
     log( 2, "load_ignored_packages, g_default_ignored_packages: " + str( g_default_ignored_packages ) )
-
-
-def unique_list_join(*lists):
-    unique_list = []
-
-    for _list in lists:
-
-        for item in _list:
-
-            if item not in unique_list:
-                unique_list.append( item )
-
-    return unique_list
-
-
-def get_installed_packages():
-    package_control_settings = sublime.load_settings("Package Control.sublime-settings")
-    return package_control_settings.get("installed_packages", [])
 
 
 def is_dependency(gitModulesFile, section):
@@ -623,7 +607,7 @@ def get_development_packages():
     gitModulesFile = configparser.RawConfigParser()
 
     index = 0
-    installed_packages = get_installed_packages()
+    installed_packages = get_installed_packages( "Package Control.sublime-settings" )
 
     packages_tonot_install = unique_list_join( PACKAGES_TO_NOT_INSTALL, installed_packages )
     log( 2, "get_development_packages, packages_tonot_install: " + str( packages_tonot_install ) )
@@ -659,6 +643,7 @@ def get_development_packages():
     #     ('Notepad++ Color Scheme', 'https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme', 'Packages/Notepad++ Color Scheme'),
     #     ('PackagesManager', 'https://github.com/evandrocoan/package_control', 'Packages/PackagesManager'),
     #     ('Toggle Words', 'https://github.com/evandrocoan/ToggleWords', 'Packages/Toggle Words')
+    #     ('Default', 'https://github.com/evandrocoan/DefaultSublimePackage', 'Packages/Default'),
     # ]
 
     return packages

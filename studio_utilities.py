@@ -130,3 +130,21 @@ def wrap_text(text):
     return re.sub( r"(?<!\n)\n(?!\n)", " ", textwrap.dedent( text ).strip( " " ) )
 
 
+def get_installed_packages(setting_name):
+    package_control_settings = sublime.load_settings( setting_name )
+    return package_control_settings.get( "installed_packages", [] )
+
+
+def unique_list_join(*lists):
+    unique_list = []
+
+    for _list in lists:
+
+        for item in _list:
+
+            if item not in unique_list:
+                unique_list.append( item )
+
+    return unique_list
+
+
