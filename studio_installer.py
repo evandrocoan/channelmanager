@@ -281,7 +281,6 @@ def install_stable_packages(packages_to_install):
         # # For quick testing
         # if current_index > 3:
         #     break
-
         log( 1, "\n\nInstalling %d of %d: %s (%s)" % ( current_index, git_packages_count, str( package_name ), str( is_dependency ) ) )
 
         package_manager.install_package( package_name, is_dependency )
@@ -399,7 +398,7 @@ def load_data_file(file_path):
     if os.path.exists( file_path ):
 
         with open( file_path, 'r', encoding='utf-8' ) as studio_channel_data:
-            channel_dictionary = json.load( studio_channel_data)
+            channel_dictionary = json.load( studio_channel_data )
 
     else:
         log( 1, "Error on load_data_file(1), the file '%s' does not exists!" % file_path )
@@ -820,7 +819,7 @@ def complete_package_control(maximum_attempts=3):
         else:
             log( 1, "Error! Could not complete the Package Control uninstalling, missing import for `PackagesManager`." )
 
-    silence_error_message_box()
+    silence_error_message_box(300)
     packages = [ ("Package Control", False), ("0_package_control_loader", None) ]
 
     package_manager  = PackageManager()
