@@ -402,7 +402,8 @@ def uninstall_packagesmanger():
         Uninstals PackagesManager only if Control was installed, otherwise the user will end up with
         no package manager.
     """
-    packages = [ ("PackagesManager", False), ("0_packagesmanager_loader", None) ]
+    # By last uninstall itself `STUDIO_PACKAGE_NAME`
+    packages = [ ("PackagesManager", False), ("0_packagesmanager_loader", None), (STUDIO_PACKAGE_NAME, False) ]
 
     package_manager  = PackageManager()
     package_disabler = PackageDisabler()
