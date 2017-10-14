@@ -101,7 +101,7 @@ def unpack_settings(channel_settings):
     global STUDIO_MAIN_DIRECTORY
     global STUDIO_CHANNEL_FILE
     global STUDIO_REPOSITORY_FILE
-    global STUDIO_INSTALLATION_SETTINGS
+    global STUDIO_SETTINGS_PATH
 
     STUDIO_REPOSITORY_URL = channel_settings['STUDIO_REPOSITORY_URL']
     DEFAULT_CHANNEL_URL   = channel_settings['DEFAULT_CHANNEL_URL']
@@ -110,7 +110,7 @@ def unpack_settings(channel_settings):
     STUDIO_CHANNEL_FILE    = channel_settings['STUDIO_CHANNEL_FILE']
     STUDIO_REPOSITORY_FILE = channel_settings['STUDIO_REPOSITORY_FILE']
 
-    STUDIO_INSTALLATION_SETTINGS = channel_settings['STUDIO_INSTALLATION_SETTINGS']
+    STUDIO_SETTINGS_PATH = channel_settings['STUDIO_SETTINGS_PATH']
     # log( 1, "channel_settings: " + dictionary_to_string_by_line( channel_settings ) )
 
 
@@ -145,7 +145,7 @@ def create_ignored_packages():
     user_ignored_packages                = userSettings.get("ignored_packages", [])
     studioSettings['packages_to_ignore'] = user_ignored_packages
 
-    write_data_file( STUDIO_INSTALLATION_SETTINGS, studioSettings )
+    write_data_file( STUDIO_SETTINGS_PATH, studioSettings )
 
 
 def is_allowed_to_run():
