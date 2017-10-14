@@ -287,7 +287,7 @@ def install_stable_packages(packages_to_install):
         add_package_to_installation_list( package_name )
 
 
-def get_stable_packages( git_modules_file ):
+def get_stable_packages(git_modules_file):
     """
         python ConfigParser: read configuration from string
         https://stackoverflow.com/questions/27744058/python-configparser-read-configuration-from-string
@@ -658,35 +658,46 @@ def set_default_settings_before(packages_to_install):
         already disabled and the new packages to be installed and must be disabled before attempting
         to install them.
     """
-    packages = {}
+    set_last_packages_to_install( packages_to_install )
 
-    # Ignore everything except some packages, until it is finished
+    # The development version does not need to ignore all installed packages before starting the
+    # installation process as it is not affected by the Sublime Text bug.
+    if IS_DEVELOPMENT_INSTALL:
+        set_development_ignored_packages( packages_to_install )
+
+
+def set_development_ignored_packages(packages_to_install):
+
+    for package_name in g_packages_to_ignore:
+
+        # Only ignore the packages which are being installed
+        if package_name in packages_to_install and package_name not in g_default_ignored_packages:
+            g_default_ignored_packages.append( package_name )
+            add_item_if_not_exists( g_packages_to_unignore, package_name )
+
+    g_user_settings.set( 'ignored_packages', g_default_ignored_packages )
+    log( 1, "set_default_settings_before, g_user_settings: " + str( g_user_settings.get("ignored_packages") ) )
+
+    # Save our changes to the user ignored packages list
+    sublime.save_settings( USER_SETTINGS_FILE )
+
+
+def set_last_packages_to_install(packages_to_install):
+    """
+        Ignore everything except some packages, until it is finished
+    """
+    last_packages = {}
+
     for package_name in packages_to_install:
 
         if package_name[0] in PACKAGES_TO_INSTALL_LAST:
-            packages[package_name[0]] = package_name
+            last_packages[package_name[0]] = package_name
             packages_to_install.remove( package_name )
 
     for package_name in PACKAGES_TO_INSTALL_LAST:
 
-        if package_name in packages:
-            packages_to_install.append( packages[package_name] )
-
-    if IS_DEVELOPMENT_INSTALL:
-        global g_default_ignored_packages
-
-        for package_name in g_packages_to_ignore:
-
-            # Only ignore the packages which are being installed
-            if package_name in packages_to_install and package_name not in g_default_ignored_packages:
-                g_default_ignored_packages.append( package_name )
-                add_item_if_not_exists( g_packages_to_unignore, package_name )
-
-        g_user_settings.set( 'ignored_packages', g_default_ignored_packages )
-        log( 1, "set_default_settings_before, g_user_settings: " + str( g_user_settings.get("ignored_packages") ) )
-
-        # Save our changes to the user ignored packages list
-        sublime.save_settings( USER_SETTINGS_FILE )
+        if package_name in last_packages:
+            packages_to_install.append( last_packages[package_name] )
 
 
 def sync_package_control_and_manager():
