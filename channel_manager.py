@@ -280,6 +280,9 @@ def fix_sublime_text_release(release_data, gitModulesFile, section, repository_i
     """
     repository_info['homepage'] = url
 
+    if 'previous_names' not in repository_info:
+        repository_info['previous_names'] = []
+
     if 'description' not in repository_info:
         repository_info['description'] = "No description available."
 
