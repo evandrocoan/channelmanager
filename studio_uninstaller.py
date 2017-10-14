@@ -424,7 +424,7 @@ def uninstall_packagesmanger():
         no package manager.
     """
     # By last uninstall itself `STUDIO_PACKAGE_NAME`
-    packages_to_uninstall = [ ("PackagesManager", False), ("0_packagesmanager_loader", None), (STUDIO_PACKAGE_NAME, False) ]
+    packages_to_uninstall = [ ("0_packagesmanager_loader", None), (STUDIO_PACKAGE_NAME, False), ("PackagesManager", False) ]
 
     package_manager  = PackageManager()
     package_disabler = PackageDisabler()
@@ -442,7 +442,16 @@ def uninstall_packagesmanger():
 
         remove_package_from_list( package_name )
 
+    remove_0_packagesmanager_loader()
     clean_packagesmanager_settings()
+
+
+def remove_0_packagesmanager_loader():
+    """
+        Most times the 0_packagesmanager_loader is not being deleted/removed, then try again.
+    """
+    _packagesmanager_loader_path = os.path.join( STUDIO_MAIN_DIRECTORY, "Installed Packages", "0_packagesmanager_loader_path.sublime-package" )
+    safe_remove( _packagesmanager_loader_path )
 
 
 def clean_packagesmanager_settings(maximum_attempts=3):
