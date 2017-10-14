@@ -253,9 +253,6 @@ def uninstall_packages():
         log( 1, "\n\nUninstalling %d of %d: %s (%s)" % ( current_index, git_packages_count, str( package_name ), str( is_dependency ) ) )
         ignore_next_packages( package_disabler, package_name, packages_to_uninstall )
 
-        # Let the package be unloaded by Sublime Text
-        time.sleep(0.8)
-
         package_manager.remove_package( package_name, is_dependency )
         remove_package_from_list( package_name )
 
@@ -328,6 +325,10 @@ def ignore_next_packages(package_disabler, package_name, packages_list):
 
         # Add them to the in_process list
         package_disabler.disable_packages( next_packages_to_ignore, "remove" )
+        time.sleep(3.0)
+
+    # Let the package be unloaded by Sublime Text
+    time.sleep(0.8)
 
 
 def is_package_dependency(package, dependencies, packages):
