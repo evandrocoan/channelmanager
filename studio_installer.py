@@ -232,24 +232,24 @@ def install_modules(command_line_interface, git_executable_path):
         download_not_packages_submodules( command_line_interface, git_executable_path )
 
         load_ignored_packages()
-        git_packages = get_development_packages()
+        packages_to_install = get_development_packages()
 
-        log( 2, "install_modules, git_packages: " + str( git_packages ) )
-        install_development_packages( git_packages, git_executable_path, command_line_interface )
+        log( 2, "install_modules, packages_to_install: " + str( packages_to_install ) )
+        install_development_packages( packages_to_install, git_executable_path, command_line_interface )
 
     else:
         load_ignored_packages()
 
-        git_modules_file = download_text_file( get_git_modules_url() )
-        git_packages     = get_stable_packages( git_modules_file )
+        git_modules_file    = download_text_file( get_git_modules_url() )
+        packages_to_install = get_stable_packages( git_modules_file )
 
-        log( 2, "install_modules, git_packages: " + str( git_packages ) )
-        install_stable_packages( git_packages )
+        log( 2, "install_modules, packages_to_install: " + str( packages_to_install ) )
+        install_stable_packages( packages_to_install )
 
     uninstall_package_control()
 
 
-def install_stable_packages(git_packages):
+def install_stable_packages(packages_to_install):
     """
         python multithreading wait till all threads finished
         https://stackoverflow.com/questions/11968689/python-multithreading-wait-till-all-threads-finished
@@ -261,11 +261,11 @@ def install_stable_packages(git_packages):
 
         When trying to install several package at once, then here I am installing them one by one.
     """
-    set_default_settings_before( git_packages )
+    set_default_settings_before( packages_to_install )
 
     # Package Control: Advanced Install Package
     # https://github.com/wbond/package_control/issues/1191
-    # thread = AdvancedInstallPackageThread( git_packages )
+    # thread = AdvancedInstallPackageThread( packages_to_install )
     # thread.start()
     # thread.join()
 
@@ -273,9 +273,9 @@ def install_stable_packages(git_packages):
     log( 2, "install_stable_packages, PACKAGES_TO_NOT_INSTALL: " + str( PACKAGES_TO_NOT_INSTALL ) )
 
     current_index      = 0
-    git_packages_count = len( git_packages )
+    git_packages_count = len( packages_to_install )
 
-    for package_name, is_dependency in git_packages:
+    for package_name, is_dependency in packages_to_install:
         current_index += 1
 
         # # For quick testing
@@ -576,14 +576,14 @@ def download_not_packages_submodules(command_line_interface, git_executable_path
                 set_default_settings_after()
 
 
-def install_development_packages(git_packages, git_executable_path, command_line_interface):
-    set_default_settings_before( git_packages )
+def install_development_packages(packages_to_install, git_executable_path, command_line_interface):
+    set_default_settings_before( packages_to_install )
     log( 2, "install_submodules_packages, PACKAGES_TO_NOT_INSTALL: " + str( PACKAGES_TO_NOT_INSTALL ) )
 
     current_index      = 0
-    git_packages_count = len( git_packages )
+    git_packages_count = len( packages_to_install )
 
-    for package_name, url, path in git_packages:
+    for package_name, url, path in packages_to_install:
         current_index += 1
 
         # # For quick testing
@@ -643,13 +643,13 @@ def get_development_packages():
     #     ('Notepad++ Color Scheme', 'https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme', 'Packages/Notepad++ Color Scheme'),
     #     ('PackagesManager', 'https://github.com/evandrocoan/package_control', 'Packages/PackagesManager'),
     #     ('Toggle Words', 'https://github.com/evandrocoan/ToggleWords', 'Packages/Toggle Words'),
-    #     ('Default', 'https://github.com/evandrocoan/DefaultSublimePackage', 'Packages/Default'),
+    #     ('Default', 'https://github.com/evandrocoan/SublimeDefault', 'Packages/Default'),
     # ]
 
     return packages
 
 
-def set_default_settings_before(git_packages):
+def set_default_settings_before(packages_to_install):
     """
         Set some package to be enabled at last due their settings being dependent on other packages
         which need to be installed first.
@@ -662,25 +662,26 @@ def set_default_settings_before(git_packages):
     packages = {}
 
     # Ignore everything except some packages, until it is finished
-    for package in git_packages:
+    for package_name in packages_to_install:
 
-        if package[0] in PACKAGES_TO_INSTALL_LAST:
-            packages[package[0]] = package
-            git_packages.remove( package )
+        if package_name[0] in PACKAGES_TO_INSTALL_LAST:
+            packages[package_name[0]] = package_name
+            packages_to_install.remove( package_name )
 
-    for package in PACKAGES_TO_INSTALL_LAST:
+    for package_name in PACKAGES_TO_INSTALL_LAST:
 
-        if package in packages:
-            git_packages.append( packages[package] )
+        if package_name in packages:
+            packages_to_install.append( packages[package_name] )
 
     if IS_DEVELOPMENT_INSTALL:
         global g_default_ignored_packages
 
-        for package in g_packages_to_ignore:
+        for package_name in g_packages_to_ignore:
 
-            if package not in g_default_ignored_packages:
-                g_default_ignored_packages.append( package )
-                add_item_if_not_exists( g_packages_to_unignore, package )
+            # Only ignore the packages which are being installed
+            if package_name in packages_to_install and package_name not in g_default_ignored_packages:
+                g_default_ignored_packages.append( package_name )
+                add_item_if_not_exists( g_packages_to_unignore, package_name )
 
         g_user_settings.set( 'ignored_packages', g_default_ignored_packages )
         log( 1, "set_default_settings_before, g_user_settings: " + str( g_user_settings.get("ignored_packages") ) )
