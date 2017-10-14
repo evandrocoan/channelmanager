@@ -524,7 +524,7 @@ def download_main_repository(command_line_interface, git_executable_path, studio
         shutil.rmtree( studio_temporary_folder )
 
     command = shlex.split( '"%s" clone "%s" "%s"' % ( git_executable_path, STUDIO_MAIN_URL, TEMPORARY_FOLDER_TO_USE ) )
-    output  = command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY )
+    output  = str( command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY ) )
 
     log( 1, "download_main_repository, output: " + str( output ) )
     studio_temporary_packages_folder = os.path.join( studio_temporary_folder, "Packages" )
@@ -567,7 +567,7 @@ def download_not_packages_submodules(command_line_interface, git_executable_path
                 log( 1, "download_not_packages_submodules, \n\nInstalling: %s" % ( str( url ) ) )
 
                 command = shlex.split( '"%s" clone "%s" "%s"' % ( git_executable_path, url, path ) )
-                output  = command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY )
+                output  = str( command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY ) )
 
                 add_folders_and_files_for_removal( submodule_absolute_path, path )
                 log( 1, "download_not_packages_submodules, output: " + str( output ) )
@@ -593,10 +593,10 @@ def install_development_packages(git_packages, git_executable_path, command_line
         log( 1, "\n\nInstalling %d of %d: %s" % ( current_index, git_packages_count, str( package_name ) ) )
 
         command = shlex.split( '"%s" clone --recursive "%s" "%s"' % ( git_executable_path, url, path) )
-        output = command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY )
+        output  = str( command_line_interface.execute( command, cwd=STUDIO_MAIN_DIRECTORY ) )
 
         command = shlex.split( '"%s" checkout master' % ( git_executable_path ) )
-        output += "\n" + command_line_interface.execute( command, cwd=os.path.join( STUDIO_MAIN_DIRECTORY, path ) )
+        output += "\n" + str( command_line_interface.execute( command, cwd=os.path.join( STUDIO_MAIN_DIRECTORY, path ) ) )
 
         log( 1, "install_development_packages, output: " + str( output ) )
         add_package_to_installation_list( package_name )
@@ -642,7 +642,7 @@ def get_development_packages():
     #     ('Clear Cursors Carets', 'https://github.com/evandrocoan/ClearCursorsCarets', 'Packages/Clear Cursors Carets'),
     #     ('Notepad++ Color Scheme', 'https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme', 'Packages/Notepad++ Color Scheme'),
     #     ('PackagesManager', 'https://github.com/evandrocoan/package_control', 'Packages/PackagesManager'),
-    #     ('Toggle Words', 'https://github.com/evandrocoan/ToggleWords', 'Packages/Toggle Words')
+    #     ('Toggle Words', 'https://github.com/evandrocoan/ToggleWords', 'Packages/Toggle Words'),
     #     ('Default', 'https://github.com/evandrocoan/DefaultSublimePackage', 'Packages/Default'),
     # ]
 

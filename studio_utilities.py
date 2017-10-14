@@ -148,3 +148,7 @@ def unique_list_join(*lists):
     return unique_list
 
 
+def upcase_first_letter(s):
+    return s[0].upper() + s[1:]
+
+
