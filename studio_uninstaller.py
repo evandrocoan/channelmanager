@@ -435,10 +435,10 @@ def uninstall_packagesmanger():
     package_manager  = PackageManager()
     package_disabler = PackageDisabler()
 
+    package_disabler.disable_packages( [ package_name for package_name, _ in packages_to_uninstall ], "remove" )
+
     for package_name, is_dependency in packages_to_uninstall:
         log( 1, "\n\nUninstalling: %s" % str( package_name ) )
-
-        package_disabler.disable_packages( package_name, "remove" )
         thread = RemovePackageThread( package_manager, package_name, is_dependency )
 
         thread.start()

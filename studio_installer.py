@@ -165,9 +165,10 @@ class StartInstallStudioThread(threading.Thread):
                     'Sublime Text Studio %s was successfully installed.' % installation_type )
 
             installer_thread.join()
-
             set_default_settings_after(1)
-            check_installed_packages()
+
+            # Wait PackagesManager to load the found dependencies, before announcing it to the user
+            sublime.set_timeout_async( check_installed_packages, 6000 )
 
         global g_is_already_running
         g_is_already_running = False
@@ -324,24 +325,24 @@ def get_stable_packages(git_modules_file):
 
     # return \
     # [
-    #     # ('Active View Jump Back', False),
-    #     # ('amxmodx', False),
-    #     # ('Amxx Pawn', False),
-    #     # ('Clear Cursors Carets', False),
-    #     # ('Indent and braces', False),
-    #     # ('Invert Selection', False),
-    #     # ('PackagesManager', False),
-    #     # ('Toggle Words', False),
-    #     ('BBCode', False),
-    #     # ('DocBlockr', False),
-    #     # ('Gist', False),
-    #     # ('FileManager', False),
-    #     # ('FuzzyFileNav', False),
-    #     # ('ExportHtml', False),
-    #     # ('ExtendedTabSwitcher', False),
-    #     # ('BufferScroll', False),
-    #     # ('ChannelRepositoryTools', False),
-    #     # ('Better CoffeeScript', False),
+    #     ('Active View Jump Back', False),
+    #     ('amxmodx', False),
+    #     ('Amxx Pawn', False),
+    #     ('Clear Cursors Carets', False),
+    #     ('Indent and braces', False),
+    #     ('Invert Selection', False),
+    #     ('PackagesManager', False),
+    #     ('Toggle Words', False),
+    #     # ('BBCode', False),
+    #     ('DocBlockr', False),
+    #     ('Gist', False),
+    #     ('FileManager', False),
+    #     ('FuzzyFileNav', False),
+    #     ('ExportHtml', False),
+    #     ('ExtendedTabSwitcher', False),
+    #     ('BufferScroll', False),
+    #     ('ChannelRepositoryTools', False),
+    #     ('Better CoffeeScript', False),
     # ]
 
     return packages
@@ -846,15 +847,15 @@ def complete_package_control(maximum_attempts=3):
             log( 1, "Error! Could not complete the Package Control uninstalling, missing import for `PackagesManager`." )
 
     silence_error_message_box(300)
-    packages = [ ("Package Control", False), ("0_package_control_loader", None) ]
+    packages_to_remove = [ ("Package Control", False), ("0_package_control_loader", None) ]
 
     package_manager  = PackageManager()
     package_disabler = PackageDisabler()
 
-    for package_name, is_dependency in packages:
-        log( 1, "\n\nUninstalling: %s" % str( package_name ) )
+    package_disabler.disable_packages( [ package_name for package_name, _ in packages_to_remove ], "remove" )
 
-        package_disabler.disable_packages( package_name, "remove" )
+    for package_name, is_dependency in packages_to_remove:
+        log( 1, "\n\nUninstalling: %s" % str( package_name ) )
         thread = RemovePackageThread( package_manager, package_name, is_dependency )
 
         thread.start()
