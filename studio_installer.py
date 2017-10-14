@@ -331,7 +331,17 @@ def get_stable_packages(git_modules_file):
     #     ('Indent and braces', False),
     #     ('Invert Selection', False),
     #     ('PackagesManager', False),
-    #     ('Toggle Words', False)
+    #     ('Toggle Words', False),
+    #     ('BBCode', False),
+    #     ('DocBlockr', False),
+    #     ('Gist', False),
+    #     ('FileManager', False),
+    #     ('FuzzyFileNav', False),
+    #     ('ExportHtml', False),
+    #     ('ExtendedTabSwitcher', False),
+    #     ('BufferScroll', False),
+    #     ('ChannelRepositoryTools', False),
+    #     ('Better CoffeeScript', False),
     # ]
 
     return packages
