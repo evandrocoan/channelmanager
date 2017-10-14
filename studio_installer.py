@@ -199,6 +199,8 @@ class InstallStudioFilesThread(threading.Thread):
         log( 2, "run, git_executable_path: " + str( git_executable_path ) )
         install_modules( command_line_interface, git_executable_path)
 
+        uninstall_package_control()
+
 
 def load_installation_settings_file():
     global g_packages_to_uninstall
@@ -245,8 +247,6 @@ def install_modules(command_line_interface, git_executable_path):
 
         log( 2, "install_modules, packages_to_install: " + str( packages_to_install ) )
         install_stable_packages( packages_to_install )
-
-    uninstall_package_control()
 
 
 def install_stable_packages(packages_to_install):
@@ -324,24 +324,24 @@ def get_stable_packages(git_modules_file):
 
     # return \
     # [
-    #     ('Active View Jump Back', False),
-    #     ('amxmodx', False),
-    #     ('Amxx Pawn', False),
-    #     ('Clear Cursors Carets', False),
-    #     ('Indent and braces', False),
-    #     ('Invert Selection', False),
-    #     ('PackagesManager', False),
-    #     ('Toggle Words', False),
+    #     # ('Active View Jump Back', False),
+    #     # ('amxmodx', False),
+    #     # ('Amxx Pawn', False),
+    #     # ('Clear Cursors Carets', False),
+    #     # ('Indent and braces', False),
+    #     # ('Invert Selection', False),
+    #     # ('PackagesManager', False),
+    #     # ('Toggle Words', False),
     #     ('BBCode', False),
-    #     ('DocBlockr', False),
-    #     ('Gist', False),
-    #     ('FileManager', False),
-    #     ('FuzzyFileNav', False),
-    #     ('ExportHtml', False),
-    #     ('ExtendedTabSwitcher', False),
-    #     ('BufferScroll', False),
-    #     ('ChannelRepositoryTools', False),
-    #     ('Better CoffeeScript', False),
+    #     # ('DocBlockr', False),
+    #     # ('Gist', False),
+    #     # ('FileManager', False),
+    #     # ('FuzzyFileNav', False),
+    #     # ('ExportHtml', False),
+    #     # ('ExtendedTabSwitcher', False),
+    #     # ('BufferScroll', False),
+    #     # ('ChannelRepositoryTools', False),
+    #     # ('Better CoffeeScript', False),
     # ]
 
     return packages
@@ -817,6 +817,11 @@ def uninstall_package_control():
         # Sublime Text is waiting the current thread to finish before loading the just installed
         # PackagesManager, therefore run a new thread delayed which finishes the job
         sublime.set_timeout_async( complete_package_control, 2000 )
+
+    else:
+        log( 1, "\n\nWarning: PackagesManager is was not installed on the system!" )
+        global g_is_installation_complete
+        g_is_installation_complete = True
 
 
 def complete_package_control(maximum_attempts=3):
