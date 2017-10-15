@@ -428,27 +428,27 @@ def get_stable_packages(git_modules_file):
 
                 packages.append( ( package_name, is_dependency( gitModulesFile, section ) ) )
 
-    return \
-    [
-        ('Active View Jump Back', False),
-        ('amxmodx', False),
-        ('Amxx Pawn', False),
-        ('Clear Cursors Carets', False),
-        ('Indent and braces', False),
-        ('Invert Selection', False),
-        ('PackagesManager', False),
-        ('Toggle Words', False),
-        # ('BBCode', False),
-        ('DocBlockr', False),
-        ('Gist', False),
-        ('FileManager', False),
-        ('FuzzyFileNav', False),
-        ('ExportHtml', False),
-        ('ExtendedTabSwitcher', False),
-        ('BufferScroll', False),
-        ('ChannelRepositoryTools', False),
-        ('Better CoffeeScript', False),
-    ]
+    # return \
+    # [
+    #     ('Active View Jump Back', False),
+    #     ('amxmodx', False),
+    #     ('Amxx Pawn', False),
+    #     ('Clear Cursors Carets', False),
+    #     ('Indent and braces', False),
+    #     ('Invert Selection', False),
+    #     ('PackagesManager', False),
+    #     ('Toggle Words', False),
+    #     # ('BBCode', False),
+    #     ('DocBlockr', False),
+    #     ('Gist', False),
+    #     ('FileManager', False),
+    #     ('FuzzyFileNav', False),
+    #     ('ExportHtml', False),
+    #     ('ExtendedTabSwitcher', False),
+    #     ('BufferScroll', False),
+    #     ('ChannelRepositoryTools', False),
+    #     ('Better CoffeeScript', False),
+    # ]
 
     return packages
 

@@ -667,7 +667,20 @@ def delete_channel_settings_file(maximum_attempts=3):
 
     if maximum_attempts > 0:
         maximum_attempts -= 1
+
         sublime.set_timeout_async( lambda: delete_channel_settings_file( maximum_attempts ), 1000 )
+        return
+
+    sublime.message_dialog( wrap_text( """\
+            The %s uninstallation was successfully completed.
+
+            You need to restart Sublime Text to unload the uninstalled packages and finish
+            uninstalling the unused dependencies.
+
+            Check you Sublime Text Console for more information.
+            """ % STUDIO_PACKAGE_NAME ) )
+
+    sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
 
 
 def check_uninstalled_packages(maximum_attempts=10):
@@ -683,16 +696,6 @@ def check_uninstalled_packages(maximum_attempts=10):
     maximum_attempts -= 1
 
     if g_is_installation_complete & 3:
-        sublime.message_dialog( wrap_text( """\
-                The %s uninstallation was successfully completed.
-
-                You need to restart Sublime Text to unload the uninstalled packages and finish
-                uninstalling the unused dependencies.
-
-                Check you Sublime Text Console for more information.
-                """ % STUDIO_PACKAGE_NAME ) )
-
-        sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
         unignore_user_packages(flush_everything=True)
 
         delete_channel_settings_file()
