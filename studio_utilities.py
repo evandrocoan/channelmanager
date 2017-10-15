@@ -105,6 +105,12 @@ def add_item_if_not_exists(list_to_append, item):
         list_to_append.append( item )
 
 
+def remove_item_if_exists(list_to_remove, item):
+
+    if item in list_to_remove:
+        list_to_remove.remove( item )
+
+
 def _delete_read_only_file(path):
     delete_read_only_file( None, path, None )
 

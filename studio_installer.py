@@ -55,6 +55,7 @@ from .studio_utilities import write_data_file
 from .studio_utilities import get_dictionary_key
 from .studio_utilities import string_convert_list
 from .studio_utilities import add_item_if_not_exists
+from .studio_utilities import remove_item_if_exists
 from .studio_utilities import delete_read_only_file
 from .studio_utilities import wrap_text
 
@@ -749,10 +750,12 @@ def ensure_installed_packages_name(package_control_settings):
 
     if "installed_packages" in package_control_settings:
         installed_packages = package_control_settings['installed_packages']
-        add_item_if_not_exists( installed_packages, "Package Control" )
+
+        remove_item_if_exists( installed_packages, "Package Control" )
+        add_item_if_not_exists( installed_packages, "PackagesManager" )
 
     else:
-        package_control_settings['installed_packages'] = [ "Package Control" ]
+        package_control_settings['installed_packages'] = [ "PackagesManager" ]
 
 
 def set_default_settings_after(print_settings=0):
