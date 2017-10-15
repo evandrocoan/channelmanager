@@ -207,7 +207,6 @@ def finish_uninstallation():
     install_package_control()
     uninstall_packagesmanger()
 
-    delete_channel_settings_file()
     g_is_installation_complete = 1
 
 
@@ -234,8 +233,12 @@ def load_package_manager_settings():
     g_installed_packages       = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
 
     # Disable the error message when uninstalling it
-    import amxmodx
-    amxmodx.AMXXEditor.g_is_package_loading = True
+    try:
+        import amxmodx
+        amxmodx.AMXXEditor.g_is_package_loading = True
+
+    except ImportError:
+        pass
 
 
 def uninstall_packages():
@@ -615,11 +618,22 @@ def safe_remove(path):
             log( 1, "Failed to remove `%s`. Error is: %s" % ( path, error) )
 
 
-def delete_channel_settings_file():
-    log( 1, "\n\nUninstalling channel settings file: %s" % str( STUDIO_INSTALLATION_SETTINGS ) )
+def delete_channel_settings_file(maximum_attempts=3):
+    """
+        Ensure the file is deleted
+    """
+    if maximum_attempts == 3:
+        log( 1, "\n\nUninstalling channel settings file: %s" % str( STUDIO_INSTALLATION_SETTINGS ) )
+        write_data_file( STUDIO_INSTALLATION_SETTINGS, {} )
 
-    write_data_file( STUDIO_INSTALLATION_SETTINGS, {} )
+    else:
+        log( 1, "Uninstalling channel settings file, maximum_attempts: %s" % str( maximum_attempts ) )
+
     safe_remove( STUDIO_INSTALLATION_SETTINGS )
+
+    if maximum_attempts > 0:
+        maximum_attempts -= 1
+        sublime.set_timeout_async( lambda: delete_channel_settings_file( maximum_attempts ), 1000 )
 
 
 def check_uninstalled_packages(maximum_attempts=10):
@@ -647,6 +661,7 @@ def check_uninstalled_packages(maximum_attempts=10):
         sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
         unignore_user_packages(flush_everything=True)
 
+        delete_channel_settings_file()
         return
 
     if maximum_attempts > 0:
