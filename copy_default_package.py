@@ -60,10 +60,11 @@ log( 2, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 
 def main(default_packages_files=[], is_forced=False):
     log( 2, "Entering on main(0)" )
+    main_git_path = os.path.join( CURRENT_DIRECTORY, ".git" )
 
     # Not attempt to run when we are running from inside a `.sublime-package`: FileNotFoundError:
     # '..\\Installed Packages\\ChannelManager.sublime-package\\last_sublime_upgrade.studio-channel'
-    if is_forced or os.path.isdir( CURRENT_DIRECTORY ) and is_sublime_text_upgraded():
+    if is_forced or os.path.exists( main_git_path ) and is_sublime_text_upgraded():
         CopyFilesThread( default_packages_files ).start()
 
 
