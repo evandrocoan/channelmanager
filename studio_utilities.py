@@ -51,8 +51,13 @@ def write_data_file(file_path, channel_dictionary):
 def load_data_file(file_path):
     channel_dictionary = {}
 
-    with open( file_path, 'r', encoding='utf-8' ) as studio_channel_data:
-        channel_dictionary = json.load( studio_channel_data)
+    if os.path.exists( file_path ):
+
+        with open( file_path, 'r', encoding='utf-8' ) as studio_channel_data:
+            channel_dictionary = json.load( studio_channel_data )
+
+    else:
+        log( 1, "Error on load_data_file(1), the file '%s' does not exists!" % file_path )
 
     return channel_dictionary
 
@@ -88,7 +93,7 @@ def print_data_file(file_path):
 def get_dictionary_key(dictionary, key, default=None):
 
     if key in dictionary:
-        default = dictionary[key]
+        return dictionary[key]
 
     return default
 

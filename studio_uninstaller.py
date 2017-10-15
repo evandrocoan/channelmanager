@@ -32,8 +32,10 @@ import time
 import threading
 
 
+g_is_already_running           = False
+g_is_package_control_installed = False
+
 from .settings import *
-g_is_already_running = False
 
 from .studio_utilities import get_installed_packages
 from .studio_utilities import unique_list_join
@@ -51,16 +53,22 @@ from .studio_utilities import wrap_text
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
 # or vice-versa. Which means we cannot do nothing as this is only compatible with PackagesManager.
 try:
-    from PackagesManager.packagesmanager import cmd
-    from PackagesManager.packagesmanager.download_manager import downloader
-
     from PackagesManager.packagesmanager.show_error import silence_error_message_box
+
     from PackagesManager.packagesmanager.package_manager import PackageManager
     from PackagesManager.packagesmanager.thread_progress import ThreadProgress
     from PackagesManager.packagesmanager.package_disabler import PackageDisabler
 
 except ImportError:
-    pass
+    g_is_package_control_installed = True
+
+    from package_control.package_manager import PackageManager
+    from package_control.thread_progress import ThreadProgress
+    from package_control.package_disabler import PackageDisabler
+
+    def silence_error_message_box():
+        pass
+
 
 # How many packages to ignore and unignore in batch to fix the ignored packages bug error
 PACKAGES_COUNT_TO_IGNORE_AHEAD = 8
@@ -155,7 +163,7 @@ class StartUninstallStudioThread(threading.Thread):
             uninstaller_thread.join()
 
             # Wait PackagesManager to load the found dependencies, before announcing it to the user
-            sublime.set_timeout_async( check_uninstalled_packages, 6000 )
+            sublime.set_timeout_async( check_uninstalled_packages, 10000 )
 
         global g_is_already_running
         g_is_already_running = False
@@ -193,6 +201,7 @@ class UninstallStudioFilesThread(threading.Thread):
         g_packages_to_unignore = get_dictionary_key( g_studioSettings, "packages_to_unignore", [] )
 
         load_package_manager_settings()
+        disable_amxmodx_errors()
 
         uninstall_packages()
         remove_studio_channel()
@@ -203,10 +212,27 @@ class UninstallStudioFilesThread(threading.Thread):
         sublime.set_timeout_async( finish_uninstallation, 5000 )
 
 
-def finish_uninstallation():
-    install_package_control()
-    uninstall_packagesmanger()
+def disable_amxmodx_errors():
+    """
+        Disable the error message when uninstalling it
+    """
 
+    try:
+        import amxmodx
+        amxmodx.AMXXEditor.g_is_package_loading = True
+
+    except ImportError:
+        pass
+
+
+def finish_uninstallation():
+    package_manager = PackageManager()
+    installed_packages = package_manager.list_packages()
+
+    if "Package Control" not in installed_packages:
+        install_package_control()
+
+    uninstall_packagesmanger( package_manager, installed_packages )
     g_is_installation_complete = 1
 
 
@@ -226,19 +252,17 @@ def load_package_manager_settings():
     PACKAGESMANAGER = os.path.join( USER_FOLDER_PATH, packagesmanager_name )
     PACKAGE_CONTROL = os.path.join( USER_FOLDER_PATH, package_control_name )
 
-    g_user_settings         = sublime.load_settings( USER_SETTINGS_FILE )
+    g_user_settings            = sublime.load_settings( USER_SETTINGS_FILE )
     g_default_ignored_packages = g_user_settings.get( "ignored_packages", [] )
 
-    g_package_control_settings = load_data_file( PACKAGESMANAGER )
-    g_installed_packages       = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
+    # Allow to not override the Package Control file when PackagesManager does exists
+    if os.path.exists( PACKAGESMANAGER ):
+        g_package_control_settings = load_data_file( PACKAGESMANAGER )
 
-    # Disable the error message when uninstalling it
-    try:
-        import amxmodx
-        amxmodx.AMXXEditor.g_is_package_loading = True
+    else:
+        g_package_control_settings = load_data_file( PACKAGE_CONTROL )
 
-    except ImportError:
-        pass
+    g_installed_packages = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
 
 
 def uninstall_packages():
@@ -251,8 +275,15 @@ def uninstall_packages():
     current_index      = 0
     git_packages_count = len( packages_to_uninstall )
 
-    packages     = set( package_manager.list_packages( list_everything=True ) + get_installed_packages( "PackagesManager.sublime-settings" ) )
-    dependencies = set( package_manager.list_dependencies() )
+    if g_is_package_control_installed:
+        _dependencies = package_manager.list_dependencies()
+        dependencies  = set( _dependencies )
+        packages      = set( package_manager.list_packages() + _dependencies + ['Default']
+                + package_manager.list_default_packages() + get_installed_packages( "PackagesManager.sublime-settings" ) )
+
+    else:
+        packages     = set( package_manager.list_packages( list_everything=True ) + get_installed_packages( "PackagesManager.sublime-settings" ) )
+        dependencies = set( package_manager.list_dependencies() )
 
     uninstall_default_package( packages )
 
@@ -280,7 +311,7 @@ def uninstall_default_package(packages):
         default_packages_path = os.path.join( STUDIO_MAIN_DIRECTORY, "Packages", "Default" )
 
         packages.remove('Default')
-        files_installed = g_studioSettings['default_packages_files']
+        files_installed = get_dictionary_key( g_studioSettings, 'default_packages_files', [] )
 
         for file in files_installed:
             file_path = os.path.join( default_packages_path, file )
@@ -291,7 +322,7 @@ def uninstall_default_package(packages):
 
 def get_packages_to_uninstall():
     filtered_packages     = []
-    packages_to_uninstall = g_studioSettings['packages_to_uninstall']
+    packages_to_uninstall = get_dictionary_key( g_studioSettings, 'packages_to_uninstall', [] )
 
     # Only merges the packages which are actually being uninstalled
     for package_name in PACKAGES_TO_UNINSTALL_FIRST:
@@ -433,25 +464,28 @@ def unignore_some_packages(packages_list):
     sublime.save_settings( USER_SETTINGS_FILE )
 
 
-def uninstall_packagesmanger():
+def uninstall_packagesmanger(package_manager, installed_packages):
     """
         Uninstals PackagesManager only if Control was installed, otherwise the user will end up with
         no package manager.
     """
     log(1, "\n\nFinishing PackagesManager Uninstallation..." )
+    packages_to_remove = []
 
-    silence_error_message_box()
-    package_manager = PackageManager()
+    # Only uninstall it when it is installed
+    if "PackagesManager" in installed_packages:
+        packages_to_remove.extend( [ ("PackagesManager", False), ("0_packagesmanager_loader", None) ] )
 
     # By last uninstall itself `STUDIO_PACKAGE_NAME`
-    packages_to_remove = [ ("PackagesManager", False), ("0_packagesmanager_loader", None), (STUDIO_PACKAGE_NAME, False) ]
+    packages_to_remove.extend( [ (STUDIO_PACKAGE_NAME, False) ] )
 
-    # Let the package be unloaded by Sublime Text
+    # Let the package be unloaded by Sublime Text1
     add_packages_to_ignored_list( [ package_name for package_name, _ in packages_to_remove ] )
 
     for package_name, is_dependency in packages_to_remove:
         log( 1, "\n\nUninstalling: %s..." % str( package_name ) )
 
+        silence_error_message_box()
         package_manager.remove_package( package_name, is_dependency )
 
     remove_0_packagesmanager_loader()

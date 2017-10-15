@@ -56,6 +56,7 @@ from .studio_utilities import write_data_file
 from .studio_utilities import get_dictionary_key
 from .studio_utilities import string_convert_list
 from .studio_utilities import add_item_if_not_exists
+from .studio_utilities import load_data_file
 from .studio_utilities import remove_if_exists
 from .studio_utilities import remove_item_if_exists
 from .studio_utilities import delete_read_only_file
@@ -525,20 +526,6 @@ def download_text_file( git_modules_url ):
     return downloaded_contents.decode('utf-8')
 
 
-def load_data_file(file_path):
-    channel_dictionary = {}
-
-    if os.path.exists( file_path ):
-
-        with open( file_path, 'r', encoding='utf-8' ) as studio_channel_data:
-            channel_dictionary = json.load( studio_channel_data )
-
-    else:
-        log( 1, "Error on load_data_file(1), the file '%s' does not exists!" % file_path )
-
-    return channel_dictionary
-
-
 def clone_sublime_text_studio(command_line_interface, git_executable_path):
     """
         Clone the main repository `https://github.com/evandrocoan/SublimeTextStudio`
@@ -862,7 +849,7 @@ def ensure_installed_packages_name(package_control_settings):
     """
 
     if "installed_packages" in package_control_settings:
-        installed_packages = package_control_settings['installed_packages']
+        installed_packages = get_dictionary_key( package_control_settings, 'installed_packages', [] )
 
         remove_item_if_exists( installed_packages, "Package Control" )
         add_item_if_not_exists( installed_packages, "PackagesManager" )
