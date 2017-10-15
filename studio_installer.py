@@ -51,10 +51,12 @@ g_is_already_running = False
 
 from .studio_utilities import get_installed_packages
 from .studio_utilities import unique_list_join
+from .studio_utilities import unique_list_append
 from .studio_utilities import write_data_file
 from .studio_utilities import get_dictionary_key
 from .studio_utilities import string_convert_list
 from .studio_utilities import add_item_if_not_exists
+from .studio_utilities import remove_if_exists
 from .studio_utilities import remove_item_if_exists
 from .studio_utilities import delete_read_only_file
 from .studio_utilities import wrap_text
@@ -76,6 +78,9 @@ try:
 
 except ImportError:
     pass
+
+# How many packages to ignore and unignore in batch to fix the ignored packages bug error
+PACKAGES_COUNT_TO_IGNORE_AHEAD = 8
 
 
 # Import the debugger
@@ -154,7 +159,10 @@ class StartInstallStudioThread(threading.Thread):
 
         if is_allowed_to_run():
             global g_is_installation_complete
-            g_is_installation_complete = False
+            global _uningored_packages_to_flush
+
+            g_is_installation_complete   = False
+            _uningored_packages_to_flush = []
 
             unpack_settings(self.channel_settings)
 
@@ -221,11 +229,13 @@ def load_installation_settings_file():
     global g_files_to_uninstall
     global g_folders_to_uninstall
     global g_packages_to_unignore
+    global g_next_packages_to_ignore
 
-    g_packages_to_uninstall = load_list_if_exists( g_studioSettings, 'packages_to_uninstall', [] )
-    g_packages_to_unignore  = load_list_if_exists( g_studioSettings, 'packages_to_unignore', [] )
-    g_files_to_uninstall    = load_list_if_exists( g_studioSettings, 'files_to_uninstall', [] )
-    g_folders_to_uninstall  = load_list_if_exists( g_studioSettings, 'folders_to_uninstall', [] )
+    g_packages_to_uninstall   = load_list_if_exists( g_studioSettings, 'packages_to_uninstall', [] )
+    g_packages_to_unignore    = load_list_if_exists( g_studioSettings, 'packages_to_unignore', [] )
+    g_files_to_uninstall      = load_list_if_exists( g_studioSettings, 'files_to_uninstall', [] )
+    g_folders_to_uninstall    = load_list_if_exists( g_studioSettings, 'folders_to_uninstall', [] )
+    g_next_packages_to_ignore = load_list_if_exists( g_studioSettings, 'next_packages_to_ignore', [] )
 
 
 def load_list_if_exists(dictionary_to_search, item_to_load, default_value):
@@ -257,6 +267,7 @@ def install_modules(command_line_interface, git_executable_path):
 
         log( 2, "install_modules, packages_to_install: " + str( packages_to_install ) )
         install_stable_packages( packages_to_install )
+        accumulative_unignore_user_packages( flush_everything=True )
 
 
 def install_stable_packages(packages_to_install):
@@ -279,8 +290,11 @@ def install_stable_packages(packages_to_install):
     # thread.start()
     # thread.join()
 
-    package_manager = PackageManager()
+    package_manager  = PackageManager()
+    package_disabler = PackageDisabler()
+
     log( 2, "install_stable_packages, PACKAGES_TO_NOT_INSTALL: " + str( PACKAGES_TO_NOT_INSTALL ) )
+    packages_to_install_names = [ package_name for package_name, _ in packages_to_install ]
 
     current_index      = 0
     git_packages_count = len( packages_to_install )
@@ -293,8 +307,89 @@ def install_stable_packages(packages_to_install):
         #     break
         log( 1, "\n\nInstalling %d of %d: %s (%s)" % ( current_index, git_packages_count, str( package_name ), str( is_dependency ) ) )
 
+        ignore_next_packages( package_disabler, package_name, packages_to_install_names )
         package_manager.install_package( package_name, is_dependency )
+
         add_package_to_installation_list( package_name )
+        accumulative_unignore_user_packages( package_name )
+
+
+def ignore_next_packages(package_disabler, package_name, packages_list):
+    """
+        There is a bug with the uninstalling several packages, which trigger several errors of:
+
+        "It appears a package is trying to ignore itself, causing a loop.
+        Please resolve by removing the offending ignored_packages setting."
+
+        When trying to uninstall several package at once, then here I am ignoring them all at once.
+
+        Package Control: Advanced Install Package
+        https://github.com/wbond/package_control/issues/1191
+
+        This fixes it by ignoring several next packages, then later unignoring them after uninstalled.
+    """
+    if len( _uningored_packages_to_flush ) < 1:
+        global g_next_packages_to_ignore
+
+        last_ignored_packges      = packages_list.index( package_name )
+        g_next_packages_to_ignore = packages_list[ last_ignored_packges : last_ignored_packges + PACKAGES_COUNT_TO_IGNORE_AHEAD + 1 ]
+
+        log( 1, "Adding %d packages to be uninstalled to the `ignored_packages` setting list." % len( g_next_packages_to_ignore ) )
+        log( 1, "g_next_packages_to_ignore: " + str( g_next_packages_to_ignore ) )
+
+        # We never can ignore the Default package, otherwise several errors/anomalies show up
+        if "Default" in g_next_packages_to_ignore:
+            g_next_packages_to_ignore.remove( "Default" )
+
+        # Add them to the in_process list
+        package_disabler.disable_packages( g_next_packages_to_ignore, "remove" )
+        unique_list_append( g_default_ignored_packages, g_next_packages_to_ignore )
+
+        # Let the package be unloaded by Sublime Text
+        set_default_settings_after()
+        time.sleep(2.0)
+
+
+def accumulative_unignore_user_packages(package_name="", flush_everything=False):
+    """
+        There is a bug with the uninstalling several packages, which trigger several errors of:
+
+        "It appears a package is trying to ignore itself, causing a loop.
+        Please resolve by removing the offending ignored_packages setting."
+
+        When trying to uninstall several package at once, then here I am unignoring them all at once.
+
+        Package Control: Advanced Install Package
+        https://github.com/wbond/package_control/issues/1191
+
+        @param flush_everything     set all remaining packages as unignored
+    """
+
+    if flush_everything:
+        unignore_some_packages( g_packages_to_unignore + _uningored_packages_to_flush )
+
+    else:
+        log( 1, "Adding package to unignore list: %s" % str( package_name ) )
+        _uningored_packages_to_flush.append( package_name )
+
+        if len( _uningored_packages_to_flush ) > PACKAGES_COUNT_TO_IGNORE_AHEAD:
+            unignore_some_packages( _uningored_packages_to_flush )
+            del _uningored_packages_to_flush[:]
+
+
+def unignore_some_packages(packages_list):
+    """
+        Flush just a few items each time
+    """
+
+    for package_name in packages_list:
+
+        if package_name in g_default_ignored_packages:
+            log( 1, "Unignoring the package: %s" % package_name )
+            g_default_ignored_packages.remove( package_name )
+
+    g_user_settings.set( "ignored_packages", g_default_ignored_packages )
+    sublime.save_settings( USER_SETTINGS_FILE )
 
 
 def get_stable_packages(git_modules_file):
@@ -332,27 +427,27 @@ def get_stable_packages(git_modules_file):
 
                 packages.append( ( package_name, is_dependency( gitModulesFile, section ) ) )
 
-    # return \
-    # [
-    #     ('Active View Jump Back', False),
-    #     ('amxmodx', False),
-    #     ('Amxx Pawn', False),
-    #     ('Clear Cursors Carets', False),
-    #     ('Indent and braces', False),
-    #     ('Invert Selection', False),
-    #     ('PackagesManager', False),
-    #     ('Toggle Words', False),
-    #     # ('BBCode', False),
-    #     ('DocBlockr', False),
-    #     ('Gist', False),
-    #     ('FileManager', False),
-    #     ('FuzzyFileNav', False),
-    #     ('ExportHtml', False),
-    #     ('ExtendedTabSwitcher', False),
-    #     ('BufferScroll', False),
-    #     ('ChannelRepositoryTools', False),
-    #     ('Better CoffeeScript', False),
-    # ]
+    return \
+    [
+        ('Active View Jump Back', False),
+        ('amxmodx', False),
+        ('Amxx Pawn', False),
+        ('Clear Cursors Carets', False),
+        ('Indent and braces', False),
+        ('Invert Selection', False),
+        ('PackagesManager', False),
+        ('Toggle Words', False),
+        # ('BBCode', False),
+        ('DocBlockr', False),
+        ('Gist', False),
+        ('FileManager', False),
+        ('FuzzyFileNav', False),
+        ('ExportHtml', False),
+        ('ExtendedTabSwitcher', False),
+        ('BufferScroll', False),
+        ('ChannelRepositoryTools', False),
+        ('Better CoffeeScript', False),
+    ]
 
     return packages
 
@@ -379,6 +474,24 @@ def load_ignored_packages():
 
     log( 2, "load_ignored_packages, g_packages_to_ignore:    " + str( g_packages_to_ignore ) )
     log( 2, "load_ignored_packages, g_default_ignored_packages: " + str( g_default_ignored_packages ) )
+
+    unignore_installed_packages()
+
+
+def unignore_installed_packages():
+    """
+        When the installation was interrupted, there will be ignored packages which are pending to
+        uningored.
+    """
+    packages_to_unignore = []
+
+    for package_name in g_next_packages_to_ignore:
+
+        if package_name in g_packages_to_uninstall:
+            packages_to_unignore.append( package_name )
+
+    log( 1, "unignore_installed_packages: " + str( packages_to_unignore ) )
+    unignore_some_packages( packages_to_unignore )
 
 
 def is_dependency(gitModulesFile, section):
@@ -772,10 +885,11 @@ def set_default_settings_after(print_settings=0):
 
     # `packages_to_uninstall` and `packages_to_unignore` are to uninstall and unignore they when
     # uninstalling the studio channel
-    g_studioSettings['packages_to_uninstall'] = g_packages_to_uninstall
-    g_studioSettings['packages_to_unignore']  = g_packages_to_unignore
-    g_studioSettings['files_to_uninstall']    = g_files_to_uninstall
-    g_studioSettings['folders_to_uninstall']  = g_folders_to_uninstall
+    g_studioSettings['packages_to_uninstall']   = g_packages_to_uninstall
+    g_studioSettings['packages_to_unignore']    = g_packages_to_unignore
+    g_studioSettings['files_to_uninstall']      = g_files_to_uninstall
+    g_studioSettings['folders_to_uninstall']    = g_folders_to_uninstall
+    g_studioSettings['next_packages_to_ignore'] = g_next_packages_to_ignore
 
     g_studioSettings = sort_dictionary( g_studioSettings )
 
@@ -814,11 +928,6 @@ def uninstall_package_control():
     installed_packages = g_packagesmanager_settings.get( 'installed_packages', [] )
 
     if "PackagesManager" in installed_packages:
-        installed_packages.remove( "Package Control" )
-
-        g_packagesmanager_settings.set( 'installed_packages', installed_packages )
-        sublime.save_settings( g_package_control_name )
-
         # Sublime Text is waiting the current thread to finish before loading the just installed
         # PackagesManager, therefore run a new thread delayed which finishes the job
         sublime.set_timeout_async( complete_package_control, 2000 )
@@ -850,13 +959,11 @@ def complete_package_control(maximum_attempts=3):
             log( 1, "Error! Could not complete the Package Control uninstalling, missing import for `PackagesManager`." )
 
     silence_error_message_box(300)
+    package_manager = PackageManager()
+
     packages_to_remove = [ ("Package Control", False), ("0_package_control_loader", None) ]
+    add_packages_to_ignored_list( [ package_name for package_name, _ in packages_to_remove ] )
 
-    package_manager  = PackageManager()
-    package_disabler = PackageDisabler()
-
-    package_disabler.disable_packages( [ package_name for package_name, _ in packages_to_remove ], "remove" )
-    time.sleep(1.7)
 
     for package_name, is_dependency in packages_to_remove:
         log( 1, "\n\nUninstalling: %s" % str( package_name ) )
@@ -865,6 +972,31 @@ def complete_package_control(maximum_attempts=3):
 
     sync_package_control_and_manager()
     clean_package_control_settings()
+
+    accumulative_unignore_user_packages( flush_everything=True )
+
+
+def add_packages_to_ignored_list(packages_list):
+    """
+        Something, somewhere is setting the ignored_packages list to `["Vintage"]`. Then ensure we
+        override this ************.
+    """
+    log( 1, "add_packages_to_ignored_list, Adding packages to unignore list: %s" % str( packages_list ) )
+
+    global g_next_packages_to_ignore
+    g_next_packages_to_ignore = packages_list
+
+    set_default_settings_after()
+    unique_list_append( _uningored_packages_to_flush, packages_list )
+
+    ignored_packages = g_user_settings.get( "ignored_packages", [] )
+    unique_list_append( ignored_packages, packages_list )
+
+    for interval in range( 0, 27 ):
+        g_user_settings.set( "ignored_packages", ignored_packages )
+        sublime.save_settings( USER_SETTINGS_FILE )
+
+        time.sleep(0.1)
 
 
 def clean_package_control_settings(maximum_attempts=3):
