@@ -254,18 +254,19 @@ def install_modules(command_line_interface, git_executable_path):
         download_not_packages_submodules( command_line_interface, git_executable_path )
 
         load_ignored_packages()
-        packages_to_install = get_development_packages()
 
+        packages_to_install = get_development_packages()
         log( 2, "install_modules, packages_to_install: " + str( packages_to_install ) )
+
         install_development_packages( packages_to_install, git_executable_path, command_line_interface )
 
     else:
         load_ignored_packages()
+        git_modules_file = download_text_file( get_git_modules_url() )
 
-        git_modules_file    = download_text_file( get_git_modules_url() )
         packages_to_install = get_stable_packages( git_modules_file )
-
         log( 2, "install_modules, packages_to_install: " + str( packages_to_install ) )
+
         install_stable_packages( packages_to_install )
         accumulative_unignore_user_packages( flush_everything=True )
 
@@ -345,9 +346,8 @@ def ignore_next_packages(package_disabler, package_name, packages_list):
         package_disabler.disable_packages( g_next_packages_to_ignore, "remove" )
         unique_list_append( g_default_ignored_packages, g_next_packages_to_ignore )
 
-        # Let the package be unloaded by Sublime Text
-        set_default_settings_after()
-        time.sleep(2.0)
+        # Let the package be unloaded by Sublime Text while ensuring anyone is putting them back in
+        add_packages_to_ignored_list( g_next_packages_to_ignore )
 
 
 def accumulative_unignore_user_packages(package_name="", flush_everything=False):
@@ -472,7 +472,7 @@ def load_ignored_packages():
     g_default_ignored_packages = g_user_settings.get( 'ignored_packages', [] )
     g_packages_to_ignore       = get_dictionary_key( g_studio_settings, 'packages_to_ignore', [] )
 
-    log( 2, "load_ignored_packages, g_packages_to_ignore:    " + str( g_packages_to_ignore ) )
+    log( 2, "load_ignored_packages, g_packages_to_ignore:       " + str( g_packages_to_ignore ) )
     log( 2, "load_ignored_packages, g_default_ignored_packages: " + str( g_default_ignored_packages ) )
 
     unignore_installed_packages()
@@ -873,9 +873,7 @@ def ensure_installed_packages_name(package_control_settings):
 
 def set_default_settings_after(print_settings=0):
     """
-        Populate the global variable `g_default_ignored_packages` with the packages this installation
-        process added to the user's settings files and also save it to the file system. So later
-        when uninstalling this studio we can only remove our packages, keeping the user's original
+        When uninstalling this studio we can only remove our packages, keeping the user's original
         ignored packages intact.
     """
     global g_studioSettings

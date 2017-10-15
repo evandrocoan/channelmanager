@@ -265,9 +265,6 @@ def uninstall_packages():
         package_manager.remove_package( package_name, is_dependency )
         remove_package_from_list( package_name )
 
-        # Let the package be unloaded by Sublime Text
-        time.sleep(0.7)
-
     # Remove the remaining packages to be uninstalled
     remove_package_from_list( "PackagesManager" )
     remove_package_from_list( STUDIO_PACKAGE_NAME )
@@ -386,8 +383,8 @@ def save_package_control_settings():
 
 def remove_package_from_list(package_name):
     remove_if_exists( g_installed_packages, package_name )
-
     save_package_control_settings()
+
     unignore_user_packages( package_name )
 
 
