@@ -148,6 +148,16 @@ def unique_list_join(*lists):
     return unique_list
 
 
+def unique_list_append(a_list, *lists):
+
+    for _list in lists:
+
+        for item in _list:
+
+            if item not in a_list:
+                a_list.append( item )
+
+
 def upcase_first_letter(s):
     return s[0].upper() + s[1:]
 

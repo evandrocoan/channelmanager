@@ -37,6 +37,7 @@ g_is_already_running = False
 
 from .studio_utilities import get_installed_packages
 from .studio_utilities import unique_list_join
+from .studio_utilities import unique_list_append
 from .studio_utilities import load_data_file
 from .studio_utilities import write_data_file
 from .studio_utilities import string_convert_list
@@ -57,7 +58,6 @@ try:
     from PackagesManager.packagesmanager.package_manager import PackageManager
     from PackagesManager.packagesmanager.thread_progress import ThreadProgress
     from PackagesManager.packagesmanager.package_disabler import PackageDisabler
-    from PackagesManager.packagesmanager.commands.remove_package_command import RemovePackageThread
 
 except ImportError:
     pass
@@ -153,7 +153,9 @@ class StartUninstallStudioThread(threading.Thread):
                     'Sublime Text Studio %s was successfully installed.' )
 
             uninstaller_thread.join()
-            check_uninstalled_packages()
+
+            # Wait PackagesManager to load the found dependencies, before announcing it to the user
+            sublime.set_timeout_async( check_uninstalled_packages, 6000 )
 
         global g_is_already_running
         g_is_already_running = False
@@ -182,7 +184,7 @@ class UninstallStudioFilesThread(threading.Thread):
         global g_packages_to_unignore
         global _uningored_packages_to_flush
 
-        g_is_installation_complete = False
+        g_is_installation_complete = 0
         g_channel_manager_settings = load_data_file( STUDIO_INSTALLATION_SETTINGS )
 
         _uningored_packages_to_flush = []
@@ -191,19 +193,18 @@ class UninstallStudioFilesThread(threading.Thread):
         g_packages_to_unignore = get_dictionary_key( g_channel_manager_settings, "packages_to_unignore", [] )
 
         load_package_manager_settings()
-        uninstall_packages()
 
-        install_package_control()
+        uninstall_packages()
         remove_studio_channel()
 
+        install_package_control()
         uninstall_packagesmanger()
-        unignore_user_packages(flush_everything=True)
 
         uninstall_files()
         uninstall_folders()
 
         delete_channel_settings_file()
-        g_is_installation_complete = True
+        g_is_installation_complete = 1
 
 
 def load_package_manager_settings():
@@ -227,6 +228,10 @@ def load_package_manager_settings():
 
     g_package_control_settings = load_data_file( PACKAGESMANAGER )
     g_installed_packages       = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
+
+    # Disable the error message when uninstalling it
+    import amxmodx
+    amxmodx.AMXXEditor.g_is_package_loading = True
 
 
 def uninstall_packages():
@@ -255,6 +260,13 @@ def uninstall_packages():
 
         package_manager.remove_package( package_name, is_dependency )
         remove_package_from_list( package_name )
+
+        # Let the package be unloaded by Sublime Text
+        time.sleep(0.7)
+
+    # Remove the remaining packages to be uninstalled
+    remove_package_from_list( "PackagesManager" )
+    remove_package_from_list( STUDIO_PACKAGE_NAME )
 
 
 def uninstall_default_package(packages):
@@ -325,10 +337,11 @@ def ignore_next_packages(package_disabler, package_name, packages_list):
 
         # Add them to the in_process list
         package_disabler.disable_packages( next_packages_to_ignore, "remove" )
-        time.sleep(3.0)
 
-    # Let the package be unloaded by Sublime Text
-    time.sleep(0.8)
+        unique_list_append( g_user_ignored_packages, next_packages_to_ignore )
+
+        # Let the package be unloaded by Sublime Text
+        time.sleep(2.0)
 
 
 def is_package_dependency(package, dependencies, packages):
@@ -369,7 +382,6 @@ def save_package_control_settings():
 
 
 def remove_package_from_list(package_name):
-    remove_if_exists( g_user_ignored_packages, package_name )
     remove_if_exists( g_installed_packages, package_name )
 
     save_package_control_settings()
@@ -423,24 +435,26 @@ def uninstall_packagesmanger():
         Uninstals PackagesManager only if Control was installed, otherwise the user will end up with
         no package manager.
     """
+    log(1, "\n\nFinishing PackagesManager Uninstallation..." )
+
     # By last uninstall itself `STUDIO_PACKAGE_NAME`
-    packages_to_uninstall = [ ("0_packagesmanager_loader", None), (STUDIO_PACKAGE_NAME, False), ("PackagesManager", False) ]
+    packages_to_remove = [ ("PackagesManager", False), ("0_packagesmanager_loader", None), (STUDIO_PACKAGE_NAME, False) ]
 
     package_manager  = PackageManager()
     package_disabler = PackageDisabler()
 
     # Let the package be unloaded by Sublime Text
-    package_disabler.disable_packages( [ package_name for package_name, _ in packages_to_uninstall ], "remove" )
-    time.sleep(0.7)
+    package_disabler.disable_packages( [ package_name for package_name, _ in packages_to_remove ], "remove" )
+    remove_0_packagesmanager_loader()
 
-    for package_name, is_dependency in packages_to_uninstall:
-        log( 1, "\n\nUninstalling: %s" % str( package_name ) )
-        thread = RemovePackageThread( package_manager, package_name, is_dependency )
+    time.sleep(3.0)
+    remove_0_packagesmanager_loader()
 
-        thread.start()
-        thread.join()
+    for package_name, is_dependency in packages_to_remove:
+        log( 1, "\n\nUninstalling: %s..." % str( package_name ) )
 
-        remove_package_from_list( package_name )
+        remove_0_packagesmanager_loader()
+        package_manager.remove_package( package_name, is_dependency )
 
     remove_0_packagesmanager_loader()
     clean_packagesmanager_settings()
@@ -450,7 +464,7 @@ def remove_0_packagesmanager_loader():
     """
         Most times the 0_packagesmanager_loader is not being deleted/removed, then try again.
     """
-    _packagesmanager_loader_path = os.path.join( STUDIO_MAIN_DIRECTORY, "Installed Packages", "0_packagesmanager_loader_path.sublime-package" )
+    _packagesmanager_loader_path = os.path.join( STUDIO_MAIN_DIRECTORY, "Installed Packages", "0_packagesmanager_loader.sublime-package" )
     safe_remove( _packagesmanager_loader_path )
 
 
@@ -468,6 +482,10 @@ def clean_packagesmanager_settings(maximum_attempts=3):
 
     if maximum_attempts > 0:
         sublime.set_timeout_async( lambda: clean_packagesmanager_settings( maximum_attempts ), 2000 )
+        return
+
+    global g_is_installation_complete
+    g_is_installation_complete = 2
 
 
 def uninstall_folders():
@@ -603,7 +621,7 @@ def check_uninstalled_packages(maximum_attempts=10):
     log( 1, "Finishing Uninstallation... maximum_attempts: " + str( maximum_attempts ) )
     maximum_attempts -= 1
 
-    if g_is_installation_complete:
+    if g_is_installation_complete & 3:
         sublime.message_dialog( wrap_text( """\
                 The %s uninstallation was successfully completed.
 
@@ -614,6 +632,8 @@ def check_uninstalled_packages(maximum_attempts=10):
                 """ % STUDIO_PACKAGE_NAME ) )
 
         sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+        unignore_user_packages(flush_everything=True)
+
         return
 
     if maximum_attempts > 0:
@@ -630,5 +650,6 @@ def check_uninstalled_packages(maximum_attempts=10):
                 """ % STUDIO_PACKAGE_NAME ) )
 
         sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+        unignore_user_packages(flush_everything=True)
 
 

@@ -27,6 +27,7 @@
 import sublime
 
 import os
+import time
 import shutil
 
 import io
@@ -68,7 +69,6 @@ try:
 
     from package_control.package_manager import PackageManager
     from package_control.package_disabler import PackageDisabler
-    from package_control.commands.remove_package_command import RemovePackageThread
 
     from package_control.thread_progress import ThreadProgress
     from package_control.commands.advanced_install_package_command import AdvancedInstallPackageThread
@@ -833,7 +833,6 @@ def complete_package_control(maximum_attempts=3):
         from PackagesManager.packagesmanager.show_error import silence_error_message_box
         from PackagesManager.packagesmanager.package_manager import PackageManager
         from PackagesManager.packagesmanager.package_disabler import PackageDisabler
-        from PackagesManager.packagesmanager.commands.remove_package_command import RemovePackageThread
 
     except ImportError:
 
@@ -853,13 +852,12 @@ def complete_package_control(maximum_attempts=3):
     package_disabler = PackageDisabler()
 
     package_disabler.disable_packages( [ package_name for package_name, _ in packages_to_remove ], "remove" )
+    time.sleep(1.7)
 
     for package_name, is_dependency in packages_to_remove:
         log( 1, "\n\nUninstalling: %s" % str( package_name ) )
-        thread = RemovePackageThread( package_manager, package_name, is_dependency )
 
-        thread.start()
-        thread.join()
+        package_manager.remove_package( package_name, is_dependency )
 
     clean_package_control_settings()
 
