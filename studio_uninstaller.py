@@ -330,9 +330,9 @@ def ignore_next_packages(package_disabler, package_name, packages_list):
     """
     if len( _uningored_packages_to_flush ) < 1:
         last_ignored_packges    = packages_list.index( package_name )
-        next_packages_to_ignore = packages_list[ last_ignored_packges : last_ignored_packges + PACKAGES_COUNT_TO_IGNORE_AHEAD ]
+        next_packages_to_ignore = packages_list[ last_ignored_packges : last_ignored_packges + PACKAGES_COUNT_TO_IGNORE_AHEAD + 1 ]
 
-        log( 1, "Adding some packages to be uninstalled to the `ignored_packages` setting list." )
+        log( 1, "Adding %d packages to be uninstalled to the `ignored_packages` setting list." % len( next_packages_to_ignore ) )
         log( 1, "next_packages_to_ignore: " + str( next_packages_to_ignore ) )
 
         # We never can ignore the Default package, otherwise several errors/anomalies show up
@@ -343,8 +343,8 @@ def ignore_next_packages(package_disabler, package_name, packages_list):
         package_disabler.disable_packages( next_packages_to_ignore, "remove" )
         unique_list_append( g_default_ignored_packages, next_packages_to_ignore )
 
-        # Let the package be unloaded by Sublime Text
-        time.sleep(2.0)
+        # Let the package be unloaded by Sublime Text while ensuring anyone is putting them back in
+        add_packages_to_ignored_list( next_packages_to_ignore )
 
 
 def is_package_dependency(package, dependencies, packages):
@@ -439,24 +439,17 @@ def uninstall_packagesmanger():
         no package manager.
     """
     log(1, "\n\nFinishing PackagesManager Uninstallation..." )
+    package_manager = PackageManager()
 
     # By last uninstall itself `STUDIO_PACKAGE_NAME`
     packages_to_remove = [ ("PackagesManager", False), ("0_packagesmanager_loader", None), (STUDIO_PACKAGE_NAME, False) ]
 
-    package_manager  = PackageManager()
-    package_disabler = PackageDisabler()
-
     # Let the package be unloaded by Sublime Text
-    package_disabler.disable_packages( [ package_name for package_name, _ in packages_to_remove ], "remove" )
-    remove_0_packagesmanager_loader()
-
-    time.sleep(3.0)
-    remove_0_packagesmanager_loader()
+    add_packages_to_ignored_list( [ package_name for package_name, _ in packages_to_remove ] )
 
     for package_name, is_dependency in packages_to_remove:
         log( 1, "\n\nUninstalling: %s..." % str( package_name ) )
 
-        remove_0_packagesmanager_loader()
         package_manager.remove_package( package_name, is_dependency )
 
     remove_0_packagesmanager_loader()
@@ -467,8 +460,26 @@ def remove_0_packagesmanager_loader():
     """
         Most times the 0_packagesmanager_loader is not being deleted/removed, then try again.
     """
-    _packagesmanager_loader_path = os.path.join( STUDIO_MAIN_DIRECTORY, "Installed Packages", "0_packagesmanager_loader.sublime-package" )
+    _packagesmanager_loader_path     = os.path.join( STUDIO_MAIN_DIRECTORY, "Installed Packages", "0_packagesmanager_loader.sublime-package" )
+    _packagesmanager_loader_path_new = os.path.join( STUDIO_MAIN_DIRECTORY, "Installed Packages", "0_packagesmanager_loader.sublime-package-new" )
+
     safe_remove( _packagesmanager_loader_path )
+    safe_remove( _packagesmanager_loader_path_new )
+
+
+def add_packages_to_ignored_list(packages_list):
+    """
+        Something, somewhere is setting the ignored_packages list to `["Vintage"]`. Then ensure we
+        override this ************.
+    """
+    ignored_packages = g_user_settings.get( "ignored_packages", [] )
+    unique_list_append( ignored_packages, packages_list )
+
+    for interval in range( 0, 27 ):
+        g_user_settings.set( "ignored_packages", ignored_packages )
+        sublime.save_settings( USER_SETTINGS_FILE )
+
+        time.sleep(0.1)
 
 
 def clean_packagesmanager_settings(maximum_attempts=3):
