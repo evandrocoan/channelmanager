@@ -180,17 +180,17 @@ class UninstallStudioFilesThread(threading.Thread):
     def run(self):
         log( 2, "Entering on %s run(1)" % self.__class__.__name__ )
         global g_is_installation_complete
-        global g_channel_manager_settings
+        global g_studioSettings
         global g_packages_to_unignore
         global _uningored_packages_to_flush
 
         g_is_installation_complete = 0
-        g_channel_manager_settings = load_data_file( STUDIO_INSTALLATION_SETTINGS )
+        g_studioSettings = load_data_file( STUDIO_INSTALLATION_SETTINGS )
 
         _uningored_packages_to_flush = []
 
-        log( 1, "Loaded g_channel_manager_settings: " + str( g_channel_manager_settings ) )
-        g_packages_to_unignore = get_dictionary_key( g_channel_manager_settings, "packages_to_unignore", [] )
+        log( 1, "Loaded g_studioSettings: " + str( g_studioSettings ) )
+        g_packages_to_unignore = get_dictionary_key( g_studioSettings, "packages_to_unignore", [] )
 
         load_package_manager_settings()
 
@@ -277,7 +277,7 @@ def uninstall_default_package(packages):
         default_packages_path = os.path.join( STUDIO_MAIN_DIRECTORY, "Packages", "Default" )
 
         packages.remove('Default')
-        files_installed = g_channel_manager_settings['default_packages_files']
+        files_installed = g_studioSettings['default_packages_files']
 
         for file in files_installed:
             file_path = os.path.join( default_packages_path, file )
@@ -288,7 +288,7 @@ def uninstall_default_package(packages):
 
 def get_packages_to_uninstall():
     filtered_packages     = []
-    packages_to_uninstall = g_channel_manager_settings['packages_to_uninstall']
+    packages_to_uninstall = g_studioSettings['packages_to_uninstall']
 
     # Only merges the packages which are actually being uninstalled
     for package_name in PACKAGES_TO_UNINSTALL_FIRST:
@@ -436,6 +436,8 @@ def uninstall_packagesmanger():
         no package manager.
     """
     log(1, "\n\nFinishing PackagesManager Uninstallation..." )
+
+    silence_error_message_box()
     package_manager = PackageManager()
 
     # By last uninstall itself `STUDIO_PACKAGE_NAME`
@@ -500,7 +502,7 @@ def clean_packagesmanager_settings(maximum_attempts=3):
 
 
 def uninstall_folders():
-    folders_to_remove = get_dictionary_key( g_channel_manager_settings, "folders_to_uninstall", [] )
+    folders_to_remove = get_dictionary_key( g_studioSettings, "folders_to_uninstall", [] )
     log( 1, "\n\nUninstalling added folders: %s" % str( folders_to_remove ) )
 
     for folder in reversed( folders_to_remove ):
@@ -588,7 +590,7 @@ def removeEmptyFolders(path):
 
 
 def uninstall_files():
-    files_to_remove = get_dictionary_key( g_channel_manager_settings, "files_to_uninstall", [] )
+    files_to_remove = get_dictionary_key( g_studioSettings, "files_to_uninstall", [] )
     log( 1, "\n\nUninstalling added files: %s" % str( files_to_remove ) )
 
     for file in files_to_remove:
