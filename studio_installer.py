@@ -198,19 +198,28 @@ class InstallStudioFilesThread(threading.Thread):
         git_executable_path    = command_line_interface.find_binary( "git.exe" if os.name == 'nt' else "git" )
 
         log( 2, "run, git_executable_path: " + str( git_executable_path ) )
-        install_modules( command_line_interface, git_executable_path)
 
+        install_modules( command_line_interface, git_executable_path)
         uninstall_package_control()
 
 
 def load_installation_settings_file():
+    global g_package_control_name
+    global g_packagesmanager_name
+
+    g_package_control_name = "Package Control.sublime-settings"
+    g_packagesmanager_name = "PackagesManager.sublime-settings"
+
+    global g_studioSettings
+    global g_packagesmanager_settings
+
+    g_studioSettings           = load_data_file( STUDIO_INSTALLATION_SETTINGS )
+    g_packagesmanager_settings = sublime.load_settings( g_packagesmanager_name )
+
     global g_packages_to_uninstall
     global g_files_to_uninstall
     global g_folders_to_uninstall
     global g_packages_to_unignore
-
-    global g_studioSettings
-    g_studioSettings = load_data_file( STUDIO_INSTALLATION_SETTINGS )
 
     g_packages_to_uninstall = load_list_if_exists( g_studioSettings, 'packages_to_uninstall', [] )
     g_packages_to_unignore  = load_list_if_exists( g_studioSettings, 'packages_to_unignore', [] )
@@ -228,7 +237,6 @@ def load_list_if_exists(dictionary_to_search, item_to_load, default_value):
 
 def install_modules(command_line_interface, git_executable_path):
     log( 2, "install_modules_, PACKAGES_TO_NOT_INSTALL: " + str( PACKAGES_TO_NOT_INSTALL ) )
-    sync_package_control_and_manager()
 
     if IS_DEVELOPMENT_INSTALL:
         clone_sublime_text_studio( command_line_interface, git_executable_path )
@@ -721,22 +729,17 @@ def sync_package_control_and_manager():
         This happens due their configurations files list different sets of packages. So to fix this
         we need to keep both files synced while the installation process is going on.
     """
-
-    package_control_name = "Package Control.sublime-settings"
-    packagesmanager_name = "PackagesManager.sublime-settings"
-
     # Ensure they exists on the User folder
-    sublime.load_settings( package_control_name )
-    sublime.save_settings( package_control_name )
+    sublime.load_settings( g_package_control_name )
+    sublime.save_settings( g_package_control_name )
 
-    global g_package_control_settings
-    package_control = os.path.join( USER_FOLDER_PATH, package_control_name )
+    package_control = os.path.join( USER_FOLDER_PATH, g_package_control_name )
 
-    g_package_control_settings = load_data_file( package_control )
-    ensure_installed_packages_name( g_package_control_settings )
+    package_control_settings = load_data_file( package_control )
+    ensure_installed_packages_name( package_control_settings )
 
-    packagesmanager = os.path.join( USER_FOLDER_PATH, packagesmanager_name )
-    write_data_file( packagesmanager, g_package_control_settings )
+    packagesmanager = os.path.join( USER_FOLDER_PATH, g_packagesmanager_name )
+    write_data_file( packagesmanager, package_control_settings )
 
 
 def ensure_installed_packages_name(package_control_settings):
@@ -760,7 +763,6 @@ def set_default_settings_after(print_settings=0):
         ignored packages intact.
     """
     global g_studioSettings
-    save_packagesmanager_settings()
 
     if 'Default' in g_packages_to_uninstall:
         g_studioSettings['default_packages_files'] = DEFAULT_PACKAGES_FILES
@@ -778,29 +780,24 @@ def set_default_settings_after(print_settings=0):
     write_data_file( STUDIO_INSTALLATION_SETTINGS, g_studioSettings )
 
 
-def save_packagesmanager_settings():
-    """
-        When the installation is going on the PackagesManager will be installed. If the user restart
-        Sublime Text after doing it, on the next time Sublime Text starts, the Package Control and
-        the PackagesManager will kill each other and probably end up uninstalling all the packages
-        installed.
-
-        This happens due their configurations files list different sets of packages. So to fix this
-        we need to keep both files synced while the installation process is going on.
-    """
-    packagesmanager_name = "PackagesManager.sublime-settings"
-    packagesmanager = os.path.join( USER_FOLDER_PATH, packagesmanager_name )
-
-    write_data_file( packagesmanager, g_package_control_settings )
-
-
 def sort_dictionary(dictionary):
     return OrderedDict( sorted( dictionary.items() ) )
 
 
 def add_package_to_installation_list(package_name):
+    """
+        When the installation is going on the PackagesManager will be installed. If the user restart
+        Sublime Text after doing it, on the next time Sublime Text starts, the Package Control and
+        the PackagesManager will kill each other and probably end up uninstalling all the packages
+        installed.
+    """
+    installed_packages = g_packagesmanager_settings.get( 'installed_packages', [] )
+
+    add_item_if_not_exists( installed_packages, package_name )
     add_item_if_not_exists( g_packages_to_uninstall, package_name )
-    add_item_if_not_exists( g_package_control_settings['installed_packages'], package_name )
+
+    g_packagesmanager_settings.set( 'installed_packages', installed_packages )
+    sublime.save_settings( g_packagesmanager_name )
 
     # Progressively saves the installation data, in case the user closes Sublime Text
     set_default_settings_after()
@@ -811,9 +808,13 @@ def uninstall_package_control():
         Uninstals package control only if PackagesManager was installed, otherwise the user will end
         up with no package manager.
     """
+    installed_packages = g_packagesmanager_settings.get( 'installed_packages', [] )
 
-    if "PackagesManager" in g_package_control_settings['installed_packages']:
-        g_package_control_settings['installed_packages'].remove( "Package Control" )
+    if "PackagesManager" in installed_packages:
+        installed_packages.remove( "Package Control" )
+
+        g_packagesmanager_settings.set( 'installed_packages', installed_packages )
+        sublime.save_settings( g_package_control_name )
 
         # Sublime Text is waiting the current thread to finish before loading the just installed
         # PackagesManager, therefore run a new thread delayed which finishes the job
@@ -859,6 +860,7 @@ def complete_package_control(maximum_attempts=3):
 
         package_manager.remove_package( package_name, is_dependency )
 
+    sync_package_control_and_manager()
     clean_package_control_settings()
 
 
@@ -869,9 +871,7 @@ def clean_package_control_settings(maximum_attempts=3):
     """
     log( 1, "Finishing Package Control Uninstallation... maximum_attempts: " + str( maximum_attempts ) )
     maximum_attempts -= 1
-
-    package_control_name = "Package Control.sublime-settings"
-    package_control      = os.path.join( USER_FOLDER_PATH, package_control_name )
+    package_control   = os.path.join( USER_FOLDER_PATH, g_package_control_name )
 
     # If we do not write nothing to package_control file, Sublime Text will create another
     write_data_file( package_control, {} )
