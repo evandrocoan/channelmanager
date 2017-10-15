@@ -197,14 +197,18 @@ class UninstallStudioFilesThread(threading.Thread):
         uninstall_packages()
         remove_studio_channel()
 
-        install_package_control()
-        uninstall_packagesmanger()
-
         uninstall_files()
         uninstall_folders()
 
-        delete_channel_settings_file()
-        g_is_installation_complete = 1
+        sublime.set_timeout_async( finish_uninstallation, 5000 )
+
+
+def finish_uninstallation():
+    install_package_control()
+    uninstall_packagesmanger()
+
+    delete_channel_settings_file()
+    g_is_installation_complete = 1
 
 
 def load_package_manager_settings():
@@ -218,13 +222,13 @@ def load_package_manager_settings():
     global g_installed_packages
 
     global g_user_settings
-    global g_user_ignored_packages
+    global g_default_ignored_packages
 
     PACKAGESMANAGER = os.path.join( USER_FOLDER_PATH, packagesmanager_name )
     PACKAGE_CONTROL = os.path.join( USER_FOLDER_PATH, package_control_name )
 
     g_user_settings         = sublime.load_settings( USER_SETTINGS_FILE )
-    g_user_ignored_packages = g_user_settings.get( "ignored_packages", [] )
+    g_default_ignored_packages = g_user_settings.get( "ignored_packages", [] )
 
     g_package_control_settings = load_data_file( PACKAGESMANAGER )
     g_installed_packages       = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
@@ -337,8 +341,7 @@ def ignore_next_packages(package_disabler, package_name, packages_list):
 
         # Add them to the in_process list
         package_disabler.disable_packages( next_packages_to_ignore, "remove" )
-
-        unique_list_append( g_user_ignored_packages, next_packages_to_ignore )
+        unique_list_append( g_default_ignored_packages, next_packages_to_ignore )
 
         # Let the package be unloaded by Sublime Text
         time.sleep(2.0)
@@ -422,11 +425,11 @@ def unignore_some_packages(packages_list):
 
     for package_name in packages_list:
 
-        if package_name in g_user_ignored_packages:
+        if package_name in g_default_ignored_packages:
             log( 1, "Unignoring the package: %s" % package_name )
-            g_user_ignored_packages.remove( package_name )
+            g_default_ignored_packages.remove( package_name )
 
-    g_user_settings.set( "ignored_packages", g_user_ignored_packages )
+    g_user_settings.set( "ignored_packages", g_default_ignored_packages )
     sublime.save_settings( USER_SETTINGS_FILE )
 
 
