@@ -947,8 +947,10 @@ def complete_package_control(maximum_attempts=3):
     package_manager = PackageManager()
 
     packages_to_remove = [ ("Package Control", False), ("0_package_control_loader", None) ]
-    add_packages_to_ignored_list( [ package_name for package_name, _ in packages_to_remove ] )
+    packages_names     = [ package_name for package_name, _ in packages_to_remove ]
 
+    add_packages_to_ignored_list( packages_names )
+    unique_list_append( _uningored_packages_to_flush, packages_names )
 
     for package_name, is_dependency in packages_to_remove:
         log( 1, "\n\nUninstalling: %s" % str( package_name ) )
@@ -958,6 +960,7 @@ def complete_package_control(maximum_attempts=3):
     sync_package_control_and_manager()
     clean_package_control_settings()
 
+    # Flush off the `_uningored_packages_to_flush` just appended
     accumulative_unignore_user_packages( flush_everything=True )
 
 
@@ -972,7 +975,6 @@ def add_packages_to_ignored_list(packages_list):
     g_next_packages_to_ignore = packages_list
 
     set_default_settings_after()
-    unique_list_append( _uningored_packages_to_flush, packages_list )
 
     ignored_packages = g_user_settings.get( "ignored_packages", [] )
     unique_list_append( ignored_packages, packages_list )
@@ -999,6 +1001,7 @@ def clean_package_control_settings(maximum_attempts=3):
 
     if maximum_attempts > 0:
         sublime.set_timeout_async( lambda: clean_package_control_settings( maximum_attempts ), 2000 )
+        return
 
     global g_is_installation_complete
     g_is_installation_complete = True
