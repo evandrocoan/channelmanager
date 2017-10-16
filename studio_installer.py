@@ -857,6 +857,12 @@ def ensure_installed_packages_name(package_control_settings):
     else:
         package_control_settings['installed_packages'] = [ "PackagesManager" ]
 
+    # The `remove_orphaned_backup` is used to save the default user value for the overridden key
+    # `remove_orphaned` by the `PackagesManager` when configuring
+    if "remove_orphaned_backup" in package_control_settings:
+        package_control_settings['remove_orphaned'] = package_control_settings['remove_orphaned_backup']
+        del package_control_settings['remove_orphaned_backup']
+
 
 def set_default_settings_after(print_settings=0):
     """

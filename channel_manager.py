@@ -260,7 +260,7 @@ def get_repositories( all_packages ):
             repository_info['name']     = repository_name
             repository_info['releases'] = tagged_releases
 
-    return sort_list_of_dictionary( repositories) , sort_list_of_dictionary( dependencies )
+    return sort_list_of_dictionary( repositories), sort_list_of_dictionary( dependencies )
 
 
 def fix_sublime_text_release(release_data, gitModulesFile, section, repository_info, repositories, dependencies, url):
