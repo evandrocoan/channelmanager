@@ -301,7 +301,7 @@ def uninstall_packages():
     uninstall_default_package( packages )
 
     for package_name in packages_to_uninstall:
-        silence_error_message_box()
+        silence_error_message_box(61.0)
 
         is_dependency  = is_package_dependency( package_name, dependencies, packages )
         current_index += 1
@@ -498,7 +498,7 @@ def uninstall_packagesmanger(package_manager, installed_packages):
     for package_name, is_dependency in packages_to_remove:
         log( 1, "\n\nUninstalling: %s..." % str( package_name ) )
 
-        silence_error_message_box()
+        silence_error_message_box(62.0)
         package_manager.remove_package( package_name, is_dependency )
 
     remove_0_packagesmanager_loader()

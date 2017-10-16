@@ -896,7 +896,7 @@ def complete_package_control(maximum_attempts=3):
         else:
             log( 1, "Error! Could not complete the Package Control uninstalling, missing import for `PackagesManager`." )
 
-    silence_error_message_box(300)
+    silence_error_message_box(300.0)
     package_manager = PackageManager()
 
     packages_to_remove = [ ("Package Control", False), ("0_package_control_loader", None) ]
