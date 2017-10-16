@@ -59,7 +59,7 @@ from .studio_utilities import add_item_if_not_exists
 from .studio_utilities import load_data_file
 from .studio_utilities import remove_if_exists
 from .studio_utilities import remove_item_if_exists
-from .studio_utilities import delete_read_only_file
+from .studio_utilities import _delete_read_only_file
 from .studio_utilities import wrap_text
 
 from collections import OrderedDict
@@ -528,7 +528,7 @@ def clone_sublime_text_studio(command_line_interface, git_executable_path):
         download_main_repository( command_line_interface, git_executable_path, studio_temporary_folder )
 
         copy_overrides( studio_temporary_folder, STUDIO_MAIN_DIRECTORY )
-        shutil.rmtree( studio_temporary_folder, onerror=delete_read_only_file )
+        shutil.rmtree( studio_temporary_folder, onerror=_delete_read_only_file )
 
         # Progressively saves the installation data, in case the user closes Sublime Text
         set_default_settings_after()

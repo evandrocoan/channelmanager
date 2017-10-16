@@ -136,11 +136,11 @@ def remove_item_if_exists(list_to_remove, item):
         list_to_remove.remove( item )
 
 
-def _delete_read_only_file(path):
-    delete_read_only_file( None, path, None )
+def delete_read_only_file(path):
+    _delete_read_only_file( None, path, None )
 
 
-def delete_read_only_file(action, name, exc):
+def _delete_read_only_file(action, name, exc):
     """
         shutil.rmtree to remove readonly files
         https://stackoverflow.com/questions/21261132/shutil-rmtree-to-remove-readonly-files

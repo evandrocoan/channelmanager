@@ -29,6 +29,7 @@ import sublime
 import os
 import json
 import time
+import shutil
 import threading
 
 
@@ -46,6 +47,7 @@ from .studio_utilities import string_convert_list
 from .studio_utilities import get_main_directory
 from .studio_utilities import get_dictionary_key
 from .studio_utilities import remove_if_exists
+from .studio_utilities import delete_read_only_file
 from .studio_utilities import _delete_read_only_file
 from .studio_utilities import wrap_text
 
@@ -232,7 +234,7 @@ def finish_uninstallation():
     installed_packages = package_manager.list_packages()
 
     if "Package Control" not in installed_packages:
-        install_package_control()
+        install_package_control( package_manager )
 
     uninstall_packagesmanger( package_manager, installed_packages )
 
@@ -291,19 +293,19 @@ def uninstall_packages():
     if g_is_package_control_installed:
         _dependencies = package_manager.list_dependencies()
         dependencies  = set( _dependencies )
-        packages      = set( package_manager.list_packages() + _dependencies + ['Default']
+        all_packages  = set( package_manager.list_packages() + _dependencies + ['Default']
                 + package_manager.list_default_packages() + get_installed_packages( "PackagesManager.sublime-settings" ) )
 
     else:
-        packages     = set( package_manager.list_packages( list_everything=True ) + get_installed_packages( "PackagesManager.sublime-settings" ) )
+        all_packages = set( package_manager.list_packages( list_everything=True ) + get_installed_packages( "PackagesManager.sublime-settings" ) )
         dependencies = set( package_manager.list_dependencies() )
 
-    uninstall_default_package( packages )
+    uninstall_default_package( packages_to_uninstall )
 
     for package_name in packages_to_uninstall:
         silence_error_message_box(61.0)
 
-        is_dependency  = is_package_dependency( package_name, dependencies, packages )
+        is_dependency  = is_package_dependency( package_name, dependencies, all_packages )
         current_index += 1
 
         log( 1, "\n\nUninstalling %d of %d: %s (%s)" % ( current_index, git_packages_count, str( package_name ), str( is_dependency ) ) )
@@ -317,13 +319,13 @@ def uninstall_packages():
     remove_package_from_list( STUDIO_PACKAGE_NAME )
 
 
-def uninstall_default_package(packages):
+def uninstall_default_package(packages_names):
 
-    if 'Default' in packages:
-        log( 1, "\n\nUninstalling Default Packages files..." )
+    if 'Default' in packages_names:
+        log( 1, "\n\nUninstalling `Default Package` files..." )
         default_packages_path = os.path.join( STUDIO_MAIN_DIRECTORY, "Packages", "Default" )
 
-        packages.remove('Default')
+        packages_names.remove('Default')
         files_installed = get_dictionary_key( g_studioSettings, 'default_packages_files', [] )
 
         for file in files_installed:
@@ -331,6 +333,21 @@ def uninstall_default_package(packages):
 
             if os.path.exists( file_path ):
                 safe_remove( file_path )
+
+        default_git_folder = os.path.join( default_packages_path, ".git" )
+        remove_git_folder( default_git_folder, default_packages_path )
+
+
+def remove_git_folder(default_git_folder, parent_folder):
+    log( 1, "Uninstalling default_git_folder: %s" % str( default_git_folder ) )
+    shutil.rmtree( default_git_folder, ignore_errors=True, onerror=_delete_read_only_file )
+
+    folders_not_empty = []
+    recursively_delete_empty_folders( parent_folder, folders_not_empty )
+
+    if len( folders_not_empty ) > 0:
+        log( 1, "The installed default_git_folder `%s` could not be removed because is it not empty." % default_git_folder )
+        log( 1, "Its files contents are: " + str( os.listdir( default_git_folder ) ) )
 
 
 def get_packages_to_uninstall():
@@ -404,11 +421,10 @@ def is_package_dependency(package, dependencies, packages):
     return None
 
 
-def install_package_control():
+def install_package_control(package_manager):
     package_name = "Package Control"
-    log( 1, "\n\nInstalling: %s" % str( package_name ) )
 
-    package_manager = PackageManager()
+    log( 1, "\n\nInstalling: %s" % str( package_name ) )
     package_manager.install_package( package_name, False )
 
 
@@ -610,7 +626,7 @@ def recursively_delete_empty_folders(root_folder, folders_not_empty):
                     is_empty = False
 
                     try:
-                        removeEmptyFolders( root_folder )
+                        _removeEmptyFolders( root_folder )
 
                     except:
                         pass
@@ -624,7 +640,7 @@ def recursively_delete_empty_folders(root_folder, folders_not_empty):
         pass
 
 
-def removeEmptyFolders(path):
+def _removeEmptyFolders(path):
 
     if not os.path.isdir( path ):
         return
@@ -637,7 +653,7 @@ def removeEmptyFolders(path):
             fullpath = os.path.join( path, file )
 
             if os.path.isdir( fullpath ):
-                removeEmptyFolders( fullpath )
+                _removeEmptyFolders( fullpath )
 
     os.rmdir( path )
 
@@ -662,7 +678,7 @@ def safe_remove(path):
         log( 1, "Failed to remove `%s`. Error is: %s" % ( path, error) )
 
         try:
-            _delete_read_only_file(path)
+            delete_read_only_file(path)
 
         except Exception as error:
             log( 1, "Failed to remove `%s`. Error is: %s" % ( path, error) )
