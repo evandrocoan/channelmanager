@@ -240,9 +240,14 @@ def finish_uninstallation():
     uninstall_packagesmanger( package_manager, installed_packages )
 
     # Restore the remove_orphaned setting
-    g_package_control_settings['remove_orphaned'] = g_remove_orphaned_backup
-    write_data_file( PACKAGE_CONTROL, g_package_control_settings )
+    if g_remove_orphaned_backup:
+        # By default, it is already True on `Package Control.sublime-settings`, so just remove it
+        del g_package_control_settings['remove_orphaned']
 
+    else:
+        g_package_control_settings['remove_orphaned'] = g_remove_orphaned_backup
+
+    write_data_file( PACKAGE_CONTROL, g_package_control_settings )
     g_is_installation_complete = 1
 
 
