@@ -524,10 +524,13 @@ def clean_packagesmanager_settings(maximum_attempts=3):
         to its settings file.
     """
     log( 1, "Finishing PackagesManager Uninstallation... maximum_attempts: " + str( maximum_attempts ) )
+
+    if maximum_attempts == 3:
+        write_data_file( PACKAGESMANAGER, {} )
+
     maximum_attempts -= 1
 
     # If we do not write nothing to package_control file, Sublime Text will create another
-    write_data_file( PACKAGESMANAGER, {} )
     safe_remove( PACKAGESMANAGER )
 
     if maximum_attempts > 0:

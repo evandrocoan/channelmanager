@@ -992,11 +992,14 @@ def clean_package_control_settings(maximum_attempts=3):
         to its settings file.
     """
     log( 1, "Finishing Package Control Uninstallation... maximum_attempts: " + str( maximum_attempts ) )
+    package_control = os.path.join( USER_FOLDER_PATH, g_package_control_name )
+
+    if maximum_attempts == 3:
+        write_data_file( package_control, {} )
+
     maximum_attempts -= 1
-    package_control   = os.path.join( USER_FOLDER_PATH, g_package_control_name )
 
     # If we do not write nothing to package_control file, Sublime Text will create another
-    write_data_file( package_control, {} )
     os.remove( package_control )
 
     if maximum_attempts > 0:
