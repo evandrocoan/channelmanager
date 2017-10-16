@@ -29,6 +29,7 @@ import json
 import stat
 
 import re
+import time
 import textwrap
 
 import sublime
@@ -48,13 +49,32 @@ def write_data_file(file_path, channel_dictionary):
         json.dump( channel_dictionary, output_file, indent=4 )
 
 
-def load_data_file(file_path):
+def load_data_file(file_path, wait_on_error=True):
+    """
+        Attempt to read the file some times when there is a value error. This could happen when the
+        file is currently being written by Sublime Text.
+    """
     channel_dictionary = {}
 
     if os.path.exists( file_path ):
+        error = None
+        maximum_attempts = 10
 
-        with open( file_path, 'r', encoding='utf-8' ) as studio_channel_data:
-            channel_dictionary = json.load( studio_channel_data )
+        while maximum_attempts > 0:
+
+            try:
+                with open( file_path, 'r', encoding='utf-8' ) as studio_channel_data:
+                    return json.load( studio_channel_data )
+
+            except ValueError as error:
+                log( 1, "\n\nError, maximum_attempts %d, load_data_file: %s" % ( maximum_attempts, error ) )
+                maximum_attempts -= 1
+
+                if wait_on_error:
+                    time.sleep( 0.1 )
+
+        if maximum_attempts < 1:
+            raise ValueError( "file_path: %s, error: %s" % ( file_path, error ) )
 
     else:
         log( 1, "Error on load_data_file(1), the file '%s' does not exists!" % file_path )
