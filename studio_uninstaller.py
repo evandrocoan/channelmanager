@@ -53,6 +53,7 @@ from .studio_utilities import wrap_text
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
 # or vice-versa. Which means we cannot do nothing as this is only compatible with PackagesManager.
 try:
+    from PackagesManager.packagesmanager.settings import disable_package_control_uninstaller
     from PackagesManager.packagesmanager.show_error import silence_error_message_box
 
     from PackagesManager.packagesmanager.package_manager import PackageManager
@@ -216,6 +217,7 @@ def disable_amxmodx_errors():
     """
         Disable the error message when uninstalling it
     """
+    disable_package_control_uninstaller()
 
     try:
         import amxmodx
