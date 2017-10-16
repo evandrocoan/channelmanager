@@ -748,6 +748,7 @@ def get_development_packages():
     # [
     #     ('Active View Jump Back', 'https://github.com/evandrocoan/SublimeActiveViewJumpBack', 'Packages/Active View Jump Back'),
     #     ('amxmodx', 'https://github.com/evandrocoan/SublimeAMXX_Editor', 'Packages/amxmodx'),
+    #     ('All Autocomplete', 'https://github.com/evandrocoan/SublimeAllAutocomplete', 'Packages/All Autocomplete'),
     #     ('Amxx Pawn', 'https://github.com/evandrocoan/SublimeAmxxPawn', 'Packages/Amxx Pawn'),
     #     ('Clear Cursors Carets', 'https://github.com/evandrocoan/ClearCursorsCarets', 'Packages/Clear Cursors Carets'),
     #     ('Notepad++ Color Scheme', 'https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme', 'Packages/Notepad++ Color Scheme'),
@@ -786,11 +787,7 @@ def set_development_ignored_packages(packages_to_install):
             g_default_ignored_packages.append( package_name )
             add_item_if_not_exists( g_packages_to_unignore, package_name )
 
-    g_user_settings.set( 'ignored_packages', g_default_ignored_packages )
-    log( 1, "set_default_settings_before, g_user_settings: " + str( g_user_settings.get("ignored_packages") ) )
-
-    # Save our changes to the user ignored packages list
-    sublime.save_settings( USER_SETTINGS_FILE )
+    add_packages_to_ignored_list( g_default_ignored_packages )
 
 
 def set_last_packages_to_install(packages_to_install):
@@ -863,12 +860,9 @@ def uninstall_package_control():
         Uninstals package control only if PackagesManager was installed, otherwise the user will end
         up with no package manager.
     """
-    package_control_settings = sublime.load_settings( g_package_control_name )
-    installed_packages       = package_control_settings.get( 'installed_packages', [] )
+    log( 2, "uninstall_package_control, g_packages_to_uninstall: " + str( g_packages_to_uninstall ) )
 
-    log( 2, "uninstall_package_control, installed_packages: " + str( installed_packages ) )
-
-    if "PackagesManager" in installed_packages:
+    if "PackagesManager" in g_packages_to_uninstall:
         # Sublime Text is waiting the current thread to finish before loading the just installed
         # PackagesManager, therefore run a new thread delayed which finishes the job
         sublime.set_timeout_async( complete_package_control, 2000 )
