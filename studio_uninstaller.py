@@ -27,6 +27,7 @@
 import sublime
 
 import os
+import re
 import json
 import time
 import shutil
@@ -329,25 +330,25 @@ def uninstall_default_package(packages_names):
         files_installed = get_dictionary_key( g_studioSettings, 'default_packages_files', [] )
 
         for file in files_installed:
-            file_path = os.path.join( default_packages_path, file )
 
-            if os.path.exists( file_path ):
-                safe_remove( file_path )
+            file_path = os.path.join( default_packages_path, file )
+            remove_only_if_exists( file_path )
 
         default_git_folder = os.path.join( default_packages_path, ".git" )
         remove_git_folder( default_git_folder, default_packages_path )
 
 
-def remove_git_folder(default_git_folder, parent_folder):
+def remove_git_folder(default_git_folder, parent_folder=None):
     log( 1, "Uninstalling default_git_folder: %s" % str( default_git_folder ) )
     shutil.rmtree( default_git_folder, ignore_errors=True, onerror=_delete_read_only_file )
 
-    folders_not_empty = []
-    recursively_delete_empty_folders( parent_folder, folders_not_empty )
+    if parent_folder:
+        folders_not_empty = []
+        recursively_delete_empty_folders( parent_folder, folders_not_empty )
 
-    if len( folders_not_empty ) > 0:
-        log( 1, "The installed default_git_folder `%s` could not be removed because is it not empty." % default_git_folder )
-        log( 1, "Its files contents are: " + str( os.listdir( default_git_folder ) ) )
+        if len( folders_not_empty ) > 0:
+            log( 1, "The installed default_git_folder `%s` could not be removed because is it not empty." % default_git_folder )
+            log( 1, "Its files contents are: " + str( os.listdir( default_git_folder ) ) )
 
 
 def get_packages_to_uninstall():
@@ -528,8 +529,14 @@ def remove_0_packagesmanager_loader():
     _packagesmanager_loader_path     = os.path.join( STUDIO_MAIN_DIRECTORY, "Installed Packages", "0_packagesmanager_loader.sublime-package" )
     _packagesmanager_loader_path_new = os.path.join( STUDIO_MAIN_DIRECTORY, "Installed Packages", "0_packagesmanager_loader.sublime-package-new" )
 
-    safe_remove( _packagesmanager_loader_path )
-    safe_remove( _packagesmanager_loader_path_new )
+    remove_only_if_exists( _packagesmanager_loader_path )
+    remove_only_if_exists( _packagesmanager_loader_path_new )
+
+
+def remove_only_if_exists(file_path):
+
+    if os.path.exists( file_path ):
+        safe_remove( file_path )
 
 
 def add_packages_to_ignored_list(packages_list):
@@ -560,7 +567,7 @@ def clean_packagesmanager_settings(maximum_attempts=3):
     maximum_attempts -= 1
 
     # If we do not write nothing to package_control file, Sublime Text will create another
-    safe_remove( PACKAGESMANAGER )
+    remove_only_if_exists( PACKAGESMANAGER )
 
     if maximum_attempts > 0:
         sublime.set_timeout_async( lambda: clean_packagesmanager_settings( maximum_attempts ), 2000 )
@@ -659,6 +666,8 @@ def _removeEmptyFolders(path):
 
 
 def uninstall_files():
+    git_folders = []
+
     files_to_remove = get_dictionary_key( g_studioSettings, "files_to_uninstall", [] )
     log( 1, "\n\nUninstalling added files: %s" % str( files_to_remove ) )
 
@@ -667,6 +676,22 @@ def uninstall_files():
         file_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, file )
 
         safe_remove( file_absolute_path )
+        add_git_folder_by_file( file, git_folders )
+
+    log( 1, "Removing git_folders..." )
+
+    for git_folder in git_folders:
+        remove_git_folder( git_folder )
+
+
+def add_git_folder_by_file(file_relative_path, git_folders):
+    match = re.search( "\.git", file_relative_path )
+
+    if match:
+        git_folder_relative = file_relative_path[:match.end(0)]
+
+        if git_folder_relative not in git_folders:
+            git_folders.append( git_folder_relative )
 
 
 def safe_remove(path):
@@ -695,7 +720,7 @@ def delete_channel_settings_file(maximum_attempts=3):
     else:
         log( 1, "Uninstalling channel settings file, maximum_attempts: %s" % str( maximum_attempts ) )
 
-    safe_remove( STUDIO_INSTALLATION_SETTINGS )
+    remove_only_if_exists( STUDIO_INSTALLATION_SETTINGS )
 
     if maximum_attempts > 0:
         maximum_attempts -= 1
