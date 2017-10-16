@@ -194,7 +194,7 @@ class UninstallStudioFilesThread(threading.Thread):
         global _uningored_packages_to_flush
 
         g_is_installation_complete = 0
-        g_studioSettings = load_data_file( STUDIO_INSTALLATION_SETTINGS )
+        g_studioSettings           = load_data_file( STUDIO_INSTALLATION_SETTINGS )
 
         _uningored_packages_to_flush = []
 
@@ -210,7 +210,7 @@ class UninstallStudioFilesThread(threading.Thread):
         uninstall_files()
         uninstall_folders()
 
-        sublime.set_timeout_async( finish_uninstallation, 5000 )
+        finish_uninstallation()
 
 
 def disable_amxmodx_errors():
@@ -235,6 +235,11 @@ def finish_uninstallation():
         install_package_control()
 
     uninstall_packagesmanger( package_manager, installed_packages )
+
+    # Restore the remove_orphaned setting
+    g_package_control_settings['remove_orphaned'] = g_remove_orphaned_backup
+    write_data_file( PACKAGE_CONTROL, g_package_control_settings )
+
     g_is_installation_complete = 1
 
 
@@ -250,6 +255,7 @@ def load_package_manager_settings():
 
     global g_user_settings
     global g_default_ignored_packages
+    global g_remove_orphaned_backup
 
     PACKAGESMANAGER = os.path.join( USER_FOLDER_PATH, packagesmanager_name )
     PACKAGE_CONTROL = os.path.join( USER_FOLDER_PATH, package_control_name )
@@ -264,7 +270,12 @@ def load_package_manager_settings():
     else:
         g_package_control_settings = load_data_file( PACKAGE_CONTROL )
 
-    g_installed_packages = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
+    g_installed_packages     = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
+    g_remove_orphaned_backup = get_dictionary_key( g_package_control_settings, 'remove_orphaned', True )
+
+    # Temporally stops Package Control from removing orphaned packages, otherwise it will scroll up
+    # the uninstallation when Package Control is installed back
+    g_package_control_settings['remove_orphaned'] = False
 
 
 def uninstall_packages():
