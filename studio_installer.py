@@ -275,7 +275,8 @@ def install_stable_packages(packages_to_install):
 
         When trying to install several package at once, then here I am installing them one by one.
     """
-    set_default_settings_before( packages_to_install )
+    log( 2, "install_stable_packages, PACKAGES_TO_NOT_INSTALL: " + str( PACKAGES_TO_NOT_INSTALL ) )
+    packages_to_install_names = set_default_settings_before( packages_to_install )
 
     # Package Control: Advanced Install Package
     # https://github.com/wbond/package_control/issues/1191
@@ -285,9 +286,6 @@ def install_stable_packages(packages_to_install):
 
     package_manager  = PackageManager()
     package_disabler = PackageDisabler()
-
-    log( 2, "install_stable_packages, PACKAGES_TO_NOT_INSTALL: " + str( PACKAGES_TO_NOT_INSTALL ) )
-    packages_to_install_names = [ package_name for package_name, _ in packages_to_install ]
 
     current_index      = 0
     git_packages_count = len( packages_to_install )
@@ -358,7 +356,7 @@ def accumulative_unignore_user_packages(package_name="", flush_everything=False)
     """
 
     if flush_everything:
-        unignore_some_packages( g_packages_to_unignore + _uningored_packages_to_flush )
+        unignore_some_packages( _uningored_packages_to_flush )
 
     else:
         log( 1, "Adding package to unignore list: %s" % str( package_name ) )
@@ -744,18 +742,18 @@ def get_development_packages():
                 packages.append( ( package_name, url, path ) )
                 log( 2, "get_development_packages, path: " + path )
 
-    # return \
-    # [
-    #     ('Active View Jump Back', 'https://github.com/evandrocoan/SublimeActiveViewJumpBack', 'Packages/Active View Jump Back'),
-    #     ('amxmodx', 'https://github.com/evandrocoan/SublimeAMXX_Editor', 'Packages/amxmodx'),
-    #     ('All Autocomplete', 'https://github.com/evandrocoan/SublimeAllAutocomplete', 'Packages/All Autocomplete'),
-    #     ('Amxx Pawn', 'https://github.com/evandrocoan/SublimeAmxxPawn', 'Packages/Amxx Pawn'),
-    #     ('Clear Cursors Carets', 'https://github.com/evandrocoan/ClearCursorsCarets', 'Packages/Clear Cursors Carets'),
-    #     ('Notepad++ Color Scheme', 'https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme', 'Packages/Notepad++ Color Scheme'),
-    #     ('PackagesManager', 'https://github.com/evandrocoan/package_control', 'Packages/PackagesManager'),
-    #     ('Toggle Words', 'https://github.com/evandrocoan/ToggleWords', 'Packages/Toggle Words'),
-    #     ('Default', 'https://github.com/evandrocoan/SublimeDefault', 'Packages/Default'),
-    # ]
+    return \
+    [
+        ('Active View Jump Back', 'https://github.com/evandrocoan/SublimeActiveViewJumpBack', 'Packages/Active View Jump Back'),
+        ('amxmodx', 'https://github.com/evandrocoan/SublimeAMXX_Editor', 'Packages/amxmodx'),
+        ('All Autocomplete', 'https://github.com/evandrocoan/SublimeAllAutocomplete', 'Packages/All Autocomplete'),
+        ('Amxx Pawn', 'https://github.com/evandrocoan/SublimeAmxxPawn', 'Packages/Amxx Pawn'),
+        ('Clear Cursors Carets', 'https://github.com/evandrocoan/ClearCursorsCarets', 'Packages/Clear Cursors Carets'),
+        ('Notepad++ Color Scheme', 'https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme', 'Packages/Notepad++ Color Scheme'),
+        ('PackagesManager', 'https://github.com/evandrocoan/package_control', 'Packages/PackagesManager'),
+        ('Toggle Words', 'https://github.com/evandrocoan/ToggleWords', 'Packages/Toggle Words'),
+        ('Default', 'https://github.com/evandrocoan/SublimeDefault', 'Packages/Default'),
+    ]
 
     return packages
 
@@ -771,11 +769,14 @@ def set_default_settings_before(packages_to_install):
         to install them.
     """
     set_last_packages_to_install( packages_to_install )
+    packages_names = [ package_name[0] for package_name in packages_to_install ]
 
     # The development version does not need to ignore all installed packages before starting the
     # installation process as it is not affected by the Sublime Text bug.
     if IS_DEVELOPMENT_INSTALL:
-        set_development_ignored_packages( packages_to_install )
+        set_development_ignored_packages( packages_names )
+
+    return packages_names
 
 
 def set_development_ignored_packages(packages_to_install):
@@ -897,7 +898,7 @@ def complete_package_control(maximum_attempts=3):
     package_manager = PackageManager()
 
     packages_to_remove = [ ("Package Control", False), ("0_package_control_loader", None) ]
-    packages_names     = [ package_name for package_name, _ in packages_to_remove ]
+    packages_names     = [ package_name[0] for package_name in packages_to_remove ]
 
     add_packages_to_ignored_list( packages_names )
     unique_list_append( _uningored_packages_to_flush, packages_names )
