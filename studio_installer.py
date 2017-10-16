@@ -742,18 +742,18 @@ def get_development_packages():
                 packages.append( ( package_name, url, path ) )
                 log( 2, "get_development_packages, path: " + path )
 
-    return \
-    [
-        ('Active View Jump Back', 'https://github.com/evandrocoan/SublimeActiveViewJumpBack', 'Packages/Active View Jump Back'),
-        ('amxmodx', 'https://github.com/evandrocoan/SublimeAMXX_Editor', 'Packages/amxmodx'),
-        ('All Autocomplete', 'https://github.com/evandrocoan/SublimeAllAutocomplete', 'Packages/All Autocomplete'),
-        ('Amxx Pawn', 'https://github.com/evandrocoan/SublimeAmxxPawn', 'Packages/Amxx Pawn'),
-        ('Clear Cursors Carets', 'https://github.com/evandrocoan/ClearCursorsCarets', 'Packages/Clear Cursors Carets'),
-        ('Notepad++ Color Scheme', 'https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme', 'Packages/Notepad++ Color Scheme'),
-        ('PackagesManager', 'https://github.com/evandrocoan/package_control', 'Packages/PackagesManager'),
-        ('Toggle Words', 'https://github.com/evandrocoan/ToggleWords', 'Packages/Toggle Words'),
-        ('Default', 'https://github.com/evandrocoan/SublimeDefault', 'Packages/Default'),
-    ]
+    # return \
+    # [
+    #     ('Active View Jump Back', 'https://github.com/evandrocoan/SublimeActiveViewJumpBack', 'Packages/Active View Jump Back'),
+    #     ('amxmodx', 'https://github.com/evandrocoan/SublimeAMXX_Editor', 'Packages/amxmodx'),
+    #     ('All Autocomplete', 'https://github.com/evandrocoan/SublimeAllAutocomplete', 'Packages/All Autocomplete'),
+    #     ('Amxx Pawn', 'https://github.com/evandrocoan/SublimeAmxxPawn', 'Packages/Amxx Pawn'),
+    #     ('Clear Cursors Carets', 'https://github.com/evandrocoan/ClearCursorsCarets', 'Packages/Clear Cursors Carets'),
+    #     ('Notepad++ Color Scheme', 'https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme', 'Packages/Notepad++ Color Scheme'),
+    #     ('PackagesManager', 'https://github.com/evandrocoan/package_control', 'Packages/PackagesManager'),
+    #     ('Toggle Words', 'https://github.com/evandrocoan/ToggleWords', 'Packages/Toggle Words'),
+    #     ('Default', 'https://github.com/evandrocoan/SublimeDefault', 'Packages/Default'),
+    # ]
 
     return packages
 
@@ -844,13 +844,15 @@ def add_package_to_installation_list(package_name):
         the PackagesManager will kill each other and probably end up uninstalling all the packages
         installed.
     """
-    installed_packages = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
 
-    add_item_if_not_exists( installed_packages, package_name )
+    if not IS_DEVELOPMENT_INSTALL:
+        installed_packages = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
+        add_item_if_not_exists( installed_packages, package_name )
+
+        packagesmanager = os.path.join( USER_FOLDER_PATH, g_packagesmanager_name )
+        write_data_file( packagesmanager, sort_dictionary( g_package_control_settings ) )
+
     add_item_if_not_exists( g_packages_to_uninstall, package_name )
-
-    packagesmanager = os.path.join( USER_FOLDER_PATH, g_packagesmanager_name )
-    write_data_file( packagesmanager, sort_dictionary( g_package_control_settings ) )
 
     # Progressively saves the installation data, in case the user closes Sublime Text
     set_default_settings_after()
