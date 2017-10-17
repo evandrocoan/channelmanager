@@ -89,13 +89,13 @@ except:
 # https://stackoverflow.com/questions/16981921/relative-imports-in-python-3
 try:
     from .settings import *
-    from .studio_utilities import get_main_directory
-    from .studio_utilities import assert_path
+    from .channel_utilities import get_main_directory
+    from .channel_utilities import assert_path
 
 except ModuleNotFoundError:
     from settings import *
-    from studio_utilities import get_main_directory
-    from studio_utilities import assert_path
+    from channel_utilities import get_main_directory
+    from channel_utilities import assert_path
 
 
 # print_python_envinronment()

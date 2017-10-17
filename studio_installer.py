@@ -49,18 +49,18 @@ except:
 from .settings import *
 g_is_already_running = False
 
-from .studio_utilities import get_installed_packages
-from .studio_utilities import unique_list_join
-from .studio_utilities import unique_list_append
-from .studio_utilities import write_data_file
-from .studio_utilities import get_dictionary_key
-from .studio_utilities import string_convert_list
-from .studio_utilities import add_item_if_not_exists
-from .studio_utilities import load_data_file
-from .studio_utilities import remove_if_exists
-from .studio_utilities import remove_item_if_exists
-from .studio_utilities import _delete_read_only_file
-from .studio_utilities import wrap_text
+from .channel_utilities import get_installed_packages
+from .channel_utilities import unique_list_join
+from .channel_utilities import unique_list_append
+from .channel_utilities import write_data_file
+from .channel_utilities import get_dictionary_key
+from .channel_utilities import string_convert_list
+from .channel_utilities import add_item_if_not_exists
+from .channel_utilities import load_data_file
+from .channel_utilities import remove_if_exists
+from .channel_utilities import remove_item_if_exists
+from .channel_utilities import _delete_read_only_file
+from .channel_utilities import wrap_text
 
 from collections import OrderedDict
 

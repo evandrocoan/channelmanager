@@ -276,7 +276,7 @@ you usually do with the default `Package Control` channel.
 
    To create the channel you need the configuration loader for the dependency `ChannelManager`. This
    would be a Sublime Text Package which requires the `ChannelManager` as a dependency and call its
-   installer, uninstaller and command available passing the configuration required by the
+   installer, uninstaller and commands available passing the configuration required by the
    `ChannelManager` dependency to run its operations.
 
    This is a
