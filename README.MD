@@ -1,23 +1,30 @@
-# Sublime Text Channel Manager
+# Channel Manager
 
 The plugin `channel_manager.py` creates the files `channel.json` and `repository.json` based on the
-`.gitmodules` file on the Sublime Text Data folder (the folder at `Packages/../`).
-
-To call it, you can open the command palette and type `Studio Channel: Generate Channel File`. See
-the following threads for more information about the `Package Control` channel and repository files:
+`.gitmodules` file on the Sublime Text Data folder (the folder at `Packages/../`). To call it, you
+can open the command palette and type `Studio Channel: Generate Channel File`. See the following
+threads for more information about the `Package Control` channel and repository files:
 
 1. https://packagecontrol.io/docs/dependencies  DOCS - Dependencies
 1. https://packagecontrol.io/docs/channels_and_repositories Channels and Repositories
 1. https://github.com/wbond/package_control/issues/1089 Package dependencies (install dependent sublime packages)
 1. https://forum.sublimetext.com/t/dependencies-in-package-control-3/14646 Dependencies in Package Control 3
-1. https://github.com/wbond/package_control/issues/1070 [Meta] What to do when a dependency update includes breaking changes?
 1. https://forum.sublimetext.com/t/modules-dependencies-best-practices/21037 Modules + Dependencies : Best Practices?
+1. https://github.com/wbond/package_control/issues/1070 [Meta] What to do when a dependency update includes breaking changes?
 
 ChannelManager is dependency which manages the packages installed by git as submodules. It allows to
 create the channel files required by Package Control to list and install packages. Currently I
-implemented to different bundle of package bounded by `.gitmodules` files. The
+implemented two different bundle of package bounded by `.gitmodules` files. The
 [StudioChannel](https://github.com/evandrocoan/SublimeStudioChannel) and the
-[AmxxSimpleIDE](https://github.com/evandrocoan/SublimeTextAmxxSimpleIDE).
+[AmxxChannel](https://github.com/evandrocoan/SublimeAmxxChannel).
+
+1. **StudioChannel** This is one of the channels I implemented using the `ChannelManager`. I
+   contains about 100 packages for the stable version and 150 for the development version. It has a
+   custom installation wizard to guide you through the installation steps and call channel installer
+   at the `ChannelManager` passing the channel configurations.
+
+1. **AmxxChannel** This is a smaller channel of packages with about 20 packages focused on just for
+   programming for AMX Mod X Pawn language.
 
 The channel creation is based on the existence of a
 [.gitmodules](https://git-scm.com/docs/gitmodules) file on the root of your Sublime Text Data
@@ -58,22 +65,7 @@ channel files. Currently there are implemented the following keys:
     tags = 3144, 3147
 ```
 
-The keys `dependency` and `tags` are comma separate lists of `dependencies` a package has. If the
-dependency key start with number like in `dependency = 50, PythonDebugTools, regex`, it would mean
-that the package `Packages/Notepad++ Color Scheme` would be a dependency, which requires as
-dependency the dependencies `PythonDebugTools` and `regex`.
-
-As well it would just be `dependency = 50`, then it would mean it is a dependency which has the
-loading order set as `50`. You can learn more about dependencies reading [Package Control, Docs:
-Dependencies](https://packagecontrol.io/docs/dependencies).
-
-The `upstream` can be empty or not present if you would like to. It used to set your repository
-`upstream` when the project is a fork of some another project. For example, let us suppose you like
-the project `https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme` and created a fork of it on
-Github. Now, instead of installing the original package from `evandrocoan`, you installed your fork,
-from your address `https://github.com/my_user_name/SublimeNotepadPlusPlusTheme`.
-
-Lastly, the `tags` key indicate the remote tags and the version of Sublime they are aimed to be
+The `tags` is a comma separated list of remote tags and the version of Sublime they are aimed to be
 used. For example, `tags = 3144, 3147` indicates the repository `Notepad++ Color Scheme` has the
 following git tags called `3144` and `3147`.
 
@@ -81,7 +73,7 @@ Settings tags like this is useful when a package has ceased working for old buil
 For example, on Sublime Text development build 3147, the package `Notepad++ Color Scheme` stopped
 working completely: [CoreIssue$1983](https://github.com/SublimeTextIssues/Core/issues/1983) however
 the fix for build 3147 also broke completely the package for Sublime Text stable build 3144. Hence,
-we must to create a tag which targets the last commit which is working for build 3144. Hence when
+we must to create a tag which targets the last commit which is working for build 3144. Moreover when
 some user using the stable build 3144 installs the `Notepad++ Color Scheme`, they must install the
 one from the tag `3144`, and not the one from the master branch, which has the latest fixes for
 build development build 3147 or newer.
@@ -93,27 +85,37 @@ automatic tagging of the latest release package is working for Sublime Text, how
 much required to be done as should be only a few exceptions for when a packages stops working for
 some build of Sublime Text.
 
+The key `dependency` is comma separate lists of `dependencies` a package has. If the dependency key
+start with number like in `dependency = 50, PythonDebugTools, regex`, it would mean that the package
+`Packages/Notepad++ Color Scheme` would be a dependency with load order of 50, which requires as
+dependency the dependencies `PythonDebugTools` and `regex`.
 
-### Channel Installer/uninstaller
+As well it would just be `dependency = 50`, then it would mean `Packages/Notepad++ Color Scheme` is
+a dependency which has the loading order set as `50`. You can learn more about dependencies reading
+[Package Control, Docs: Dependencies](https://packagecontrol.io/docs/dependencies). If it had no key
+`dependency` then it mean it is just a `Package` with no dependencies.
 
-The plugin `channel_installer.py`/`channel_uninstaller.py` performs the installation and
-uninstallation of the of all the channel packages packages by the `Package Control` when installing
-the Stable Version, or by `git` when installing the Development Version of the channel.
-
-Currently the installer has some hard coded configurations which are implemented directly on the
-code. But futurely they should be moved on from the dependency `ChannelManager` to the package which
-actually is using the dependency and
+The `upstream` can be empty or not present if you would like to. It is used to set your repository
+`upstream` when the project is a fork of some another project. For example, let us suppose you liked
+the project `https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme` and created a fork of it on
+Github. Now, instead of installing the original package from `evandrocoan`, you installed your fork,
+from your address `https://github.com/your_user_name/SublimeNotepadPlusPlusTheme`, then you would
+set the `upstream` key pointing to the original repository and the `url` key for your fork of it.
 
 
 ### Submodules Manager
 
 The plugin `submodules_manager.py` run several operations based on the `.gitmodules` file on the
 Sublime Text Data folder (the folder at `Packages/../`) and `Backstroke.gitmodules` file on the
-Sublime Text Data folder (the folder at `Packages/../Local`). Still to do, implement a caller which
-will allow you to change the locations of these files by settings files. So you can put them where
-you please most.
+Sublime Text Data folder (the folder at `Packages/../Local`). However, still to do a implementation
+of a configuration which will allow you to change the locations of these files by settings files. So
+you can put them where you please most.
 
-Here is a sample of the structure of both files:
+Here is a sample of the structure of both files, the `Backstroke.gitmodules` is not indented on
+purpose for backward compatibility with `Python 2.7` configparser which does not allow indented
+blocks. If you are planing in only using `Python 3`, you can indent both files. The file
+`.gitmodules` is compatible with `Python 3` because I created a wrapper which removes the
+indentation before sending the files contents to the `configparser`:
 
 **.gitmodules**
 ```shell
@@ -143,20 +145,20 @@ backstroke = https://backstroke.us/_2d82221f793d50c2f75952c
 
 Hence, if you would like to receive updates from the upstream
 `https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme`, you can set the key `upstream`
-pointing to the `upstream` of the original package at
+pointing to the upstream of the original package at
 `https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme`. Therefore, your settings file would
 look like:
 ```java
 [submodule "Packages/Notepad++ Color Scheme"]
     path = Packages/Notepad++ Color Scheme
-    url = https://github.com/my_user_name/SublimeNotepadPlusPlusTheme
+    url = https://github.com/your_user_name/SublimeNotepadPlusPlusTheme
     upstream = https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme
     dependency = PythonDebugTools, regex
     tags = 3144, 3147
 ```
 
 Sadly currently this feature is not implemented yet. However, the `upstream` key is used by the
-plugin `submodules_manager.py`, which runs by the command line with the argument `-f`. The
+plugin `submodules_manager.py`, with the command line with the argument `-f`. The
 `submodules_manager.py` provides some commands which are not available from Sublime Text due they
 being too longo commands to run. Moreover is proper to use a dedicated shell for them. You can see
 the available options for the `submodules_manager.py` by running it:
@@ -180,6 +182,29 @@ optional arguments:
                     `.gitmodules` file on: Sublime Text `Data` folder
   -p, --pull        Perform a git pull from the remote repositories
 ```
+
+By just calling the `submodules_manager.py` with the `--find-forks` argument, it will run
+automatically through all your git submodules listed on the file `.gitmodules`. But still to do a
+command to be passed by as a argument to allow select one specific repository to run the command,
+instead of running it right away through all your installed repositories, thing which can take
+several hours.
+
+The `find_forks` command call the python package
+[find_forks](https://github.com/frost-nzcr4/find_forks) which finds all forks of user/repository on
+github and add it as git remote to your local cloned repository. It is useful to find interesting
+commits of old repository with many updated forks, fresh repository with many forks that original
+author doesn't want or doesn't have time to merge.
+
+
+### Channel Installer/uninstaller
+
+The plugins `channel_installer.py`/`channel_uninstaller.py` performs the installation and
+uninstallation of the of all the channel packages by the `Package Control` when installing the
+Stable Version, or by `git` when installing the Development Version of the channel.
+
+Currently the installer has some hard coded configurations which are implemented directly on the
+code. But futurely they should be moved on from the dependency `ChannelManager` to the package which
+actually is using the dependency `ChannelManager` to do the channel administration.
 
 
 
@@ -239,7 +264,7 @@ you usually do with the default `Package Control` channel.
    printf "# Main Repository\n\nFor my channel packages." > README.md
    git add README.md
    git commit -m "Added README.md"
-   git remote add origin https://github.com/user/main_repository
+   git remote add origin https://github.com/your_user_name/main_repository
    ```
 
 1. Now your `Main Repository` is set up, use the same command line to install the Packages you want
@@ -325,14 +350,274 @@ you usually do with the default `Package Control` channel.
    ![git client Graphic Interface](https://i.imgur.com/Q3DngpF.png)
 
    To create the channel you need the configuration loader for the dependency `ChannelManager`. This
-   would be a Sublime Text Package which requires the `ChannelManager` as a dependency and call its
-   installer, uninstaller and commands available passing the configuration required by the
-   `ChannelManager` dependency to run its operations.
+   configuration loader would be a Sublime Text Package which requires the `ChannelManager` as a
+   dependency and call its installer, uninstaller and commands available passing the configuration
+   required by the `ChannelManager` dependency to run its operations.
 
-   This is a
+   First of all let us create the folder for our new channel, you can name it as you like as long as
+   there is no other package installed with the same. Assuming you still have the command line
+   opened on the folder we were before, you can create the folder for the your channel:
+   ```bash
+   mkdir -p "Packages/MyBrandNewChannel"
+   ```
+
+   But without forgetting, we need to create an entry for the channel on our `.gitmodules` file. At
+   the end of it all, the `.gitmodules` would look like this for the channel named
+   `MyBrandNewChannel`:
+      ```java
+   [submodule "Packages/GitGutter"]
+       path = Packages/GitGutter
+       url = https://github.com/jisaacks/GitGutter
+
+   [submodule "Packages/ChannelManager"]
+       path = Packages/ChannelManager
+       url = https://github.com/evandrocoan/SublimeChannelManager
+       upstream =
+       dependency = 50, PythonDebugTools
+
+   [submodule "Packages/PythonDebugTools"]
+       path = Packages/PythonDebugTools
+       url = https://github.com/evandrocoan/PythonDebugTools
+       upstream =
+       dependency = 50
+
+   [submodule "Packages/MyBrandNewChannel"]
+       path = Packages/MyBrandNewChannel
+       url = https://github.com/your_user_name/MyBrandNewChannel
+       upstream =
+       dependency = ChannelManager
+   ```
+
+1. Now on this new package called `Packages/MyBrandNewChannel`, you need to create the plugin to do
+   call to the studio channel passing its configurations. In the following we may see a full example
+   configuration file, you can save it inside the folder `Packages/MyBrandNewChannel` with the name
+   you like most as `settings.py` or `settings_and_commands.py`:
+   ```python
+   import os
+   import sublime
+
+   from ChannelManager.channel_utilities import clean_urljoin
+   from ChannelManager.channel_utilities import get_main_directory
+
+   from ChannelManager import channel_uninstaller
+   from ChannelManager import channel_installer
+
+   try:
+       from package_control.package_manager import clear_cache
+
+   except ImportError:
+       pass
+
+   from ChannelManager.channel_manager import main as manager_main
+   from ChannelManager.submodules_manager import main as submodules_main
+   from ChannelManager.copy_default_package import main as default_main
+
+
+   # Infer the correct package name and current directory absolute path
+   CURRENT_DIRECTORY    = os.path.dirname( os.path.realpath( __file__ ) )
+   CURRENT_PACKAGE_NAME = os.path.basename( CURRENT_DIRECTORY ).rsplit('.', 1)[0]
+
+   # Hold all the information for this channel, which will be used by the `ChannelManager` to install
+   # this channel
+   g_channel_settings = {}
+
+
+   def plugin_loaded():
+       """
+           We can only load the information when the Sublime Text API is available due the use of the
+           get_main_directory() which requires it.
+       """
+       global g_channel_settings
+
+       # The folder where the directory where the Sublime Text `Packages` (loose packages) folder is on
+       STUDIO_MAIN_DIRECTORY = get_main_directory( CURRENT_DIRECTORY )
+
+       # The folder where the User settings are on
+       USER_FOLDER_PATH = os.path.join( STUDIO_MAIN_DIRECTORY, "Packages", "User" )
+
+       # The temporary folder to download the main repository when installing the development version
+       g_channel_settings['TEMPORARY_FOLDER_TO_USE'] = "__channel_studio_temp"
+       g_channel_settings['STUDIO_PACKAGE_NAME']     = CURRENT_PACKAGE_NAME
+
+       # Where to save the settings for channel after it is installed on the user's machine
+       g_channel_settings['USER_FOLDER_PATH']             = USER_FOLDER_PATH
+       g_channel_settings['STUDIO_INSTALLATION_SETTINGS'] = \
+               os.path.join( USER_FOLDER_PATH,CURRENT_PACKAGE_NAME + ".sublime-settings" )
+
+
+       # The local path to the files, used to save the generated channels. Valid URLs to the files, to use
+       # when installing the stable version of the channel See also:
+       # https://packagecontrol.io/docs/channels_and_repositories
+
+       # The default Package Control channel
+       g_channel_settings['DEFAULT_CHANNEL_URL'] = "https://packagecontrol.io/channel_v3.json"
+
+       # The URL of the folder where the channel files are hosted
+       STUDIO_RAW_URL = "https://raw.githubusercontent.com/your_user_name/MyBrandNewChannel/master/"
+
+       # The URL to the main A direct URL/Path to the repository where there is the `.gitmodules` file
+       # listing all the channel packages to use when generating Studio Channel files.
+       g_channel_settings['STUDIO_MAIN_URL']       = "https://github.com/your_user_name/MyParentRepository"
+       g_channel_settings['STUDIO_MAIN_DIRECTORY'] = STUDIO_MAIN_DIRECTORY
+
+       # The file path to the Channel File `channel.json` to use when installing the development version
+       g_channel_settings['STUDIO_CHANNEL_URL']  = clean_urljoin( STUDIO_RAW_URL, "channel.json" )
+       g_channel_settings['STUDIO_CHANNEL_FILE'] = os.path.join( CURRENT_DIRECTORY, "channel.json" )
+
+       # A direct URL/Path to the Repository File `repository.json` to use when installing the
+       # stable/development version
+       g_channel_settings['STUDIO_REPOSITORY_URL']  = clean_urljoin( STUDIO_RAW_URL, "repository.json" )
+       g_channel_settings['STUDIO_REPOSITORY_FILE'] = os.path.join( CURRENT_DIRECTORY, "repository.json" )
+
+       # A direct URL/Path to the `settings.json` to use when installing the stable/development version
+       g_channel_settings['STUDIO_SETTINGS_URL']  = clean_urljoin( STUDIO_RAW_URL, "settings.json" )
+       g_channel_settings['STUDIO_SETTINGS_PATH'] = os.path.join( CURRENT_DIRECTORY, "settings.json" )
+
+
+       # You can specify for some packages to be popped out from the list and being installed by
+       # last in the following order presented.
+       g_channel_settings['PACKAGES_TO_INSTALL_LAST'] = \
+       [
+           "My Package Penultimate Package",
+           "My Package Penult Package",
+           "My Package Last Package",
+       ]
+
+       # The default user preferences file
+       g_channel_settings['USER_SETTINGS_FILE'] = "Preferences.sublime-settings"
+
+       # Do not try to install this own package and the Package Control, as they are currently running
+       g_channel_settings['PACKAGES_TO_NOT_INSTALL'] = [ "Package Control", CURRENT_PACKAGE_NAME ]
+
+       # The files of the `Default.sublime-package` you are installed
+       g_channel_settings['DEFAULT_PACKAGES_FILES'] = \
+       [
+           "Tab Context.sublime-menu",
+           "Context.sublime-menu",
+       ]
+
+
+   def add_studio_channel():
+       """
+           Add your channel URL to the Package Control channel list and cleans the cached channels.
+       """
+       package_control    = "Package Control.sublime-settings"
+       studio_channel_url = g_channel_settings['STUDIO_CHANNEL_URL']
+
+       package_control_settings = sublime.load_settings( package_control )
+       channels                 = package_control_settings.get( "channels", [] )
+
+       if studio_channel_url in channels:
+           channels.remove( studio_channel_url )
+
+       channels.insert( 0, studio_channel_url )
+       package_control_settings.set( "channels", channels )
+
+       print( "Adding %s channel to %s: %s" % ( CURRENT_PACKAGE_NAME, package_control, str( channels ) ) )
+       sublime.save_settings( package_control )
+
+       clear_cache()
+
+
+   class MyBrandNewChannelRunInstallation( sublime_plugin.ApplicationCommand ):
+
+       def run(self, version="stable"):
+           """
+               Call the ChannelManager installer to install all the channel packages.
+
+               @param version   Either the value "stable" or "development" to install the
+                                Development or Stable Version of the channel.
+           """
+           add_studio_channel()
+           g_channel_settings['INSTALLATION_TYPE'] = version
+
+           sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+           channel_installer.main( g_channel_settings )
+
+
+   class MyBrandNewChannelRunUninstallation( sublime_plugin.ApplicationCommand ):
+
+       def run(self):
+           sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+           channel_uninstaller.main( g_channel_settings )
+
+
+   class MyBrandNewChannelGenerateChannelFile( sublime_plugin.ApplicationCommand ):
+
+       def run(self):
+           sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+           manager_main( g_channel_settings )
+
+
+   class MyBrandNewChannelRun( sublime_plugin.ApplicationCommand ):
+
+       def run(self, run):
+           sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+           submodules_main( run )
+
+
+   class MyBrandNewChannelUpdateDefaultPackages( sublime_plugin.ApplicationCommand ):
+
+       def run(self):
+           sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+           default_main( g_channel_settings['DEFAULT_PACKAGES_FILES'], True )
+   ```
+
+1. Lastly we need to make these commands from our configuration file named
+   `settings_and_commands.py` (or the name you picked up) available for the user to install your
+   channel. Remembering, to create the channel, i.e, generate the files `channel.json` and
+   `repositories.json`, you need to have everything installed as Development Version with all
+   packages cloned as git submodules with the `--recursive` option (if applied).
+
+   Creating a file like these should be able to make you new commands for you channel
+   `MyBrandNewChannel` to be accessible easily:
+   ```javascript
+   [
+       { "caption": "MyBrandNewChannel: Generate Channel File",
+                "command": "my_brand_new_channel_generate_channel_file" },
+
+       { "caption": "MyBrandNewChannel: Run Backstroke Requests",
+                "command": "my_brand_new_channel_run", "args": {"run": "-b"} },
+
+       { "caption": "MyBrandNewChannel: Pull & Rebase all Packages",
+                "command": "my_brand_new_channel_run", "args": {"run": "-p"} },
+
+       { "caption": "MyBrandNewChannel: Update Default Packages",
+                "command": "my_brand_new_channel_update_default_packages" },
+
+       { "caption": "MyBrandNewChannel: Run Installation Stable",
+                "command": "my_brand_new_channel_run_installation", "args": {"version": "stable"} },
+
+       { "caption": "MyBrandNewChannel: Run Installation Development",
+                "command": "my_brand_new_channel_run_installation", "args": {"version": "development"} },
+   ]
+   ```
 
 
 
+## How to Use a Channel
+
+The Channel is usable by two ways, the first is to create a big channel as Package Control with like
+2000 packages or much more, listed by the `.gitmodules` file. The second is by creating a small
+channel of packages with with just a few packages as about 10 or 100 packages.
+
+The first usage is when you intend just create big list of packages for sharing like Package Control
+does. This would not allow anyone to attempt to use the channel installer, as it would install all
+the packages, which is a lot of them. However this has the downside of requiring all the packages to
+be cloned on your computer for generating the `channel.json` and `repository.json` file.
+
+It is made like to so it is not required to have an GitHub API token access, as you can only perform
+60 access per hour without one. Now instead of pulling GitHub server with requests for the packages
+data, we just access it by the command line interface as the package is cloned locally in your
+computer.
+
+The second usage is when you intend to share with our work colleagues or friends, a bundled set of
+packages for Sublime Text. You can just pass the channel URL for them to add it to the Package
+Control channel's list, then they can install your channel and run its installer.
+
+
+
+___
 ## Commands
 
 It provides the following commands on command palette. Note these commands only works if you
@@ -371,6 +656,8 @@ installed the Development Version of the channel:
    to force it to override the current files.
 
 
+
+___
 ## Installation Notes
 
 1. Currently it has the problem of showing up this error box randomly. This may or may not happen
@@ -440,22 +727,6 @@ installed the Development Version of the channel:
     connection as you just downloaded a lot of contents. So, you can try to manually download the
     contents at [pyv8-binaries](https://github.com/emmetio/pyv8-binaries) or just wait another hour
     and restart Sublime Text, so the package can download the contents by itself.
-
-
-
-___
-## StudioChannel
-
-This is one of the channels I implemented using the `ChannelManager`. I contains about 100 packages
-for the stable version and 150 for the development version. It has a custom installation wizard
-guide you through the installation steps and call channel installer at the `ChannelManager` passing
-the channel configurations.
-
-It also the custom plugin `synced_side_bar_watcher.py` creates the command
-`synced_side_bar_reveal_in_side_bar`, to replace the default context menu command
-`SyncedSideBarRevealInSideBar`.
-
-[forum#22753](https://forum.sublimetext.com/t/solved-how-to-add-remove-a-default-menu-entry-when-a-x-package-is-isnt-enabled-installed/22753) How to add/remove a default menu entry when a X package is/isn’t enabled/installed?
 
 
 
