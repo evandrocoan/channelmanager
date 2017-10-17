@@ -25,6 +25,7 @@
 #
 
 import os
+import sys
 import json
 import stat
 
@@ -32,8 +33,27 @@ import re
 import time
 import textwrap
 
-import sublime
 
+try:
+    import sublime
+
+except ImportError:
+    sublime = None
+
+
+
+# print_python_envinronment()
+def assert_path(module):
+    """
+        Import a module from a relative path
+        https://stackoverflow.com/questions/279237/import-a-module-from-a-relative-path
+    """
+    if module not in sys.path:
+        sys.path.append( module )
+
+
+CURRENT_DIRECTORY = os.path.dirname( os.path.realpath( __file__ ) )
+assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools/all' ) )
 
 # Import the debugger
 from debug_tools import Debugger
@@ -162,8 +182,13 @@ def wrap_text(text):
 
 
 def get_installed_packages(setting_name):
-    package_control_settings = sublime.load_settings( setting_name )
-    return package_control_settings.get( "installed_packages", [] )
+
+    if sublime:
+        package_control_settings = sublime.load_settings( setting_name )
+        return package_control_settings.get( "installed_packages", [] )
+
+    else:
+        raise ImportError( "You can only use the Sublime Text API inside Sublime Text." )
 
 
 def unique_list_join(*lists):

@@ -45,7 +45,7 @@ try:
     import sublime
     import sublime_plugin
 
-except (ImportError):
+except ImportError:
     sublime = None
     sublime_plugin = None
 
@@ -85,16 +85,26 @@ except:
     from six.moves.configparser import NoOptionError
 
 
+# Relative imports in Python 3
+# https://stackoverflow.com/questions/16981921/relative-imports-in-python-3
+try:
+    from .settings import *
+    from .studio_utilities import get_main_directory
+    from .studio_utilities import assert_path
+
+except ModuleNotFoundError:
+    from settings import *
+    from studio_utilities import get_main_directory
+    from studio_utilities import assert_path
+
+
+# print_python_envinronment()
+STUDIO_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, "last_session.studio-channel" )
+FIND_FORKS_PATH     = os.path.join( CURRENT_DIRECTORY, "find_forks" )
+
 # How many errors are acceptable when the GitHub API request fails
 MAXIMUM_REQUEST_ERRORS = 10
 g_is_already_running   = False
-
-# print_python_envinronment()
-from .settings import *
-from .studio_utilities import get_main_directory
-
-STUDIO_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, "last_session.studio-channel" )
-FIND_FORKS_PATH     = os.path.join( CURRENT_DIRECTORY, "find_forks" )
 
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager.
@@ -107,6 +117,7 @@ except ImportError:
 
 
 # Import the debugger
+assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools/all' ) )
 from debug_tools import Debugger
 
 # Debugger settings: 0 - disabled, 127 - enabled
@@ -527,8 +538,4 @@ def print_command_line_arguments():
 if __name__ == "__main__":
     main()
 
-
-def plugin_loaded():
-    pass
-    # main()
 
