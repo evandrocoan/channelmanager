@@ -73,6 +73,9 @@ except ImportError:
     def silence_error_message_box():
         pass
 
+    def disable_package_control_uninstaller():
+        pass
+
 
 # How many packages to ignore and unignore in batch to fix the ignored packages bug error
 PACKAGES_COUNT_TO_IGNORE_AHEAD = 8
@@ -231,7 +234,7 @@ def disable_amxmodx_errors():
 
 
 def finish_uninstallation():
-    package_manager = PackageManager()
+    package_manager    = PackageManager()
     installed_packages = package_manager.list_packages()
 
     if "Package Control" not in installed_packages:
