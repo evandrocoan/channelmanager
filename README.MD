@@ -57,6 +57,7 @@ channel files. Currently there are implemented the following keys:
     dependency = PythonDebugTools, regex
     tags = 3144, 3147
 ```
+
 The keys `dependency` and `tags` are comma separate lists of `dependencies` a package has. If the
 dependency key start with number like in `dependency = 50, PythonDebugTools, regex`, it would mean
 that the package `Packages/Notepad++ Color Scheme` would be a dependency, which requires as
@@ -71,6 +72,74 @@ The `upstream` can be empty or not present if you would like to. It used to set 
 the project `https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme` and created a fork of it on
 Github. Now, instead of installing the original package from `evandrocoan`, you installed your fork,
 from your address `https://github.com/my_user_name/SublimeNotepadPlusPlusTheme`.
+
+Lastly, the `tags` key indicate the remote tags and the version of Sublime they are aimed to be
+used. For example, `tags = 3144, 3147` indicates the repository `Notepad++ Color Scheme` has the
+following git tags called `3144` and `3147`.
+
+Settings tags like this is useful when a package has ceased working for old build of Sublime Text.
+For example, on Sublime Text development build 3147, the package `Notepad++ Color Scheme` stopped
+working completely: [CoreIssue$1983](https://github.com/SublimeTextIssues/Core/issues/1983) however
+the fix for build 3147 also broke completely the package for Sublime Text stable build 3144. Hence,
+we must to create a tag which targets the last commit which is working for build 3144. Hence when
+some user using the stable build 3144 installs the `Notepad++ Color Scheme`, they must install the
+one from the tag `3144`, and not the one from the master branch, which has the latest fixes for
+build development build 3147 or newer.
+
+This happens because currently the channel generation is limited to setting the download link to the
+repository master branch. Still not implemented the checking for each submodule for the latest tag
+available, then then properly setting the download URL pointing to the last tag. Still also to do
+automatic tagging of the latest release package is working for Sublime Text, however this seems not
+much required to be done as should be only a few exceptions for when a packages stops working for
+some build of Sublime Text.
+
+
+### Channel Installer/uninstaller
+
+The plugin `channel_installer.py`/`channel_uninstaller.py` performs the installation and
+uninstallation of the of all the channel packages packages by the `Package Control` when installing
+the Stable Version, or by `git` when installing the Development Version of the channel.
+
+Currently the installer has some hard coded configurations which are implemented directly on the
+code. But futurely they should be moved on from the dependency `ChannelManager` to the package which
+actually is using the dependency and
+
+
+### Submodules Manager
+
+The plugin `submodules_manager.py` run several operations based on the `.gitmodules` file on the
+Sublime Text Data folder (the folder at `Packages/../`) and `Backstroke.gitmodules` file on the
+Sublime Text Data folder (the folder at `Packages/../Local`). Still to do, implement a caller which
+will allow you to change the locations of these files by settings files. So you can put them where
+you please most.
+
+Here is a sample of the structure of both files:
+
+**.gitmodules**
+```shell
+[submodule "Packages/Better CoffeeScript"]
+    path = Packages/Better CoffeeScript
+    url = https://github.com/evandrocoan/sublime-better-coffeescript
+    upstream = https://github.com/aponxi/sublime-better-coffeescript
+[submodule "Packages/BufferScroll"]
+    path = Packages/BufferScroll
+    url = https://github.com/evandrocoan/BufferScroll
+    upstream = https://github.com/titoBouzout/BufferScroll
+    dependency = PythonDebugTools
+```
+
+**Backstroke.gitmodules**
+```shell
+[submodule "Packages"]
+url = https://github.com/evandrocoan/Packages
+upstream = https://github.com/sublimehq/Packages
+backstroke = https://backstroke.us/_48c38b8a08174b2d82221f7
+
+[submodule "Packages/ANSIescape"]
+url = https://github.com/evandrocoan/SublimeANSI
+upstream = https://github.com/aziz/SublimeANSI
+backstroke = https://backstroke.us/_2d82221f793d50c2f75952c
+```
 
 Hence, if you would like to receive updates from the upstream
 `https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme`, you can set the key `upstream`
@@ -112,27 +181,9 @@ optional arguments:
   -p, --pull        Perform a git pull from the remote repositories
 ```
 
-Lastly, the `tags` key indicate the remote tags and the version of Sublime they are aimed to be
-used. For example, `tags = 3144, 3147` indicates the repository `Notepad++ Color Scheme` has the
-following git tags called `3144` and `3147`.
-
-Settings tags like this is useful when a package has ceased working for old build of Sublime Text.
-For example, on Sublime Text development build 3147, the package `Notepad++ Color Scheme` stopped
-working completely: [CoreIssue$1983](https://github.com/SublimeTextIssues/Core/issues/1983) however
-the fix for build 3147 also broke completely the package for Sublime Text stable build 3144. Hence,
-we must to create a tag which targets the last commit which is working for build 3144. Hence when
-some user using the stable build 3144 installs the `Notepad++ Color Scheme`, they must install the
-one from the tag `3144`, and not the one from the master branch, which has the latest fixes for
-build development build 3147.
-
-This happens because currently the channel generation is limited to setting the download link to the
-repository master branch. Still not implemented the checking for each submodule for the latest tag
-available, then then properly setting the download URL pointing to the last tag. Still also to do
-automatic tagging of the latest release package is working for Sublime Text, however this seems not
-much required to be done as should be only a few exceptions for when a packages stops working for
-some build of Sublime Text.
 
 
+___
 ## How to Build a Channel
 
 The original purpose of the channel is to be small, something like just a few hundred of packages.
@@ -159,7 +210,6 @@ large, channels you can change easily change this behavior by including the `ign
 manually or from another source other than the user settings `ignored_packages`, or just deciding
 not to use the channel installer to install the channel packages and just pick they one by one, as
 you usually do with the default `Package Control` channel.
-
 
 1. Install Sublime Text portable version, you can download it at:
    [https://www.sublimetext.com/3](https://www.sublimetext.com/3)
@@ -392,59 +442,20 @@ installed the Development Version of the channel:
     and restart Sublime Text, so the package can download the contents by itself.
 
 
-___
-## Synced Side Bar Watcher
 
-The plugin `synced_side_bar_watcher.py` creates the command `synced_side_bar_reveal_in_side_bar`,
-to replace the default context menu command `SyncedSideBarRevealInSideBar`.
+___
+## StudioChannel
+
+This is one of the channels I implemented using the `ChannelManager`. I contains about 100 packages
+for the stable version and 150 for the development version. It has a custom installation wizard
+guide you through the installation steps and call channel installer at the `ChannelManager` passing
+the channel configurations.
+
+It also the custom plugin `synced_side_bar_watcher.py` creates the command
+`synced_side_bar_reveal_in_side_bar`, to replace the default context menu command
+`SyncedSideBarRevealInSideBar`.
 
 [forum#22753](https://forum.sublimetext.com/t/solved-how-to-add-remove-a-default-menu-entry-when-a-x-package-is-isnt-enabled-installed/22753) How to add/remove a default menu entry when a X package is/isn’t enabled/installed?
-
-
-
-___
-## Studio Installer
-
-The plugin `studio_installer.py` performs the installation of the [Sublime Text
-Studio](https://github.com/evandrocoan/SublimeTextStudio) packages by the `Package Control` when
-installing the normal version, or by `git` when installing the development version of the `Sublime
-Text Studio`.
-
-
-
-___
-## Submodules Manager
-
-The package `submodules_manager.py` run several operations based on the `.gitmodules` file on the
-Sublime Text Data folder (the folder at `Packages/../`) and `Backstroke.gitmodules` file on the
-Sublime Text Data folder (the folder at `Packages/../Local`). Here is a sample of the structure of
-both files:
-
-**.gitmodules**
-```shell
-[submodule "Packages/Better CoffeeScript"]
-	path = Packages/Better CoffeeScript
-	url = https://github.com/evandrocoan/sublime-better-coffeescript
-	upstream = https://github.com/aponxi/sublime-better-coffeescript
-[submodule "Packages/BufferScroll"]
-	path = Packages/BufferScroll
-	url = https://github.com/evandrocoan/BufferScroll
-	upstream = https://github.com/titoBouzout/BufferScroll
-	dependency = PythonDebugTools
-```
-
-**Backstroke.gitmodules**
-```shell
-[submodule "Packages"]
-url = https://github.com/evandrocoan/Packages
-upstream = https://github.com/sublimehq/Packages
-backstroke = https://backstroke.us/_48c38b8a08174b2d82221f7
-
-[submodule "Packages/ANSIescape"]
-url = https://github.com/evandrocoan/SublimeANSI
-upstream = https://github.com/aziz/SublimeANSI
-backstroke = https://backstroke.us/_2d82221f793d50c2f75952c
-```
 
 
 
