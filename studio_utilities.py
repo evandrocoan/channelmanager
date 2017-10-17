@@ -41,7 +41,6 @@ except ImportError:
     sublime = None
 
 
-
 # print_python_envinronment()
 def assert_path(module):
     """
@@ -216,5 +215,28 @@ def unique_list_append(a_list, *lists):
 
 def upcase_first_letter(s):
     return s[0].upper() + s[1:]
+
+
+def _clean_urljoin(url):
+
+    if url.startswith( '/' ) or url.startswith( ' ' ):
+        url = url[1:]
+        url = _clean_urljoin( url )
+
+    if url.endswith( '/' ) or url.endswith( ' ' ):
+        url = url[0:-1]
+        url = _clean_urljoin( url )
+
+    return url
+
+
+def clean_urljoin(*urls):
+    fixed_urls = []
+
+    for url in urls:
+
+        fixed_urls.append( _clean_urljoin(url) )
+
+    return "/".join( fixed_urls )
 
 
