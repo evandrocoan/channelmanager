@@ -42,13 +42,4 @@ variables = \
 
 # print("\nImporting %s settings... \n%s" % ( str(datetime.datetime.now())[0:19], "\n".join(sorted(variables)) ))
 
-def dictionary_to_string_by_line(dictionary):
-	variables = \
-	[
-	    "%-30s: %s" % ( variable_name, dictionary[variable_name] )
-	    for variable_name in dictionary.keys()
-	]
-
-	return "\n\n%s" % ( "\n".join( sorted(variables) ) )
-
 

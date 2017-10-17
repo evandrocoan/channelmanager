@@ -240,3 +240,13 @@ def clean_urljoin(*urls):
     return "/".join( fixed_urls )
 
 
+def dictionary_to_string_by_line(dictionary):
+    variables = \
+    [
+        "%-30s: %s" % ( variable_name, dictionary[variable_name] )
+        for variable_name in dictionary.keys()
+    ]
+
+    return "\n\n%s" % ( "\n".join( sorted(variables) ) )
+
+

@@ -56,6 +56,7 @@ from .channel_utilities import write_data_file
 from .channel_utilities import string_convert_list
 from .channel_utilities import load_data_file
 from .channel_utilities import print_data_file
+from .channel_utilities import dictionary_to_string_by_line
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
 # or vice-versa. Which means we cannot do nothing as this is only compatible with PackagesManager.
