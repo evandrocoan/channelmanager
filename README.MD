@@ -62,20 +62,20 @@ channel files. Currently there are implemented the following keys:
     url = https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme
     upstream =
     dependency = PythonDebugTools, regex
-    tags = 3144, 3147
+    tags = 3143, 3147
 ```
 
 The `tags` is a comma separated list of remote tags and the version of Sublime they are aimed to be
-used. For example, `tags = 3144, 3147` indicates the repository `Notepad++ Color Scheme` has the
-following git tags called `3144` and `3147`.
+used. For example, `tags = 3143, 3147` indicates the repository `Notepad++ Color Scheme` has the
+following git tags called `3143` and `3147`.
 
 Settings tags like this is useful when a package has ceased working for old build of Sublime Text.
 For example, on Sublime Text development build 3147, the package `Notepad++ Color Scheme` stopped
 working completely: [CoreIssue$1983](https://github.com/SublimeTextIssues/Core/issues/1983) however
-the fix for build 3147 also broke completely the package for Sublime Text stable build 3144. Hence,
-we must to create a tag which targets the last commit which is working for build 3144. Moreover when
-some user using the stable build 3144 installs the `Notepad++ Color Scheme`, they must install the
-one from the tag `3144`, and not the one from the master branch, which has the latest fixes for
+the fix for build 3147 also broke completely the package for Sublime Text stable build 3143. Hence,
+we must to create a tag which targets the last commit which is working for build 3143. Moreover when
+some user using the stable build 3143 installs the `Notepad++ Color Scheme`, they must install the
+one from the tag `3143`, and not the one from the master branch, which has the latest fixes for
 build development build 3147 or newer.
 
 This happens because currently the channel generation is limited to setting the download link to the
@@ -84,6 +84,15 @@ available, then then properly setting the download URL pointing to the last tag.
 automatic tagging of the latest release package is working for Sublime Text, however this seems not
 much required to be done as should be only a few exceptions for when a packages stops working for
 some build of Sublime Text.
+
+Nonetheless, as currently we already fetch the lasted commit date version tag, now can easily be
+implemented automatic tagging for based on the latest commit date. It would be useful for tagging a
+large set of packages which can be considered stable. This approach should be much batter than the
+current one where the user always download the current version available at the master branch when
+the user installed the package. Such approach is not very welcomed because would allow several
+clients to be using different versions of the package while all of them think they are using the
+latest version available at the moment, however just the most recent installations would be using
+the lasted version, whereas the other installations would be using some older version.
 
 The key `dependency` is comma separate lists of `dependencies` a package has. If the dependency key
 start with number like in `dependency = 50, PythonDebugTools, regex`, it would mean that the package
@@ -154,7 +163,7 @@ look like:
     url = https://github.com/your_user_name/SublimeNotepadPlusPlusTheme
     upstream = https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme
     dependency = PythonDebugTools, regex
-    tags = 3144, 3147
+    tags = 3143, 3147
 ```
 
 Sadly currently this feature is not implemented yet. However, the `upstream` key is used by the

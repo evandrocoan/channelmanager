@@ -333,15 +333,15 @@ def get_old_compatible_versions(default_release_data, gitModulesFile, section, u
         Check for the existence of the `tags` section on the `gitModulesFile` iterator and add the
         correct for the listed olde compatible versions.
 
-        The old compatible versions are git tags as `3144` which is the last Sublime Text version
+        The old compatible versions are git tags as `3143` which is the last Sublime Text version
         where the submodule was compatible with. For example, on Sublime Text development build
         3147, the package `Notepad++ Color Scheme` stopped working completely:
             1. https://github.com/SublimeTextIssues/Core/issues/1983)
 
         However the fix for build 3147 also broke completely the package for Sublime Text stable
-        build 3144. Hence, we must to create a tag named 3144 which targets the last commit which is
-        working for build 3144, then when some user using the stable build 3144 installs the
-        Notepad++, they must install the one from the tag `3144`, and not the one from the master
+        build 3143. Hence, we must to create a tag named 3143 which targets the last commit which is
+        working for build 3143, then when some user using the stable build 3143 installs the
+        Notepad++, they must install the one from the tag `3143`, and not the one from the master
         branch, which has the latest fixes for build development build 3147.
 
         @param others                   @see the function fix_sublime_text_release()
