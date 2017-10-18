@@ -80,9 +80,10 @@ try:
 except ImportError:
     pass
 
-# How many packages to ignore and unignore in batch to fix the ignored packages bug error
-PACKAGES_COUNT_TO_IGNORE_AHEAD = 8
 
+# How many packages to ignore and unignore in batch to fix the ignored packages bug error
+g_is_installation_complete     = True
+PACKAGES_COUNT_TO_IGNORE_AHEAD = 8
 
 # Import the debugger
 from debug_tools import Debugger
@@ -181,7 +182,7 @@ class StartInstallChannelThread(threading.Thread):
             set_default_settings_after(1)
 
             # Wait PackagesManager to load the found dependencies, before announcing it to the user
-            sublime.set_timeout_async( check_installed_packages, 6000 )
+            sublime.set_timeout_async( check_installed_packages, 2000 )
 
         global g_is_already_running
         g_is_already_running = False
@@ -924,8 +925,8 @@ def complete_package_control(maximum_attempts=3):
             log( 1, "Error! Could not complete the Package Control uninstalling, missing import for `PackagesManager`." )
 
     silence_error_message_box(300.0)
-    package_manager = PackageManager()
 
+    package_manager    = PackageManager()
     packages_to_remove = [ ("Package Control", False), ("0_package_control_loader", None) ]
     packages_names     = [ package_name[0] for package_name in packages_to_remove ]
 
