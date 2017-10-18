@@ -595,11 +595,14 @@ you usually do with the default `Package Control` channel.
        { "caption": "My Brand New Channel: Update Default Packages",
                "command": "my_brand_new_channel_update_default_packages" },
 
-       { "caption": "My Brand New Channel: Run Installation Stable",
+       { "caption": "My Brand New Channel: Run Stable Installation ",
                "command": "my_brand_new_channel_run_installation", "args": {"version": "stable"} },
 
-       { "caption": "My Brand New Channel: Run Installation Development",
+       { "caption": "My Brand New Channel: Run Development Installation",
                "command": "my_brand_new_channel_run_installation", "args": {"version": "development"} },
+
+       { "caption": "My Brand New Channel: Run Uninstallation",
+               "command": "my_brand_new_channel_run_uninstallation" },
    ]
    ```
 
