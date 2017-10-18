@@ -606,8 +606,61 @@ you usually do with the default `Package Control` channel.
    ]
    ```
 
+1. However if you prefer, you can provide a menu entry for these commands instead of providing them
+   by the command palette. You can create the file called `Main.sublime-menu` inside your
+   `MyBrandNewChannel` directory:
+   ```javascript
+   [
+       {
+           "caption": "Preferences",
+           "mnemonic": "n",
+           "id": "preferences",
+           "children":
+           [
+               {
+                   "caption": "Package Settings",
+                   "mnemonic": "P",
+                   "id": "package-settings",
+                   "children":
+                   [
+                       {
+                           "caption": "My Brand New Channel",
+                           "children":
+                           [
+                               { "caption": "My Brand New Channel: Generate Channel File",
+                                       "command": "my_brand_new_channel_generate_channel_file" },
+
+                               { "caption": "My Brand New Channel: Run Backstroke Requests",
+                                       "command": "my_brand_new_channel_run", "args": {"run": "-b"} },
+
+                               { "caption": "My Brand New Channel: Pull & Rebase all Packages",
+                                       "command": "my_brand_new_channel_run", "args": {"run": "-p"} },
+
+                               { "caption": "My Brand New Channel: Update Default Packages",
+                                       "command": "my_brand_new_channel_update_default_packages" },
+
+                               { "caption": "My Brand New Channel: Run Stable Installation ",
+                                       "command": "my_brand_new_channel_run_installation",
+                                       "args": {"version": "stable"} },
+
+                               { "caption": "My Brand New Channel: Run Development Installation",
+                                       "command": "my_brand_new_channel_run_installation",
+                                       "args": {"version": "development"} },
+
+                               { "caption": "My Brand New Channel: Run Uninstallation",
+                                       "command": "my_brand_new_channel_run_uninstallation" },
+                           ]
+                       }
+                   ]
+               }
+           ]
+       }
+   ]
+   ```
 
 
+
+___
 ## How to Use a Channel
 
 The Channel is usable by two ways, the first is to create a big channel as Package Control with like
