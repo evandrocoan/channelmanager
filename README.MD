@@ -688,6 +688,11 @@ The second usage is when you intend to share with our work colleagues or friends
 packages for Sublime Text. You can just pass the channel URL for them to add it to the Package
 Control channel's list, then they can install your channel and run its installer.
 
+When the user finish the installation of the channel, the `ChannelManager` dependency will show up a
+message dialog informing whether the installation was successful or not:
+
+![Successful Installation Message Dialog](https://i.imgur.com/GcGa2MY.png)
+
 
 ### Multiple Channels Installation
 
@@ -822,6 +827,15 @@ ___
     connection as you just downloaded a lot of contents. So, you can try to manually download the
     contents at [pyv8-binaries](https://github.com/emmetio/pyv8-binaries) or just wait another hour
     and restart Sublime Text, so the package can download the contents by itself.
+
+1. Sublime Text my enter on deadlock, while Package Control is installing the missing dependencies.
+   This has a similar issue registered at
+   [CoreIssues$1966](https://github.com/SublimeTextIssues/Core/issues/1966)(Deadlock/hang when batch
+   deleting/creating settings files). The solution to this is to notice when Sublime Text is hanged
+   wich not CPU usage, i.e., for some time it is unresponsive, then you need to kill Sublime Text
+   itself or just kill the program called `plugin_host` or `plugin_host.exe`. After killing
+   `plugin_host`, Sublime Text will became responsive again, then you can save your work and restart
+   Sublime Text to restore the Sublime Text packages.
 
 
 
