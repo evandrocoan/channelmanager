@@ -1,7 +1,9 @@
 {
-	"*": {
-		">3000": [
-			"PythonDebugTools"
-		]
-	}
+    "*":
+    {
+        "*":
+        [
+            "ChannelManager"
+        ]
+    }
 }
