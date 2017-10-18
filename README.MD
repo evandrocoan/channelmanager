@@ -394,7 +394,9 @@ you usually do with the default `Package Control` channel.
    you like most as `settings.py` or `settings_and_commands.py`:
    ```python
    import os
+
    import sublime
+   import sublime_plugin
 
    from ChannelManager.channel_utilities import clean_urljoin
    from ChannelManager.channel_utilities import get_main_directory
