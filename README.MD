@@ -412,7 +412,7 @@ you usually do with the default `Package Control` channel.
 
    from ChannelManager.channel_manager import main as manager_main
    from ChannelManager.submodules_manager import main as submodules_main
-   from ChannelManager.copy_default_package import main as default_main
+   from ChannelManager.copy_default_package import main as copy_default_main
 
 
    # Infer the correct package name and current directory absolute path
@@ -569,7 +569,7 @@ you usually do with the default `Package Control` channel.
 
        def run(self):
            sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
-           default_main( g_channel_settings['DEFAULT_PACKAGES_FILES'], True )
+           copy_default_main( g_channel_settings['DEFAULT_PACKAGES_FILES'], True )
    ```
 
 1. Lastly we need to make these commands from our configuration file named
@@ -606,8 +606,8 @@ you usually do with the default `Package Control` channel.
    ]
    ```
 
-1. However if you prefer, you can provide a menu entry for these commands instead of providing them
-   by the command palette. You can create the file called `Main.sublime-menu` inside your
+1. Although if you prefer, you can provide a menu entry for these commands instead of providing them
+   by the command palette. You just need to create the file called `Main.sublime-menu` inside your
    `MyBrandNewChannel` directory:
    ```javascript
    [
@@ -658,6 +658,13 @@ you usually do with the default `Package Control` channel.
    ]
    ```
 
+If you want to get more elaborated with the installation process, you can see the
+[StudioChannel](https://github.com/evandrocoan/SublimeStudioChannel) and the
+[AmxxChannel](https://github.com/evandrocoan/SublimeAmxxChannel) files as example. The `AmxxChannel`
+implementation is similar to the one presented just above. However, the `StudioChannel` is pretty
+much different. It employs use concept of Installation Wizard, presenting a survey of the contents
+being installed.
+
 
 
 ___
@@ -680,6 +687,28 @@ computer.
 The second usage is when you intend to share with our work colleagues or friends, a bundled set of
 packages for Sublime Text. You can just pass the channel URL for them to add it to the Package
 Control channel's list, then they can install your channel and run its installer.
+
+
+### Multiple Channels Installation
+
+You can install as many Stable Versions of the channels as you want to. However, the Development
+Version due its nature can only have one installed. If you attempt to install a second Development
+Version, the `ChannelManager` will not let you. But it stills installing the packages which are not
+present on the current installed channel.
+
+Despite you cannot install multiple Development Versions, you can still install one Development
+Version and as much Stable Versions you would like to. Nevertheless, the packages which each channel
+have in common, are going to overridden accordingly to the channels installation order. For example,
+if you installed a Channel A, then another Channel B, and both channels have in common the same
+Package C, the implementation of the Package C, by the Channel A, will be overridden by the
+implementation of the Channel B, i.e., they are overridden accordingly to the order of the most
+recent channel installation.
+
+Yet still not implemented on the `ChannelManager` dependency, an short installation wizard which
+should allow you to choose which packages of Channel you do not want to install. It would also
+present to you a list of packages which are currently installed and where pruned from the
+installation due they being already installed on the system. Therefore you could select which of
+these packages you would like to install over the packages you already has installed.
 
 
 
