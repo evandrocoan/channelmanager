@@ -574,22 +574,22 @@ you usually do with the default `Package Control` channel.
    `Commands.sublime-commands` inside your `MyBrandNewChannel` directory:
    ```javascript
    [
-       { "caption": "MyBrandNewChannel: Generate Channel File",
+       { "caption": "My Brand New Channel: Generate Channel File",
                "command": "my_brand_new_channel_generate_channel_file" },
 
-      { "caption": "MyBrandNewChannel: Run Backstroke Requests",
+       { "caption": "My Brand New Channel: Run Backstroke Requests",
                "command": "my_brand_new_channel_run", "args": {"run": "-b"} },
 
-      { "caption": "MyBrandNewChannel: Pull & Rebase all Packages",
+       { "caption": "My Brand New Channel: Pull & Rebase all Packages",
                "command": "my_brand_new_channel_run", "args": {"run": "-p"} },
 
-      { "caption": "MyBrandNewChannel: Update Default Packages",
+       { "caption": "My Brand New Channel: Update Default Packages",
                "command": "my_brand_new_channel_update_default_packages" },
 
-      { "caption": "MyBrandNewChannel: Run Installation Stable",
+       { "caption": "My Brand New Channel: Run Installation Stable",
                "command": "my_brand_new_channel_run_installation", "args": {"version": "stable"} },
 
-      { "caption": "MyBrandNewChannel: Run Installation Development",
+       { "caption": "My Brand New Channel: Run Installation Development",
                "command": "my_brand_new_channel_run_installation", "args": {"version": "development"} },
    ]
    ```
