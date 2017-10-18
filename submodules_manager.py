@@ -99,8 +99,8 @@ except ModuleNotFoundError:
 
 
 # print_python_envinronment()
-STUDIO_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, "last_session.studio-channel" )
-FIND_FORKS_PATH     = os.path.join( CURRENT_DIRECTORY, "find_forks" )
+CHANNEL_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, "last_session.channel-manager" )
+FIND_FORKS_PATH      = os.path.join( CURRENT_DIRECTORY, "find_forks" )
 
 # How many errors are acceptable when the GitHub API request fails
 MAXIMUM_REQUEST_ERRORS = 10
@@ -134,15 +134,15 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 
 def main(command=None):
     log( 1, "Entering on main(0) " + str( command ) )
-    global STUDIO_MAIN_DIRECTORY
+    global CHANNEL_ROOT_DIRECTORY
 
     argumentsNamespace    = None
-    STUDIO_MAIN_DIRECTORY = get_main_directory( CURRENT_DIRECTORY )
+    CHANNEL_ROOT_DIRECTORY = get_main_directory( CURRENT_DIRECTORY )
 
     # https://stackoverflow.com/questions/6382804/how-to-use-getopt-optarg-in-python-how-to-shift
     if not command:
         print_command_line_arguments()
-        argumentParser = argparse.ArgumentParser( description='Update Sublime Text Studio' )
+        argumentParser = argparse.ArgumentParser( description='Update Sublime Text Channel' )
 
         argumentParser.add_argument( "-a", "--all", action="store_true",
                 help="Generate all assets" )
@@ -186,7 +186,7 @@ def main(command=None):
 def attempt_run_find_forks():
     if sublime:
         print( "The find forks command is only available running by the command line, while" )
-        print( "using the Sublime Text Studio Development version." )
+        print( "using the Sublime Text Channel Development version." )
 
     else:
         RunBackstrokeThread(True).start()
@@ -225,7 +225,7 @@ class RunGitPullThread(threading.Thread):
 
     def update_submodules(self):
         error_list = []
-        log( 1, "update_submodules::Current directory: " + STUDIO_MAIN_DIRECTORY )
+        log( 1, "update_submodules::Current directory: " + CHANNEL_ROOT_DIRECTORY )
 
         for _ in range(0, 100):
             error_list.append( "Error! " )
@@ -244,12 +244,12 @@ class RunGitPullThread(threading.Thread):
 
         if sublime:
             command_line_interface = cmd.Cli( None, True )
-            run_command_line( command_line_interface, shlex.split( command ), STUDIO_MAIN_DIRECTORY )
+            run_command_line( command_line_interface, shlex.split( command ), CHANNEL_ROOT_DIRECTORY )
 
         else:
             # Python os.system() call runs in incorrect directory
             # https://stackoverflow.com/questions/18066278/python-os-system-call-runs-in-incorrect-directory
-            os.chdir( STUDIO_MAIN_DIRECTORY )
+            os.chdir( CHANNEL_ROOT_DIRECTORY )
 
             # Calling an external command in Python
             # https://stackoverflow.com/questions/89228/calling-an-external-command-in-python
@@ -287,8 +287,8 @@ class RunBackstrokeThread(threading.Thread):
     def open_last_session_data(self):
         lastSection = configparser.ConfigParser( allow_no_value=True )
 
-        if os.path.exists( STUDIO_SESSION_FILE ):
-            lastSection.read( STUDIO_SESSION_FILE )
+        if os.path.exists( CHANNEL_SESSION_FILE ):
+            lastSection.read( CHANNEL_SESSION_FILE )
 
         else:
             lastSection.add_section( 'last_backstroke_session' )
@@ -301,7 +301,7 @@ class RunBackstrokeThread(threading.Thread):
 
     def create_backstroke(self):
         log( 1, "RunBackstrokeThread::create_backstroke" )
-        backstrokeFilePath = os.path.join( STUDIO_MAIN_DIRECTORY, 'Local', 'Backstroke.gitmodules' )
+        backstrokeFilePath = os.path.join( CHANNEL_ROOT_DIRECTORY, 'Local', 'Backstroke.gitmodules' )
 
         request_index        = 0
         successful_resquests = 0
@@ -389,7 +389,7 @@ class RunBackstrokeThread(threading.Thread):
 
     def save_session_data(self, maximum_errors, session_key, lastSection):
 
-        with open( STUDIO_SESSION_FILE, 'wt' ) as configfile:
+        with open( CHANNEL_SESSION_FILE, 'wt' ) as configfile:
 
             if maximum_errors == MAXIMUM_REQUEST_ERRORS:
                 print( "\n\nCongratulations! It was a successful execution." )
@@ -417,7 +417,7 @@ class RunBackstrokeThread(threading.Thread):
         request_index        = 0
         successful_resquests = 0
 
-        gitFilePath      = os.path.join( STUDIO_MAIN_DIRECTORY, '.gitmodules' )
+        gitFilePath      = os.path.join( CHANNEL_ROOT_DIRECTORY, '.gitmodules' )
         upstreamsConfigs = configparser.RawConfigParser()
 
         # https://stackoverflow.com/questions/45415684/how-to-stop-tabs-on-python-2-7-rawconfigparser-throwing-parsingerror/
@@ -482,14 +482,14 @@ class RunBackstrokeThread(threading.Thread):
                 run_command_line(
                     command_line_interface,
                     shlex.split( "python %s --user=%s --repo=%s" % ( FIND_FORKS_PATH, user, repository ) ),
-                    os.path.join( STUDIO_MAIN_DIRECTORY, path ),
+                    os.path.join( CHANNEL_ROOT_DIRECTORY, path ),
                 )
 
                 # Clean duplicate branches
                 run_command_line(
                     command_line_interface,
                     shlex.split( "sh %s/remove_duplicate_branches.sh %s" % ( FIND_FORKS_PATH, forkUser ) ),
-                    os.path.join( STUDIO_MAIN_DIRECTORY, path ),
+                    os.path.join( CHANNEL_ROOT_DIRECTORY, path ),
                 )
 
             else:

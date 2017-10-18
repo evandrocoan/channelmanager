@@ -96,39 +96,38 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 def main(channel_settings):
     """
         Before calling this installer, the `Package Control` user settings file, must have the
-        Studio Channel file set before the default channel key `channels`.
+        Channel file set before the default channel key `channels`.
 
         Also the current `Package Control` cache must be cleaned, ensuring it is downloading and
-        using the Studio Channel repositories/channel list.
+        using the Channel repositories/channel list.
     """
     log( 2, "Entering on %s main(0)" % CURRENT_PACKAGE_NAME )
 
-    installer_thread = StartUninstallStudioThread( channel_settings )
+    installer_thread = StartUninstallChannelThread( channel_settings )
     installer_thread.start()
 
 
 def unpack_settings(channel_settings):
-    global STUDIO_INSTALLATION_SETTINGS
+    global CHANNEL_INSTALLATION_SETTINGS
     global PACKAGES_TO_UNINSTALL_FIRST
 
     global USER_SETTINGS_FILE
-    global STUDIO_CHANNEL_URL
-    global STUDIO_CHANNEL_URL
+    global CHANNEL_FILE_URL
 
-    global STUDIO_MAIN_DIRECTORY
     global USER_FOLDER_PATH
-    global STUDIO_PACKAGE_NAME
+    global CHANNEL_ROOT_DIRECTORY
+    global CHANNEL_PACKAGE_NAME
 
-    STUDIO_PACKAGE_NAME = channel_settings['STUDIO_PACKAGE_NAME']
+    CHANNEL_PACKAGE_NAME          = channel_settings['CHANNEL_PACKAGE_NAME']
+    CHANNEL_INSTALLATION_SETTINGS = channel_settings['CHANNEL_INSTALLATION_SETTINGS']
 
-    STUDIO_INSTALLATION_SETTINGS = channel_settings['STUDIO_INSTALLATION_SETTINGS']
     setup_packages_to_uninstall_last_and_first( channel_settings )
 
-    STUDIO_CHANNEL_URL = channel_settings['STUDIO_CHANNEL_URL']
+    CHANNEL_FILE_URL   = channel_settings['CHANNEL_FILE_URL']
     USER_SETTINGS_FILE = channel_settings['USER_SETTINGS_FILE']
 
-    STUDIO_MAIN_DIRECTORY = channel_settings['STUDIO_MAIN_DIRECTORY']
-    USER_FOLDER_PATH      = channel_settings['USER_FOLDER_PATH']
+    CHANNEL_ROOT_DIRECTORY = channel_settings['CHANNEL_ROOT_DIRECTORY']
+    USER_FOLDER_PATH       = channel_settings['USER_FOLDER_PATH']
 
 
 def setup_packages_to_uninstall_last_and_first(channel_settings):
@@ -146,7 +145,7 @@ def setup_packages_to_uninstall_last_and_first(channel_settings):
             PACKAGES_TO_UNINSTALL_FIRST.remove( package )
 
 
-class StartUninstallStudioThread(threading.Thread):
+class StartUninstallChannelThread(threading.Thread):
 
     def __init__(self, channel_settings):
         threading.Thread.__init__(self)
@@ -161,11 +160,11 @@ class StartUninstallStudioThread(threading.Thread):
         if is_allowed_to_run():
             unpack_settings(self.channel_settings)
 
-            uninstaller_thread = UninstallStudioFilesThread()
+            uninstaller_thread = UninstallChannelFilesThread()
             uninstaller_thread.start()
 
-            ThreadProgress( uninstaller_thread, 'Uninstalling Sublime Text Studio Packages',
-                    'Sublime Text Studio %s was successfully installed.' )
+            ThreadProgress( uninstaller_thread, 'Uninstalling Sublime Text %s Packages...' % CHANNEL_PACKAGE_NAME,
+                    'The %s was successfully installed.' % CHANNEL_PACKAGE_NAME )
 
             uninstaller_thread.join()
 
@@ -187,7 +186,7 @@ def is_allowed_to_run():
     return True
 
 
-class UninstallStudioFilesThread(threading.Thread):
+class UninstallChannelFilesThread(threading.Thread):
 
     def __init__(self):
         threading.Thread.__init__(self)
@@ -195,23 +194,23 @@ class UninstallStudioFilesThread(threading.Thread):
     def run(self):
         log( 2, "Entering on %s run(1)" % self.__class__.__name__ )
         global g_is_installation_complete
-        global g_studioSettings
+        global g_channelSettings
         global g_packages_to_unignore
         global _uningored_packages_to_flush
 
         g_is_installation_complete = 0
-        g_studioSettings           = load_data_file( STUDIO_INSTALLATION_SETTINGS )
+        g_channelSettings           = load_data_file( CHANNEL_INSTALLATION_SETTINGS )
 
         _uningored_packages_to_flush = []
 
-        log( 1, "Loaded g_studioSettings: " + str( g_studioSettings ) )
-        g_packages_to_unignore = get_dictionary_key( g_studioSettings, "packages_to_unignore", [] )
+        log( 1, "Loaded g_channelSettings: " + str( g_channelSettings ) )
+        g_packages_to_unignore = get_dictionary_key( g_channelSettings, "packages_to_unignore", [] )
 
         load_package_manager_settings()
         disable_amxmodx_errors()
 
         uninstall_packages()
-        remove_studio_channel()
+        remove_channel()
 
         uninstall_files()
         uninstall_folders()
@@ -325,17 +324,17 @@ def uninstall_packages():
 
     # Remove the remaining packages to be uninstalled
     remove_package_from_list( "PackagesManager" )
-    remove_package_from_list( STUDIO_PACKAGE_NAME )
+    remove_package_from_list( CHANNEL_PACKAGE_NAME )
 
 
 def uninstall_default_package(packages_names):
 
     if 'Default' in packages_names:
         log( 1, "\n\nUninstalling `Default Package` files..." )
-        default_packages_path = os.path.join( STUDIO_MAIN_DIRECTORY, "Packages", "Default" )
+        default_packages_path = os.path.join( CHANNEL_ROOT_DIRECTORY, "Packages", "Default" )
 
         packages_names.remove('Default')
-        files_installed = get_dictionary_key( g_studioSettings, 'default_packages_files', [] )
+        files_installed = get_dictionary_key( g_channelSettings, 'default_packages_files', [] )
 
         for file in files_installed:
 
@@ -361,7 +360,7 @@ def remove_git_folder(default_git_folder, parent_folder=None):
 
 def get_packages_to_uninstall():
     filtered_packages     = []
-    packages_to_uninstall = get_dictionary_key( g_studioSettings, 'packages_to_uninstall', [] )
+    packages_to_uninstall = get_dictionary_key( g_channelSettings, 'packages_to_uninstall', [] )
 
     # Only merges the packages which are actually being uninstalled
     for package_name in PACKAGES_TO_UNINSTALL_FIRST:
@@ -437,12 +436,12 @@ def install_package_control(package_manager):
     package_manager.install_package( package_name, False )
 
 
-def remove_studio_channel():
+def remove_channel():
     channels = get_dictionary_key( g_package_control_settings, "channels", [] )
 
-    if STUDIO_CHANNEL_URL in channels:
+    while CHANNEL_FILE_URL in channels:
         log( 1, "Removing %s channel from Package Control settings: %s" % ( CURRENT_PACKAGE_NAME, str( channels ) ) )
-        channels.remove( STUDIO_CHANNEL_URL )
+        channels.remove( CHANNEL_FILE_URL )
 
     g_package_control_settings['channels'] = channels
     save_package_control_settings()
@@ -514,8 +513,8 @@ def uninstall_packagesmanger(package_manager, installed_packages):
     if "PackagesManager" in installed_packages:
         packages_to_remove.extend( [ ("PackagesManager", False), ("0_packagesmanager_loader", None) ] )
 
-    # By last uninstall itself `STUDIO_PACKAGE_NAME`
-    packages_to_remove.extend( [ (STUDIO_PACKAGE_NAME, False) ] )
+    # By last uninstall itself `CHANNEL_PACKAGE_NAME`
+    packages_to_remove.extend( [ (CHANNEL_PACKAGE_NAME, False) ] )
 
     # Let the package be unloaded by Sublime Text1
     add_packages_to_ignored_list( [ package_name for package_name, _ in packages_to_remove ] )
@@ -534,8 +533,8 @@ def remove_0_packagesmanager_loader():
     """
         Most times the 0_packagesmanager_loader is not being deleted/removed, then try again.
     """
-    _packagesmanager_loader_path     = os.path.join( STUDIO_MAIN_DIRECTORY, "Installed Packages", "0_packagesmanager_loader.sublime-package" )
-    _packagesmanager_loader_path_new = os.path.join( STUDIO_MAIN_DIRECTORY, "Installed Packages", "0_packagesmanager_loader.sublime-package-new" )
+    _packagesmanager_loader_path     = os.path.join( CHANNEL_ROOT_DIRECTORY, "Installed Packages", "0_packagesmanager_loader.sublime-package" )
+    _packagesmanager_loader_path_new = os.path.join( CHANNEL_ROOT_DIRECTORY, "Installed Packages", "0_packagesmanager_loader.sublime-package-new" )
 
     remove_only_if_exists( _packagesmanager_loader_path )
     remove_only_if_exists( _packagesmanager_loader_path_new )
@@ -550,7 +549,7 @@ def remove_only_if_exists(file_path):
 def add_packages_to_ignored_list(packages_list):
     """
         Something, somewhere is setting the ignored_packages list to `["Vintage"]`. Then ensure we
-        override this ************.
+        override this.
     """
     ignored_packages = g_user_settings.get( "ignored_packages", [] )
     unique_list_append( ignored_packages, packages_list )
@@ -586,28 +585,28 @@ def clean_packagesmanager_settings(maximum_attempts=3):
 
 
 def uninstall_folders():
-    folders_to_remove = get_dictionary_key( g_studioSettings, "folders_to_uninstall", [] )
+    folders_to_remove = get_dictionary_key( g_channelSettings, "folders_to_uninstall", [] )
     log( 1, "\n\nUninstalling added folders: %s" % str( folders_to_remove ) )
 
     for folder in reversed( folders_to_remove ):
         folders_not_empty = []
         log( 1, "Uninstalling folder: %s" % str( folder ) )
 
-        folder_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, folder )
+        folder_absolute_path = os.path.join( CHANNEL_ROOT_DIRECTORY, folder )
         recursively_delete_empty_folders( folder_absolute_path, folders_not_empty )
 
     for folder in folders_to_remove:
         folders_not_empty = []
         log( 1, "Uninstalling folder: %s" % str( folder ) )
 
-        folder_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, folder )
+        folder_absolute_path = os.path.join( CHANNEL_ROOT_DIRECTORY, folder )
         recursively_delete_empty_folders( folder_absolute_path, folders_not_empty )
 
     for folder in folders_to_remove:
         folders_not_empty = []
         log( 1, "Uninstalling folder: %s" % str( folder ) )
 
-        folder_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, folder )
+        folder_absolute_path = os.path.join( CHANNEL_ROOT_DIRECTORY, folder )
         recursively_delete_empty_folders( folder_absolute_path, folders_not_empty )
 
         if len( folders_not_empty ) > 0:
@@ -676,12 +675,12 @@ def _removeEmptyFolders(path):
 def uninstall_files():
     git_folders = []
 
-    files_to_remove = get_dictionary_key( g_studioSettings, "files_to_uninstall", [] )
+    files_to_remove = get_dictionary_key( g_channelSettings, "files_to_uninstall", [] )
     log( 1, "\n\nUninstalling added files: %s" % str( files_to_remove ) )
 
     for file in files_to_remove:
         log( 1, "Uninstalling file: %s" % str( file ) )
-        file_absolute_path = os.path.join( STUDIO_MAIN_DIRECTORY, file )
+        file_absolute_path = os.path.join( CHANNEL_ROOT_DIRECTORY, file )
 
         safe_remove( file_absolute_path )
         add_git_folder_by_file( file, git_folders )
@@ -722,13 +721,13 @@ def delete_channel_settings_file(maximum_attempts=3):
         Ensure the file is deleted
     """
     if maximum_attempts == 3:
-        log( 1, "\n\nUninstalling channel settings file: %s" % str( STUDIO_INSTALLATION_SETTINGS ) )
-        write_data_file( STUDIO_INSTALLATION_SETTINGS, {} )
+        log( 1, "\n\nUninstalling channel settings file: %s" % str( CHANNEL_INSTALLATION_SETTINGS ) )
+        write_data_file( CHANNEL_INSTALLATION_SETTINGS, {} )
 
     else:
         log( 1, "Uninstalling channel settings file, maximum_attempts: %s" % str( maximum_attempts ) )
 
-    remove_only_if_exists( STUDIO_INSTALLATION_SETTINGS )
+    remove_only_if_exists( CHANNEL_INSTALLATION_SETTINGS )
 
     if maximum_attempts > 0:
         maximum_attempts -= 1
@@ -743,7 +742,7 @@ def delete_channel_settings_file(maximum_attempts=3):
             uninstalling the unused dependencies.
 
             Check you Sublime Text Console for more information.
-            """ % STUDIO_PACKAGE_NAME ) )
+            """ % CHANNEL_PACKAGE_NAME ) )
 
     sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
 
@@ -777,7 +776,7 @@ def check_uninstalled_packages(maximum_attempts=10):
 
                 If you want help fixing the problem, please, save your Sublime Text Console output
                 so later others can see what happened try to fix it.
-                """ % STUDIO_PACKAGE_NAME ) )
+                """ % CHANNEL_PACKAGE_NAME ) )
 
         sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
         unignore_user_packages(flush_everything=True)

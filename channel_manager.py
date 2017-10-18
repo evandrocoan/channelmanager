@@ -96,22 +96,22 @@ def main(channel_settings):
 
 
 def unpack_settings(channel_settings):
-    global STUDIO_REPOSITORY_URL
+    global CHANNEL_REPOSITORY_URL
     global DEFAULT_CHANNEL_URL
 
-    global STUDIO_MAIN_DIRECTORY
-    global STUDIO_CHANNEL_FILE
-    global STUDIO_REPOSITORY_FILE
-    global STUDIO_SETTINGS_PATH
+    global CHANNEL_ROOT_DIRECTORY
+    global CHANNEL_FILE_PATH
+    global CHANNEL_REPOSITORY_FILE
+    global CHANNEL_SETTINGS_PATH
 
-    STUDIO_REPOSITORY_URL = channel_settings['STUDIO_REPOSITORY_URL']
-    DEFAULT_CHANNEL_URL   = channel_settings['DEFAULT_CHANNEL_URL']
+    CHANNEL_REPOSITORY_URL = channel_settings['CHANNEL_REPOSITORY_URL']
+    DEFAULT_CHANNEL_URL    = channel_settings['DEFAULT_CHANNEL_URL']
 
-    STUDIO_MAIN_DIRECTORY  = channel_settings['STUDIO_MAIN_DIRECTORY']
-    STUDIO_CHANNEL_FILE    = channel_settings['STUDIO_CHANNEL_FILE']
-    STUDIO_REPOSITORY_FILE = channel_settings['STUDIO_REPOSITORY_FILE']
+    CHANNEL_ROOT_DIRECTORY  = channel_settings['CHANNEL_ROOT_DIRECTORY']
+    CHANNEL_FILE_PATH       = channel_settings['CHANNEL_FILE_PATH']
+    CHANNEL_REPOSITORY_FILE = channel_settings['CHANNEL_REPOSITORY_FILE']
 
-    STUDIO_SETTINGS_PATH = channel_settings['STUDIO_SETTINGS_PATH']
+    CHANNEL_SETTINGS_PATH = channel_settings['CHANNEL_SETTINGS_PATH']
     # log( 1, "channel_settings: " + dictionary_to_string_by_line( channel_settings ) )
 
 
@@ -140,13 +140,13 @@ class GenerateChannelThread(threading.Thread):
 
 
 def create_ignored_packages():
-    studioSettings = {}
+    channelSettings = {}
     userSettings   = sublime.load_settings("Preferences.sublime-settings")
 
     user_ignored_packages                = userSettings.get("ignored_packages", [])
-    studioSettings['packages_to_ignore'] = user_ignored_packages
+    channelSettings['packages_to_ignore'] = user_ignored_packages
 
-    write_data_file( STUDIO_SETTINGS_PATH, studioSettings )
+    write_data_file( CHANNEL_SETTINGS_PATH, channelSettings )
 
 
 def is_allowed_to_run():
@@ -174,36 +174,36 @@ def load_deafault_channel():
     return all_packages
 
 
-def create_repository_file( repositories, dependencies ):
+def create_repository_file(repositories, dependencies):
     repository_file = OrderedDict()
     repository_file['schema_version'] = "3.0.0"
 
     repository_file['packages']     = repositories
     repository_file['dependencies'] = dependencies
 
-    # print_data_file( STUDIO_REPOSITORY_FILE )
-    write_data_file( STUDIO_REPOSITORY_FILE, repository_file )
+    # print_data_file( CHANNEL_REPOSITORY_FILE )
+    write_data_file( CHANNEL_REPOSITORY_FILE, repository_file )
 
 
-def create_channel_file( repositories, dependencies ):
+def create_channel_file(repositories, dependencies):
     channel_dictionary = OrderedDict()
 
     channel_dictionary['repositories'] = []
-    channel_dictionary['repositories'].append( STUDIO_REPOSITORY_URL )
+    channel_dictionary['repositories'].append( CHANNEL_REPOSITORY_URL )
 
     channel_dictionary['schema_version'] = "3.0.0"
     channel_dictionary['packages_cache'] = OrderedDict()
-    channel_dictionary['packages_cache'][STUDIO_REPOSITORY_URL] = repositories
+    channel_dictionary['packages_cache'][CHANNEL_REPOSITORY_URL] = repositories
 
     channel_dictionary['dependencies_cache'] = OrderedDict()
-    channel_dictionary['dependencies_cache'][STUDIO_REPOSITORY_URL] = dependencies
+    channel_dictionary['dependencies_cache'][CHANNEL_REPOSITORY_URL] = dependencies
 
-    # print_data_file( STUDIO_CHANNEL_FILE )
-    write_data_file( STUDIO_CHANNEL_FILE, channel_dictionary )
+    # print_data_file( CHANNEL_FILE_PATH )
+    write_data_file( CHANNEL_FILE_PATH, channel_dictionary )
 
 
-def get_repositories( all_packages ):
-    gitFilePath    = os.path.join( STUDIO_MAIN_DIRECTORY, '.gitmodules' )
+def get_repositories(all_packages):
+    gitFilePath    = os.path.join( CHANNEL_ROOT_DIRECTORY, '.gitmodules' )
     gitModulesFile = configparser.RawConfigParser()
 
     repositories = []
@@ -224,7 +224,7 @@ def get_repositories( all_packages ):
         upstream = gitModulesFile.get( section, "upstream" )
 
         user_forker     = get_user_name( url )
-        repository_path = os.path.join( STUDIO_MAIN_DIRECTORY, path )
+        repository_path = os.path.join( CHANNEL_ROOT_DIRECTORY, path )
         release_date    = get_git_date( repository_path, command_line_interface )
 
         # # For quick testing
@@ -476,7 +476,7 @@ def ensure_author_name(user_forker, upstream, repository_info):
         repository_info['authors'].append( "Forked by " + user_forker )
 
 
-def get_user_name( url, regular_expression="github\.com\/(.+)/(.+)", allow_recursion=True ):
+def get_user_name(url, regular_expression="github\.com\/(.+)/(.+)", allow_recursion=True):
     """
         How to extract a substring from inside a string in Python?
         https://stackoverflow.com/questions/4666973/how-to-extract-a-substring-from-inside-a-string-in-python

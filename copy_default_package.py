@@ -44,7 +44,7 @@ except:
 
 
 from .settings import *
-UPGRADE_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, 'last_sublime_upgrade.studio-channel' )
+UPGRADE_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, 'last_sublime_upgrade.channel-manager' )
 
 # Import the debugger
 from debug_tools import Debugger
@@ -63,7 +63,7 @@ def main(default_packages_files=[], is_forced=False):
     main_git_path = os.path.join( CURRENT_DIRECTORY, ".git" )
 
     # Not attempt to run when we are running from inside a `.sublime-package`: FileNotFoundError:
-    # '..\\Installed Packages\\ChannelManager.sublime-package\\last_sublime_upgrade.studio-channel'
+    # '..\\Installed Packages\\ChannelManager.sublime-package\\last_sublime_upgrade.channel-manager'
     if is_forced or os.path.exists( main_git_path ) and is_sublime_text_upgraded():
         CopyFilesThread( default_packages_files ).start()
 

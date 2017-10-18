@@ -82,8 +82,8 @@ def load_data_file(file_path, wait_on_error=True):
         while maximum_attempts > 0:
 
             try:
-                with open( file_path, 'r', encoding='utf-8' ) as studio_channel_data:
-                    return json.load( studio_channel_data )
+                with open( file_path, 'r', encoding='utf-8' ) as data_file:
+                    return json.load( data_file )
 
             except ValueError as error:
                 log( 1, "\n\nError, maximum_attempts %d, load_data_file: %s" % ( maximum_attempts, error ) )

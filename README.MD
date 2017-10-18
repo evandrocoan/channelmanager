@@ -2,7 +2,7 @@
 
 The plugin `channel_manager.py` creates the files `channel.json` and `repository.json` based on the
 `.gitmodules` file on the Sublime Text Data folder (the folder at `Packages/../`). To call it, you
-can open the command palette and type `Studio Channel: Generate Channel File`. See the following
+can open the command palette and type `StudioChannel: Generate Channel File`. See the following
 threads for more information about the `Package Control` channel and repository files:
 
 1. https://packagecontrol.io/docs/dependencies  DOCS - Dependencies
@@ -169,7 +169,7 @@ $ python3 submodules_manager.py
 [submodules_manager.py] 10:05:26  548638     131 ( print_command_line_arguments ) arg: submodules_manager.py
 usage: submodules_manager.py [-h] [-a] [-b] [-f] [-p]
 
-Update Sublime Text Studio
+Update Sublime Text Channel
 
 optional arguments:
   -h, --help        show this help message and exit
@@ -389,7 +389,7 @@ you usually do with the default `Package Control` channel.
    ```
 
 1. Now on this new package called `Packages/MyBrandNewChannel`, you need to create the plugin to do
-   call to the studio channel passing its configurations. In the following we may see a full example
+   call to the channel manager passing its configurations. In the following we may see a full example
    configuration file, you can save it inside the folder `Packages/MyBrandNewChannel` with the name
    you like most as `settings.py` or `settings_and_commands.py`:
    ```python
@@ -430,18 +430,18 @@ you usually do with the default `Package Control` channel.
        global g_channel_settings
 
        # The folder where the directory where the Sublime Text `Packages` (loose packages) folder is on
-       STUDIO_MAIN_DIRECTORY = get_main_directory( CURRENT_DIRECTORY )
+       CHANNEL_ROOT_DIRECTORY = get_main_directory( CURRENT_DIRECTORY )
 
        # The folder where the User settings are on
-       USER_FOLDER_PATH = os.path.join( STUDIO_MAIN_DIRECTORY, "Packages", "User" )
+       USER_FOLDER_PATH = os.path.join( CHANNEL_ROOT_DIRECTORY, "Packages", "User" )
 
        # The temporary folder to download the main repository when installing the development version
-       g_channel_settings['TEMPORARY_FOLDER_TO_USE'] = "__channel_studio_temp"
-       g_channel_settings['STUDIO_PACKAGE_NAME']     = CURRENT_PACKAGE_NAME
+       g_channel_settings['TEMPORARY_FOLDER_TO_USE'] = "__channel_temporary_directory"
+       g_channel_settings['CHANNEL_PACKAGE_NAME']    = CURRENT_PACKAGE_NAME
 
        # Where to save the settings for channel after it is installed on the user's machine
-       g_channel_settings['USER_FOLDER_PATH']             = USER_FOLDER_PATH
-       g_channel_settings['STUDIO_INSTALLATION_SETTINGS'] = \
+       g_channel_settings['USER_FOLDER_PATH']              = USER_FOLDER_PATH
+       g_channel_settings['CHANNEL_INSTALLATION_SETTINGS'] = \
                os.path.join( USER_FOLDER_PATH,CURRENT_PACKAGE_NAME + ".sublime-settings" )
 
 
@@ -452,26 +452,26 @@ you usually do with the default `Package Control` channel.
        # The default Package Control channel
        g_channel_settings['DEFAULT_CHANNEL_URL'] = "https://packagecontrol.io/channel_v3.json"
 
-       # The URL of the folder where the channel files are hosted
-       STUDIO_RAW_URL = "https://raw.githubusercontent.com/your_user_name/MyBrandNewChannel/master/"
+       # The URL of the directory where the files `channel.json` and `repository.json` are hosted
+       CHANNEL_RAW_URL = "https://raw.githubusercontent.com/your_user_name/MyBrandNewChannel/master/"
 
        # The URL to the main A direct URL/Path to the repository where there is the `.gitmodules` file
-       # listing all the channel packages to use when generating Studio Channel files.
-       g_channel_settings['STUDIO_MAIN_URL']       = "https://github.com/your_user_name/MyParentRepository"
-       g_channel_settings['STUDIO_MAIN_DIRECTORY'] = STUDIO_MAIN_DIRECTORY
+       # listing all the channel packages to use when generating the Channel files.
+       g_channel_settings['CHANNEL_ROOT_URL']       = "https://github.com/your_user_name/MyParentRepository"
+       g_channel_settings['CHANNEL_ROOT_DIRECTORY'] = CHANNEL_ROOT_DIRECTORY
 
        # The file path to the Channel File `channel.json` to use when installing the development version
-       g_channel_settings['STUDIO_CHANNEL_URL']  = clean_urljoin( STUDIO_RAW_URL, "channel.json" )
-       g_channel_settings['STUDIO_CHANNEL_FILE'] = os.path.join( CURRENT_DIRECTORY, "channel.json" )
+       g_channel_settings['CHANNEL_FILE_URL']  = clean_urljoin( CHANNEL_RAW_URL, "channel.json" )
+       g_channel_settings['CHANNEL_FILE_PATH'] = os.path.join( CURRENT_DIRECTORY, "channel.json" )
 
        # A direct URL/Path to the Repository File `repository.json` to use when installing the
        # stable/development version
-       g_channel_settings['STUDIO_REPOSITORY_URL']  = clean_urljoin( STUDIO_RAW_URL, "repository.json" )
-       g_channel_settings['STUDIO_REPOSITORY_FILE'] = os.path.join( CURRENT_DIRECTORY, "repository.json" )
+       g_channel_settings['CHANNEL_REPOSITORY_URL']  = clean_urljoin( CHANNEL_RAW_URL, "repository.json" )
+       g_channel_settings['CHANNEL_REPOSITORY_FILE'] = os.path.join( CURRENT_DIRECTORY, "repository.json" )
 
        # A direct URL/Path to the `settings.json` to use when installing the stable/development version
-       g_channel_settings['STUDIO_SETTINGS_URL']  = clean_urljoin( STUDIO_RAW_URL, "settings.json" )
-       g_channel_settings['STUDIO_SETTINGS_PATH'] = os.path.join( CURRENT_DIRECTORY, "settings.json" )
+       g_channel_settings['CHANNEL_SETTINGS_URL']  = clean_urljoin( CHANNEL_RAW_URL, "settings.json" )
+       g_channel_settings['CHANNEL_SETTINGS_PATH'] = os.path.join( CURRENT_DIRECTORY, "settings.json" )
 
 
        # You can specify for some packages to be popped out from the list and being installed by
@@ -497,20 +497,20 @@ you usually do with the default `Package Control` channel.
        ]
 
 
-   def add_studio_channel():
+   def add_channel():
        """
            Add your channel URL to the Package Control channel list and cleans the cached channels.
        """
-       package_control    = "Package Control.sublime-settings"
-       studio_channel_url = g_channel_settings['STUDIO_CHANNEL_URL']
+       package_control = "Package Control.sublime-settings"
+       channel_url     = g_channel_settings['CHANNEL_URL']
 
        package_control_settings = sublime.load_settings( package_control )
        channels                 = package_control_settings.get( "channels", [] )
 
-       if studio_channel_url in channels:
-           channels.remove( studio_channel_url )
+       while channel_url in channels:
+           channels.remove( channel_url )
 
-       channels.insert( 0, studio_channel_url )
+       channels.insert( 0, channel_url )
        package_control_settings.set( "channels", channels )
 
        print( "Adding %s channel to %s: %s" % ( CURRENT_PACKAGE_NAME, package_control, str( channels ) ) )
@@ -528,7 +528,7 @@ you usually do with the default `Package Control` channel.
                @param version   Either the value "stable" or "development" to install the
                                 Development or Stable Version of the channel.
            """
-           add_studio_channel()
+           add_channel()
            g_channel_settings['INSTALLATION_TYPE'] = version
 
            sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
@@ -570,26 +570,27 @@ you usually do with the default `Package Control` channel.
    packages cloned as git submodules with the `--recursive` option (if applied).
 
    Creating a file like these should be able to make you new commands for you channel
-   `MyBrandNewChannel` to be accessible easily:
+   `MyBrandNewChannel` to be accessible easily. You can create a file named
+   `Commands.sublime-commands` inside your `MyBrandNewChannel` directory:
    ```javascript
    [
        { "caption": "MyBrandNewChannel: Generate Channel File",
-                "command": "my_brand_new_channel_generate_channel_file" },
+               "command": "my_brand_new_channel_generate_channel_file" },
 
-       { "caption": "MyBrandNewChannel: Run Backstroke Requests",
-                "command": "my_brand_new_channel_run", "args": {"run": "-b"} },
+      { "caption": "MyBrandNewChannel: Run Backstroke Requests",
+               "command": "my_brand_new_channel_run", "args": {"run": "-b"} },
 
-       { "caption": "MyBrandNewChannel: Pull & Rebase all Packages",
-                "command": "my_brand_new_channel_run", "args": {"run": "-p"} },
+      { "caption": "MyBrandNewChannel: Pull & Rebase all Packages",
+               "command": "my_brand_new_channel_run", "args": {"run": "-p"} },
 
-       { "caption": "MyBrandNewChannel: Update Default Packages",
-                "command": "my_brand_new_channel_update_default_packages" },
+      { "caption": "MyBrandNewChannel: Update Default Packages",
+               "command": "my_brand_new_channel_update_default_packages" },
 
-       { "caption": "MyBrandNewChannel: Run Installation Stable",
-                "command": "my_brand_new_channel_run_installation", "args": {"version": "stable"} },
+      { "caption": "MyBrandNewChannel: Run Installation Stable",
+               "command": "my_brand_new_channel_run_installation", "args": {"version": "stable"} },
 
-       { "caption": "MyBrandNewChannel: Run Installation Development",
-                "command": "my_brand_new_channel_run_installation", "args": {"version": "development"} },
+      { "caption": "MyBrandNewChannel: Run Installation Development",
+               "command": "my_brand_new_channel_run_installation", "args": {"version": "development"} },
    ]
    ```
 
@@ -623,7 +624,7 @@ ___
 It provides the following commands on command palette. Note these commands only works if you
 installed the Development Version of the channel:
 
-1. **StudioChannel: Generate Channel File** Creates the files `channel.json`, `repositories.json`
+1. **YourChannelName: Generate Channel File** Creates the files `channel.json`, `repositories.json`
    and `settings.json`. The file `channel.json` and `repositories.json` are the same file as the
    Package Control's [channel_v3.json](https://packagecontrol.io/channel_v3.json) file.
 
@@ -632,16 +633,16 @@ installed the Development Version of the channel:
    the Stable Version of the channel. You can read more about them at [Package Control, Docs:
    Channels and Repositories](https://packagecontrol.io/docs/channels_and_repositories)
 
-1. **StudioChannel: Run Backstroke Requests** Backstroke is a Github bot to keep repository forks up
+1. **YourChannelName: Run Backstroke Requests** Backstroke is a Github bot to keep repository forks up
    to date with their upstream. Therefore, if you setup your own list of Backstroke URLs, you can
    run this command to ping all your URLs, so their upstreams are checked whether there are some
    missing updates.
 
-1. **StudioChannel: Pull & Rebase all Packages** Walk through all git repositories and perform the
+1. **YourChannelName: Pull & Rebase all Packages** Walk through all git repositories and perform the
    `git pull --rebase` command, i.e., fetch the updates from the origin and merge the changes by
    rebase.
 
-1. **StudioChannel: Pull & Rebase all Upstreams** (Not Yet Implemented) Walk through all git
+1. **YourChannelName: Pull & Rebase all Upstreams** (Not Yet Implemented) Walk through all git
    repositories and perform `git remote add upstream_url`, checkout on the specified remove branch,
    and do a git merge with the upstream contents.
 
@@ -649,7 +650,7 @@ installed the Development Version of the channel:
    set which one should be the remove branch used to checkout to do the merge. Otherwise, if the
    setting is not set/present, the default branch would be used.
 
-1. **StudioChannel: Update Default Packages** Run the script `copy_default_package.py` which
+1. **YourChannelName: Update Default Packages** Run the script `copy_default_package.py` which
    unpack_settings the `Default.sublime-package` at the on the `Packages/../` folder, i.e., on the
    folder which the Sublime Text loose packages are, not inside it. This command automatically runs
    when you install a new version of Sublime Text, therefore the command is only here when you want
@@ -696,7 +697,7 @@ ___
     def add_packages_to_ignored_list(packages_list):
         """
             Something, somewhere is setting the ignored_packages list to `["Vintage"]`. Then ensure we
-            override this ************.
+            override this.
         """
         ignored_packages = g_user_settings.get( "ignored_packages", [] )
         unique_list_append( ignored_packages, packages_list )
