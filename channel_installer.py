@@ -115,9 +115,6 @@ def unpack_settings(channel_settings):
     global DEFAULT_PACKAGES_FILES
     global TEMPORARY_FOLDER_TO_USE
 
-    global PACKAGES_TO_NOT_INSTALL
-    global PACKAGES_TO_INSTALL_LAST
-
     global CHANNEL_ROOT_URL
     global CHANNEL_SETTINGS_URL
     global CHANNEL_SETTINGS_PATH
@@ -127,6 +124,10 @@ def unpack_settings(channel_settings):
     global IS_DEVELOPMENT_INSTALL
     global CHANNEL_INSTALLATION_SETTINGS
     global USER_FOLDER_PATH
+
+    global PACKAGES_TO_NOT_INSTALL
+    global PACKAGES_TO_INSTALL_FIRST
+    global PACKAGES_TO_INSTALL_LAST
 
     IS_DEVELOPMENT_INSTALL       = True if channel_settings['INSTALLATION_TYPE'] == "development" else False
     CHANNEL_INSTALLATION_SETTINGS = channel_settings['CHANNEL_INSTALLATION_SETTINGS']
@@ -140,10 +141,12 @@ def unpack_settings(channel_settings):
     DEFAULT_PACKAGES_FILES  = channel_settings['DEFAULT_PACKAGES_FILES']
     TEMPORARY_FOLDER_TO_USE = channel_settings['TEMPORARY_FOLDER_TO_USE']
 
-    CHANNEL_ROOT_DIRECTORY   = channel_settings['CHANNEL_ROOT_DIRECTORY']
-    PACKAGES_TO_NOT_INSTALL  = channel_settings['PACKAGES_TO_NOT_INSTALL']
-    PACKAGES_TO_INSTALL_LAST = channel_settings['PACKAGES_TO_INSTALL_LAST']
-    USER_FOLDER_PATH         = channel_settings['USER_FOLDER_PATH']
+    CHANNEL_ROOT_DIRECTORY  = channel_settings['CHANNEL_ROOT_DIRECTORY']
+    PACKAGES_TO_NOT_INSTALL = channel_settings['PACKAGES_TO_NOT_INSTALL']
+    USER_FOLDER_PATH        = channel_settings['USER_FOLDER_PATH']
+
+    PACKAGES_TO_INSTALL_FIRST = channel_settings['PACKAGES_TO_INSTALL_FIRST']
+    PACKAGES_TO_INSTALL_LAST  = channel_settings['PACKAGES_TO_INSTALL_LAST']
 
 
 class StartInstallChannelThread(threading.Thread):
@@ -798,6 +801,7 @@ def set_last_packages_to_install(packages_to_install):
     """
         Ignore everything except some packages, until it is finished
     """
+    set_first_packages_to_install( packages_to_install )
     last_packages = {}
 
     for package_name in packages_to_install:
@@ -810,6 +814,21 @@ def set_last_packages_to_install(packages_to_install):
 
         if package_name in last_packages:
             packages_to_install.append( last_packages[package_name] )
+
+
+def set_first_packages_to_install(packages_to_install):
+    first_packages = {}
+
+    for package_name in packages_to_install:
+
+        if package_name[0] in PACKAGES_TO_INSTALL_FIRST:
+            first_packages[package_name[0]] = package_name
+            packages_to_install.remove( package_name )
+
+    for package_name in reversed( PACKAGES_TO_INSTALL_FIRST ):
+
+        if package_name in first_packages:
+            packages_to_install.insert( 0, first_packages[package_name] )
 
 
 def set_default_settings_after(print_settings=0):

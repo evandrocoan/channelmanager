@@ -477,7 +477,14 @@ you usually do with the default `Package Control` channel.
 
 
        # You can specify for some packages to be popped out from the list and being installed by
-       # last in the following order presented.
+       # first/last in the following order presented.
+       g_channel_settings['PACKAGES_TO_INSTALL_FIRST'] = \
+       [
+           "My First Package",
+           "My Second Package",
+           "My Third Package",
+       ]
+
        g_channel_settings['PACKAGES_TO_INSTALL_LAST'] = \
        [
            "My Package Penultimate Package",
@@ -491,7 +498,7 @@ you usually do with the default `Package Control` channel.
        # Do not try to install this own package and the Package Control, as they are currently running
        g_channel_settings['PACKAGES_TO_NOT_INSTALL'] = [ "Package Control", CURRENT_PACKAGE_NAME ]
 
-       # The files of the `Default.sublime-package` you are installed
+       # The files of the `Default.sublime-package` you are installing
        g_channel_settings['DEFAULT_PACKAGES_FILES'] = \
        [
            "Tab Context.sublime-menu",
@@ -504,7 +511,7 @@ you usually do with the default `Package Control` channel.
            Add your channel URL to the Package Control channel list and cleans the cached channels.
        """
        package_control = "Package Control.sublime-settings"
-       channel_url     = g_channel_settings['CHANNEL_URL']
+       channel_url     = g_channel_settings['CHANNEL_FILE_URL']
 
        package_control_settings = sublime.load_settings( package_control )
        channels                 = package_control_settings.get( "channels", [] )
