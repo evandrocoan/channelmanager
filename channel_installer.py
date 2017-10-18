@@ -410,11 +410,15 @@ def get_stable_packages(git_modules_file):
         log( 2, "get_stable_packages, path: " + path )
 
         if 'Packages' == path[0:8]:
-            package_name            = os.path.basename( path )
-            submodule_absolute_path = os.path.join( CHANNEL_ROOT_DIRECTORY, path )
+            package_name = os.path.basename( path )
 
-            if not os.path.isdir( submodule_absolute_path ) \
-                    and package_name not in packages_tonot_install:
+            if package_name not in packages_tonot_install:
+
+                if IS_DEVELOPMENT_INSTALL:
+                    submodule_absolute_path = os.path.join( CHANNEL_ROOT_DIRECTORY, path )
+
+                    if not os.path.isdir( submodule_absolute_path ):
+                        continue
 
                 packages.append( ( package_name, is_dependency( gitModulesFile, section ) ) )
 
@@ -727,13 +731,15 @@ def get_development_packages():
     gitModulesFile.read( gitFilePath )
 
     for section in gitModulesFile.sections():
-        url  = gitModulesFile.get( section, "url" )
-        path = gitModulesFile.get( section, "path" )
-
         # # For quick testing
         # index += 1
         # if index > 3:
         #     break
+
+        url  = gitModulesFile.get( section, "url" )
+        path = gitModulesFile.get( section, "path" )
+
+        log( 2, "get_development_packages, path: " + path )
 
         if 'Packages' == path[0:8]:
             package_name            = os.path.basename( path )
@@ -743,7 +749,6 @@ def get_development_packages():
                     and package_name not in packages_tonot_install :
 
                 packages.append( ( package_name, url, path ) )
-                log( 2, "get_development_packages, path: " + path )
 
     # return \
     # [
