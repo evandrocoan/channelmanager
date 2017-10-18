@@ -228,7 +228,7 @@ def disable_amxmodx_errors():
         import amxmodx
         amxmodx.AMXXEditor.g_is_package_loading = True
 
-    except ImportError:
+    except( ImportError, AttributeError ):
         pass
 
 
