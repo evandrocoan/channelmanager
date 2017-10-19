@@ -50,12 +50,12 @@ UPGRADE_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, 'last_sublime_upgrade.ch
 from debug_tools import Debugger
 
 # Debugger settings: 0 - disabled, 127 - enabled
-log = Debugger( 1, os.path.basename( __file__ ) )
+log = Debugger( 127, os.path.basename( __file__ ) )
 
-log( 2, "..." )
-log( 2, "..." )
-log( 2, "Debugging" )
-log( 2, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
+# log( 2, "..." )
+# log( 2, "..." )
+# log( 2, "Debugging" )
+# log( 2, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 
 
 def main(default_packages_files=[], is_forced=False):
@@ -77,8 +77,8 @@ class CopyFilesThread(threading.Thread):
     def run(self):
         log( 2, "Entering on run(1)" )
 
-        package_path  = os.path.join( os.path.dirname(sublime.executable_path()), "Packages", "Default.sublime-package" )
-        output_folder = os.path.join( os.path.dirname( os.path.dirname( CURRENT_DIRECTORY ) ), "Default.sublime-package" )
+        package_path  = os.path.join( os.path.dirname( sublime.executable_path() ), "Packages", "Default.sublime-package" )
+        output_folder = os.path.join( os.path.dirname( sublime.packages_path() ), "Default.sublime-package" )
 
         log( 2, "run, package_path:  " + package_path )
         log( 2, "run, output_folder: " + output_folder )
@@ -124,33 +124,33 @@ def extract_package(package_path, destine_folder):
     """
 
     try:
-        package_file = zipfile.ZipFile(package_path)
+        package_file = zipfile.ZipFile( package_path )
 
-    except zipfile.BadZipfile:
-        log( 1, " The package file '%s is invalid!" % package_path)
+    except zipfile.BadZipfile as error:
+        log( 1, " The package file '%s is invalid! Error: %s" % ( package_path, error ) )
 
-    with contextlib.closing(package_file):
+    with contextlib.closing( package_file ):
 
         try:
-            os.mkdir(destine_folder)
+            os.mkdir( destine_folder )
 
-        except OSError:
+        except OSError as error:
 
-            if os.path.isdir(destine_folder):
+            if os.path.isdir( destine_folder ):
                 pass
 
             else:
-                log( 1, "The directory '%s' could not be created!" % destine_folder)
+                log( 1, "The directory '%s' could not be created! Error: %s" % ( destine_folder, error ) )
                 return
 
         try:
-            package_file.extractall(destine_folder)
+            package_file.extractall( destine_folder )
 
-        except:
-            log( 1, "Extracting '%s' failed." % package_path)
+        except Exception as error:
+            log( 1, "Extracting '%s' failed. Error: %s" % ( package_path, error ) )
             return
 
-        log( 1, "The file '%s' was successfully extracted." % package_path)
+        log( 1, "The file '%s' was successfully extracted." % package_path )
 
 
 def is_sublime_text_upgraded():
