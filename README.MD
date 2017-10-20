@@ -78,21 +78,11 @@ some user using the stable build 3143 installs the `Notepad++ Color Scheme`, the
 one from the tag `3143`, and not the one from the master branch, which has the latest fixes for
 build development build 3147 or newer.
 
-This happens because currently the channel generation is limited to setting the download link to the
-repository master branch. Still not implemented the checking for each submodule for the latest tag
-available, then then properly setting the download URL pointing to the last tag. Still also to do
-automatic tagging of the latest release package is working for Sublime Text, however this seems not
-much required to be done as should be only a few exceptions for when a packages stops working for
-some build of Sublime Text.
-
-Nonetheless, as currently we already fetch the lasted commit date version tag, now can easily be
+Nonetheless, as currently we already fetch the lasted commit date version tag, it was easily
 implemented automatic tagging for based on the latest commit date. It would be useful for tagging a
-large set of packages which can be considered stable. This approach should be much batter than the
-current one where the user always download the current version available at the master branch when
-the user installed the package. Such approach is not very welcomed because would allow several
-clients to be using different versions of the package while all of them think they are using the
-latest version available at the moment, however just the most recent installations would be using
-the lasted version, whereas the other installations would be using some older version.
+large set of packages which can be considered stable. Still also to do automatic tagging of the
+latest release package is working for Sublime Text, however this seems not much required to be done
+as should be only a few exceptions for when a packages stops working for some build of Sublime Text.
 
 The key `dependency` is comma separate lists of `dependencies` a package has. If the dependency key
 start with number like in `dependency = 50, PythonDebugTools, regex`, it would mean that the package
@@ -593,7 +583,10 @@ you usually do with the default `Package Control` channel.
    ```javascript
    [
        { "caption": "My Brand New Channel: Generate Channel File",
-               "command": "my_brand_new_channel_generate_channel_file" },
+               "command": "my_brand_new_channel_generate_channel_file", "args": {"create_tags": false} },
+
+       { "caption": "My Brand New Channel: Generate Channel File and Tags",
+               "command": "my_brand_new_channel_generate_channel_file", "args": {"create_tags": true} },
 
        { "caption": "My Brand New Channel: Run Backstroke Requests",
                "command": "my_brand_new_channel_run", "args": {"run": "-b"} },
@@ -637,7 +630,12 @@ you usually do with the default `Package Control` channel.
                            "children":
                            [
                                { "caption": "My Brand New Channel: Generate Channel File",
-                                       "command": "my_brand_new_channel_generate_channel_file" },
+                                       "command": "my_brand_new_channel_generate_channel_file",
+                                       "args": {"create_tags": false} },
+
+                               { "caption": "My Brand New Channel: Generate Channel File and Tags",
+                                       "command": "my_brand_new_channel_generate_channel_file",
+                                       "args": {"create_tags": true} },
 
                                { "caption": "My Brand New Channel: Run Backstroke Requests",
                                        "command": "my_brand_new_channel_run", "args": {"run": "-b"} },
@@ -740,6 +738,11 @@ installed the Development Version of the channel:
    list the default ignored packages which are set when you use the Development Version, instead of
    the Stable Version of the channel. You can read more about them at [Package Control, Docs:
    Channels and Repositories](https://packagecontrol.io/docs/channels_and_repositories)
+
+1. **YourChannelName: Generate Channel File and Tags** Similar to the last command, but it also
+   create tags for each repository on based on the date of the last commit. The current tag, if it
+   exists, if fetched and then its patch component (major.minor.patch) is incremented in one, if
+   the latest
 
 1. **YourChannelName: Run Backstroke Requests** Backstroke is a Github bot to keep repository forks up
    to date with their upstream. Therefore, if you setup your own list of Backstroke URLs, you can

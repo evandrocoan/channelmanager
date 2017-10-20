@@ -37,6 +37,7 @@ import shlex
 import subprocess
 
 from collections import OrderedDict
+from distutils.version import LooseVersion
 
 
 # https://stackoverflow.com/questions/14087598/python-3-importerror-no-module-named-configparser
@@ -56,6 +57,7 @@ from .channel_utilities import write_data_file
 from .channel_utilities import string_convert_list
 from .channel_utilities import load_data_file
 from .channel_utilities import print_data_file
+from .channel_utilities import get_dictionary_key
 from .channel_utilities import dictionary_to_string_by_line
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
@@ -85,10 +87,10 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 # log( 2, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 
 
-def main(channel_settings):
-    log( 2, "Entering on main(0)" )
+def main(channel_settings, create_tags=False):
+    log( 2, "Entering on main(2)" )
 
-    channel_thread = GenerateChannelThread(channel_settings)
+    channel_thread = GenerateChannelThread(channel_settings, create_tags)
     channel_thread.start()
 
     ThreadProgress( channel_thread, "Generating Channel and Repositories files",
@@ -117,8 +119,10 @@ def unpack_settings(channel_settings):
 
 class GenerateChannelThread(threading.Thread):
 
-    def __init__(self, channel_settings):
+    def __init__(self, channel_settings, create_tags=False):
         threading.Thread.__init__(self)
+
+        self.create_tags      = create_tags
         self.channel_settings = channel_settings
 
     def run(self):
@@ -126,10 +130,12 @@ class GenerateChannelThread(threading.Thread):
 
         if is_allowed_to_run():
             unpack_settings( self.channel_settings )
-            all_packages = load_deafault_channel()
+
+            all_packages      = load_deafault_channel()
+            last_repositories = load_last_repositories()
 
             # print_some_repositories(all_packages)
-            repositories, dependencies = get_repositories( all_packages )
+            repositories, dependencies = get_repositories( all_packages, last_repositories, self.create_tags )
 
             create_channel_file( repositories, dependencies )
             create_repository_file( repositories, dependencies )
@@ -141,9 +147,9 @@ class GenerateChannelThread(threading.Thread):
 
 def create_ignored_packages():
     channelSettings = {}
-    userSettings   = sublime.load_settings("Preferences.sublime-settings")
+    userSettings    = sublime.load_settings("Preferences.sublime-settings")
 
-    user_ignored_packages                = userSettings.get("ignored_packages", [])
+    user_ignored_packages                 = userSettings.get("ignored_packages", [])
     channelSettings['packages_to_ignore'] = user_ignored_packages
 
     write_data_file( CHANNEL_SETTINGS_PATH, channelSettings )
@@ -174,6 +180,21 @@ def load_deafault_channel():
     return all_packages
 
 
+def load_last_repositories():
+    last_packages = {}
+
+    repositories_dictionary = load_data_file( CHANNEL_REPOSITORY_FILE )
+    packages_dictionary     = get_dictionary_key( repositories_dictionary, 'packages', {} )
+    dependencies_dictionary = get_dictionary_key( repositories_dictionary, 'dependencies', {} )
+
+    packages_dictionary.extend( dependencies_dictionary )
+
+    for package in packages_dictionary:
+        last_packages[package['name']] = package
+
+    return last_packages
+
+
 def create_repository_file(repositories, dependencies):
     repository_file = OrderedDict()
     repository_file['schema_version'] = "3.0.0"
@@ -202,7 +223,7 @@ def create_channel_file(repositories, dependencies):
     write_data_file( CHANNEL_FILE_PATH, channel_dictionary )
 
 
-def get_repositories(all_packages):
+def get_repositories(all_packages, last_repositories, tag_current_version=False):
     gitFilePath    = os.path.join( CHANNEL_ROOT_DIRECTORY, '.gitmodules' )
     gitModulesFile = configparser.RawConfigParser()
 
@@ -219,17 +240,16 @@ def get_repositories(all_packages):
     log( 1, "Total repositories to parse: " + str( sections_count ) )
 
     for section in sections:
+        index += 1
+        log.insert_empty_line()
+        log( 1, "Processing %d of %s repositories..." % ( index, sections_count ) )
+
         url      = gitModulesFile.get( section, "url" )
         path     = gitModulesFile.get( section, "path" )
         upstream = gitModulesFile.get( section, "upstream" )
 
-        user_forker     = get_user_name( url )
-        repository_path = os.path.join( CHANNEL_ROOT_DIRECTORY, path )
-        release_date    = get_git_date( repository_path, command_line_interface )
-
         # # For quick testing
-        # index += 1
-        # if index > 7:
+        # if index > 40:
         #     break
 
         if 'Packages' == path[0:8]:
@@ -247,12 +267,20 @@ def get_repositories(all_packages):
                 release_data['platforms']    = "*"
                 release_data['sublime_text'] = ">=3126"
 
+            last_repository = get_dictionary_key( last_repositories, repository_name, {} )
+            repository_path = os.path.join( CHANNEL_ROOT_DIRECTORY, path )
+
+            git_tag, date_tag, release_date = get_last_tag_fixed(
+                    repository_path, command_line_interface, last_repository, tag_current_version )
+
             release_data['date']    = release_date
-            release_data['version'] = get_git_version( release_date )
+            release_data['version'] = date_tag
+            release_data['git_tag'] = git_tag
 
             fix_sublime_text_release( release_data, gitModulesFile, section, repository_info, repositories, dependencies, url )
             tagged_releases = get_old_compatible_versions( release_data, gitModulesFile, section, url, repository_path, command_line_interface )
 
+            user_forker = get_user_name( url )
             ensure_author_name( user_forker, upstream, repository_info )
 
             tagged_releases.insert( 0, release_data )
@@ -262,6 +290,57 @@ def get_repositories(all_packages):
             repository_info['releases'] = tagged_releases
 
     return sort_list_of_dictionary( repositories), sort_list_of_dictionary( dependencies )
+
+
+def get_last_tag_fixed(repository_path, command_line_interface, last_repository, tag_current_version):
+    """
+        This is a entry point to do some batch operation on each git submodule. We can temporarily
+        insert the code we want to run with `command_line_interface` and remove later.
+    """
+    release_date = get_git_date( repository_path, command_line_interface )
+    date_tag     = get_git_version( release_date )
+    git_tag      = get_git_latest_tag( repository_path, command_line_interface )
+
+    # # Delete all local tags not present on the remote
+    # # https://stackoverflow.com/questions/1841341/remove-local-tags-that-are-no-longer
+    # command = shlex.split( 'git fetch --prune origin "+refs/tags/*:refs/tags/*"')
+    # output = command_line_interface.execute( command, repository_path, short_errors=True )
+    # log( 1, "output: " +str( output ) )
+
+    if tag_current_version:
+
+        # If it does not exists, it means this is the first time and there was not previous data
+        if 'releases' in last_repository:
+            release_data  = last_repository['releases'][0]
+            last_date_tag = release_data['version']
+
+            if LooseVersion( date_tag ) > LooseVersion( last_date_tag ):
+                git_tag = increment_patch_version( git_tag )
+                create_git_tag( git_tag, repository_path, command_line_interface )
+
+    return git_tag, date_tag, release_date
+
+
+def increment_patch_version(git_tag):
+
+    # if the tag is just an integer, it should be a Sublime Text build as 3147
+    try:
+        if int( git_tag ) > 3000:
+            return git_tag
+
+        else:
+            raise ValueError( "The git_tag %s is not an Sublime Text 3 build." % git_tag )
+
+    except ValueError:
+        pass
+
+    matches = re.search( "(\d+)\.(\d+)\.(\d+)", git_tag )
+
+    if matches:
+        return matches.group(1) + matches.group(2) + str( int( matches.group(3) ) + 1 )
+
+    log( 1, "Warning: Could not increment the git_tag: " + str( git_tag ) )
+    return "1.0.0"
 
 
 def fix_sublime_text_release(release_data, gitModulesFile, section, repository_info, repositories, dependencies, url):
@@ -298,7 +377,7 @@ def fix_sublime_text_release(release_data, gitModulesFile, section, repository_i
                 repository_info['issues']     = url + "/issues"
                 repository_info['load_order'] = load_order
 
-                release_data['url']  = get_download_url( url )
+                release_data['url']  = get_download_url( url, release_data['git_tag'] )
                 release_data['base'] = url
                 release_data['tags'] = True
 
@@ -311,15 +390,15 @@ def fix_sublime_text_release(release_data, gitModulesFile, section, repository_i
             except ValueError:
                 release_data['dependencies'] = dependency_list
 
-                release_data['url'] = get_download_url( url )
+                release_data['url'] = get_download_url( url, release_data['git_tag'] )
                 repositories.append( repository_info )
 
         else:
-            release_data['url'] = get_download_url( url )
+            release_data['url'] = get_download_url( url, release_data['git_tag'] )
             repositories.append( repository_info )
 
     else:
-        release_data['url'] = get_download_url( url )
+        release_data['url'] = get_download_url( url, release_data['git_tag'] )
         repositories.append( repository_info )
 
     acceptable_version = 3092
@@ -369,7 +448,7 @@ def get_old_compatible_versions(default_release_data, gitModulesFile, section, u
                 greatest_tag = tag_interger
                 default_release_data['sublime_text'] = ">" + tag
 
-            release_data['url']     = get_tag_download_url( url, tag )
+            release_data['url']     = get_download_url( url, tag )
             release_data['date']    = tag_date
             release_data['version'] = get_git_tag_version( tag_date, tag )
 
@@ -493,12 +572,29 @@ def get_user_name(url, regular_expression="github\.com\/(.+)/(.+)", allow_recurs
     return ""
 
 
-def get_download_url(url):
-    return url.replace("//github.com/", "//codeload.github.com/") + "/zip/master"
+def get_download_url(url, tag):
+    log( 1, "get_download_url, tag: " + str( tag ) )
+
+    log( 1, "url.replace: " + url.replace("//github.com/", "//codeload.github.com/") + "/zip/" + tag )
+    return url.replace("//github.com/", "//codeload.github.com/") + "/zip/" + tag
 
 
-def get_tag_download_url(url, tag):
-    return url.replace("//github.com/", "//codeload.github.com/") + "/zip/%s" % tag
+def fix_semantic_version(tag, regexes=[ ("(\d+)", ".0.0"), ("(\d+\.\d+)", ".0"), ("(\d+\.\d+\.\d+)", "") ]):
+    """
+        Returns a git tag on the format `0.0.0`.
+    """
+    if len( regexes ) > 0:
+        search_data = regexes[-1]
+        matches     = re.search( search_data[0], tag )
+
+        if matches:
+            return matches.group(0) + search_data[1]
+
+        else:
+            del regexes[-1]
+            return fix_semantic_version( tag, regexes )
+
+    return tag
 
 
 def get_git_date(repository_path, command_line_interface):
@@ -509,7 +605,7 @@ def get_git_date(repository_path, command_line_interface):
     # command = shlex.split( "git log -1 --date=iso" )
     command = shlex.split( "git log -1 --pretty=format:%ci" )
 
-    output = command_line_interface.execute( command, repository_path )
+    output = command_line_interface.execute( command, repository_path, short_errors=True )
     return output[0:19]
 
 
@@ -521,8 +617,41 @@ def get_git_tag_date(repository_path, command_line_interface, tag):
     # command = shlex.split( "git log -1 --date=iso" )
     command = shlex.split( "git log -1 --pretty=format:%ci {}".format( tag ) )
 
-    output = command_line_interface.execute( command, repository_path )
+    output = command_line_interface.execute( command, repository_path, short_errors=True )
     return output[0:19]
+
+
+def get_git_latest_tag(repository_path, command_line_interface):
+    """
+        Get timestamp of the last commit in git repository
+        https://gist.github.com/bitrut/1494315
+    """
+    # command = shlex.split( "git log -1 --date=iso" )
+    command = shlex.split( "git describe --abbrev=0 --tags" )
+    git_tag = command_line_interface.execute( command, repository_path, short_errors=True )
+
+    if git_tag is False:
+        return "master"
+
+    # if the tag is just an integer, it should be a Sublime Text build as 3147
+    try:
+        if int( git_tag ) > 3000:
+            return git_tag
+
+        else:
+            raise ValueError( "The git_tag %s is not an Sublime Text 3 build." % git_tag )
+
+    except ValueError:
+        git_tag = fix_semantic_version( git_tag )
+
+    return git_tag
+
+
+def create_git_tag(new_tag_name, repository_path, command_line_interface):
+    command = shlex.split( "git tag %s" % new_tag_name )
+    output = command_line_interface.execute( command, repository_path, short_errors=True )
+
+    log( 1, "Creating git tag `%s` for the package `%s`, results: %s" % ( new_tag_name, repository_path, output ) )
 
 
 def get_git_version(release_date):
