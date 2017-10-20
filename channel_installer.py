@@ -59,6 +59,7 @@ from .channel_utilities import add_item_if_not_exists
 from .channel_utilities import load_data_file
 from .channel_utilities import remove_if_exists
 from .channel_utilities import remove_item_if_exists
+from .channel_utilities import convert_to_unix_path
 from .channel_utilities import _delete_read_only_file
 from .channel_utilities import wrap_text
 
@@ -599,20 +600,11 @@ def add_path_if_not_exists(list_to_add, path):
         add_item_if_not_exists( list_to_add, path )
 
 
-def convert_absolute_path_to_relative(path):
-    relative_path = os.path.commonprefix( [ CHANNEL_ROOT_DIRECTORY, path ] )
-    relative_path = os.path.normpath( path.replace( relative_path, "" ) )
+def convert_absolute_path_to_relative(file_path):
+    relative_path = os.path.commonprefix( [ CHANNEL_ROOT_DIRECTORY, file_path ] )
+    relative_path = os.path.normpath( file_path.replace( relative_path, "" ) )
 
     return convert_to_unix_path(relative_path)
-
-
-def convert_to_unix_path(relative_path):
-    relative_path = relative_path.replace( "\\", "/" )
-
-    if relative_path.startswith( "/" ):
-        relative_path = relative_path[1:]
-
-    return relative_path
 
 
 def add_folders_and_files_for_removal(root_source_folder, relative_path):

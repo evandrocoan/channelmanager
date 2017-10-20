@@ -250,3 +250,12 @@ def dictionary_to_string_by_line(dictionary):
     return "\n\n%s" % ( "\n".join( sorted(variables) ) )
 
 
+def convert_to_unix_path(relative_path):
+    relative_path = relative_path.replace( "\\", "/" )
+
+    if relative_path.startswith( "/" ):
+        relative_path = relative_path[1:]
+
+    return relative_path
+
+
