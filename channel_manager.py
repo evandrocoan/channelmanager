@@ -330,7 +330,7 @@ def get_last_tag_fixed(repository_path, command_line_interface, last_repository,
     return git_tag, date_tag, release_date
 
 
-def increment_patch_version(git_tag, tag_current_version):
+def increment_patch_version(git_tag, tag_current_version=False):
 
     # if the tag is just an integer, it should be a Sublime Text build as 3147
     try:
@@ -347,7 +347,7 @@ def increment_patch_version(git_tag, tag_current_version):
     matches = re.search( "(\d+)\.(\d+)\.(\d+)", fixed_tag )
 
     if matches:
-        fixed_tag = matches.group(1) + matches.group(2) + str( int( matches.group(3) ) + 1 )
+        fixed_tag = "%s.%s.%s" % ( matches.group(1), matches.group(2), str( int( matches.group(3) ) + 1 ) )
         return git_tag.replace( matched_tag, fixed_tag )
 
     log( 1, "Warning: Could not increment the git_tag: " + str( git_tag ) )
@@ -594,20 +594,18 @@ def get_download_url(url, tag):
     return url_fixed
 
 
-def fix_semantic_version(tag, regexes=[ ("(\d+)", ".0.0"), ("(\d+\.\d+)", ".0"), ("(\d+\.\d+\.\d+)", "") ]):
+def fix_semantic_version(tag):
     """
         Returns a git tag on the format `0.0.0`.
     """
-    if len( regexes ) > 0:
-        search_data = regexes[-1]
-        matches     = re.search( search_data[0], tag )
+    regexes = [ ("(\d+)", ".0.0"), ("(\d+\.\d+)", ".0"), ("(\d+\.\d+\.\d+)", "") ]
+
+    for search_data in reversed( regexes ):
+        matches = re.search( search_data[0], tag )
 
         if matches:
-            return matches.group(0) + search_data[1], tag[matches.start(0):matches.end(0)]
-
-        else:
-            del regexes[-1]
-            return fix_semantic_version( tag, regexes )
+            matched_text = tag[matches.start(0):matches.end(0)]
+            return matches.group(0) + search_data[1], matched_text
 
     return tag, tag
 
