@@ -129,20 +129,35 @@ class GenerateChannelThread(threading.Thread):
         log( 2, "Entering on run(1)" )
 
         if is_allowed_to_run():
+            global g_failed_repositories
+
             unpack_settings( self.channel_settings )
+            g_failed_repositories = []
 
             all_packages      = load_deafault_channel()
             last_repositories = load_last_repositories()
 
-            # print_some_repositories(all_packages)
+            # print_some_repositories( all_packages )
             repositories, dependencies = get_repositories( all_packages, last_repositories, self.create_tags )
+            log.insert_empty_line()
 
             create_channel_file( repositories, dependencies )
             create_repository_file( repositories, dependencies )
+
             create_ignored_packages()
+            print_failed_repositories()
 
             global g_is_already_running
             g_is_already_running = False
+
+
+def print_failed_repositories():
+
+    if len( g_failed_repositories ) > 0:
+        log( 1, "The following repositories failed their commands..." )
+
+    for command, repository in g_failed_repositories:
+        log( 1, "command: %s (%s)" % ( command, repository ) )
 
 
 def create_ignored_packages():
@@ -234,25 +249,26 @@ def get_repositories(all_packages, last_repositories, tag_current_version=False)
     command_line_interface = cmd.Cli( None, True )
 
     sections       = gitModulesFile.sections()
-    sections_count = len( sections )
+    sections_count = count_package_sections( gitModulesFile, sections )
 
     index = 0
     log( 1, "Total repositories to parse: " + str( sections_count ) )
 
     for section in sections:
         index += 1
-        log.insert_empty_line()
-        log( 1, "Processing %d of %s repositories..." % ( index, sections_count ) )
-
-        url      = gitModulesFile.get( section, "url" )
-        path     = gitModulesFile.get( section, "path" )
-        upstream = gitModulesFile.get( section, "upstream" )
+        path   = gitModulesFile.get( section, "path" )
 
         # # For quick testing
         # if index > 40:
         #     break
 
         if 'Packages' == path[0:8]:
+            log.insert_empty_line()
+            log( 1, "Processing %d of %s repositories..." % ( index, sections_count ) )
+
+            url      = gitModulesFile.get( section, "url" )
+            upstream = gitModulesFile.get( section, "upstream" )
+
             release_data    = OrderedDict()
             repository_info = OrderedDict()
             repository_name = os.path.basename( path )
@@ -590,7 +606,7 @@ def get_user_name(url, regular_expression="github\.com\/(.+)/(.+)", allow_recurs
 def get_download_url(url, tag):
     url_fixed = url.replace("//github.com/", "//codeload.github.com/") + "/zip/" + tag
 
-    log( 1, "get_download_url, url_fixed: " + url_fixed )
+    # log( 1, "get_download_url, url_fixed: " + url_fixed )
     return url_fixed
 
 
@@ -617,8 +633,11 @@ def get_git_date(repository_path, command_line_interface):
     """
     # command = shlex.split( "git log -1 --date=iso" )
     command = shlex.split( "git log -1 --pretty=format:%ci" )
+    output  = command_line_interface.execute( command, repository_path, short_errors=True )
 
-    output = command_line_interface.execute( command, repository_path, short_errors=True )
+    if output is False:
+        g_failed_repositories.append( (command, repository_path) )
+
     return output[0:19]
 
 
@@ -629,8 +648,11 @@ def get_git_tag_date(repository_path, command_line_interface, tag):
     """
     # command = shlex.split( "git log -1 --date=iso" )
     command = shlex.split( "git log -1 --pretty=format:%ci {}".format( tag ) )
+    output  = command_line_interface.execute( command, repository_path, short_errors=True )
 
-    output = command_line_interface.execute( command, repository_path, short_errors=True )
+    if output is False:
+        g_failed_repositories.append( (command, repository_path) )
+
     return output[0:19]
 
 
@@ -644,6 +666,7 @@ def get_git_latest_tag(repository_path, command_line_interface):
     git_tag = command_line_interface.execute( command, repository_path, short_errors=True )
 
     if git_tag is False:
+        g_failed_repositories.append( (command, repository_path) )
         return "master"
 
     return git_tag
@@ -652,6 +675,9 @@ def get_git_latest_tag(repository_path, command_line_interface):
 def create_git_tag(new_tag_name, repository_path, command_line_interface):
     command = shlex.split( "git tag %s" % new_tag_name )
     output = command_line_interface.execute( command, repository_path, short_errors=True )
+
+    if output is False:
+        g_failed_repositories.append( (command, repository_path) )
 
     log( 1, "Creating git tag `%s` for the package `%s`, results: %s" % ( new_tag_name, repository_path, output ) )
 
@@ -671,6 +697,18 @@ def get_git_tag_version(tag_date, tag):
     """
     tag_date = tag_date.replace("-", ".")[0:10]
     return tag + "." + tag_date[:4] + tag_date[5:]
+
+
+def count_package_sections(gitModulesFile, sections):
+    sections_count = 0
+
+    for section in sections:
+        path = gitModulesFile.get( section, "path" )
+
+        if 'Packages' == path[0:8]:
+            sections_count += 1
+
+    return sections_count
 
 
 def print_some_repositories(all_packages):
