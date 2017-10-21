@@ -311,17 +311,26 @@ def get_last_tag_fixed(repository_path, command_line_interface, last_repository,
 
         # If it does not exists, it means this is the first time and there was not previous data
         if 'releases' in last_repository:
+            is_to_create  = False
             release_data  = last_repository['releases'][0]
             last_date_tag = release_data['version']
 
+            if "master" == git_tag:
+                is_to_create = True
+                git_tag      = "1.0.0"
+
+            # if it is to update
             if LooseVersion( date_tag ) > LooseVersion( last_date_tag ):
-                git_tag = increment_patch_version( git_tag )
+                is_to_create = True
+                git_tag      = increment_patch_version( git_tag, tag_current_version )
+
+            if is_to_create:
                 create_git_tag( git_tag, repository_path, command_line_interface )
 
     return git_tag, date_tag, release_date
 
 
-def increment_patch_version(git_tag):
+def increment_patch_version(git_tag, tag_current_version):
 
     # if the tag is just an integer, it should be a Sublime Text build as 3147
     try:
@@ -342,6 +351,10 @@ def increment_patch_version(git_tag):
         return git_tag.replace( matched_tag, fixed_tag )
 
     log( 1, "Warning: Could not increment the git_tag: " + str( git_tag ) )
+
+    if tag_current_version:
+        return "1.0.0"
+
     return "master"
 
 
@@ -575,10 +588,10 @@ def get_user_name(url, regular_expression="github\.com\/(.+)/(.+)", allow_recurs
 
 
 def get_download_url(url, tag):
-    log( 1, "get_download_url, tag: " + str( tag ) )
+    url_fixed = url.replace("//github.com/", "//codeload.github.com/") + "/zip/" + tag
 
-    log( 1, "url.replace: " + url.replace("//github.com/", "//codeload.github.com/") + "/zip/" + tag )
-    return url.replace("//github.com/", "//codeload.github.com/") + "/zip/" + tag
+    log( 1, "get_download_url, url_fixed: " + url_fixed )
+    return url_fixed
 
 
 def fix_semantic_version(tag, regexes=[ ("(\d+)", ".0.0"), ("(\d+\.\d+)", ".0"), ("(\d+\.\d+\.\d+)", "") ]):
