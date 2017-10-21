@@ -144,9 +144,6 @@ def main(command=None):
         print_command_line_arguments()
         argumentParser = argparse.ArgumentParser( description='Update Sublime Text Channel' )
 
-        argumentParser.add_argument( "-a", "--all", action="store_true",
-                help="Generate all assets" )
-
         argumentParser.add_argument( "-b", "--backstroke", action="store_true",
                 help="Check all backstroke registered repositories updates with their upstream. "
                 "The backstroke URLs are now in a separate file on: Local/Backstroke.gitmodules" )
@@ -158,24 +155,23 @@ def main(command=None):
         argumentParser.add_argument( "-p", "--pull", action="store_true",
                 help="Perform a git pull from the remote repositories" )
 
+        argumentParser.add_argument( "-t", "--push-tags", action="store_true",
+                help="Perform a git push for all submodules tags to their respective remote repository" )
+
         argumentsNamespace = argumentParser.parse_args()
 
     # print( argumentsNamespace )
-    if command == "-a" or argumentsNamespace and argumentsNamespace.all:
-        RunGitPullThread().start()
-        RunBackstrokeThread(False).start()
-
-        # This are too long operations to run within Sublime Text console
+    if argumentsNamespace and argumentsNamespace.find_forks:
         attempt_run_find_forks()
 
-    elif argumentsNamespace and argumentsNamespace.find_forks:
-        attempt_run_find_forks()
+    elif command == "-t" or argumentsNamespace and argumentsNamespace.push_tags:
+        RunGitForEachSubmodulesThread( "git push --tags" ).start()
+
+    elif command == "-p" or argumentsNamespace and argumentsNamespace.pull:
+        RunGitForEachSubmodulesThread( "git checkout master && git pull --rebase" ).start()
 
     elif command == "-b" or argumentsNamespace and argumentsNamespace.backstroke:
         RunBackstrokeThread(False).start()
-
-    elif command == "-p" or argumentsNamespace and argumentsNamespace.pull:
-        RunGitPullThread().start()
 
     elif not command:
         argumentParser.print_help()
@@ -210,20 +206,21 @@ def is_allowed_to_run():
 # https://github.com/evandrocoan/SublimeAMXX_Editor
 # https://github.com/evandrocoan/SublimePreferencesEditor
 
-class RunGitPullThread(threading.Thread):
+class RunGitForEachSubmodulesThread(threading.Thread):
 
-    def __init__(self):
+    def __init__(self, git_command):
         threading.Thread.__init__(self)
+        self.git_command = git_command
 
     def run(self):
 
         if is_allowed_to_run():
-            self.update_submodules()
+            self.update_submodules( self.git_command )
 
         global g_is_already_running
         g_is_already_running = False
 
-    def update_submodules(self):
+    def update_submodules(self, git_command):
         error_list = []
         log( 1, "update_submodules::Current directory: " + CHANNEL_ROOT_DIRECTORY )
 
@@ -240,7 +237,7 @@ class RunGitPullThread(threading.Thread):
 
         # Continue looping over submodules with the “git submodule foreach” command after a non-zero exit
         # https://stackoverflow.com/questions/19728933/continue-looping-over-submodules-with-the-git-submodule-foreach-command-after
-        command += "'date && git checkout master && git pull --rebase && printf \"\n\" || printf \"%s\n\n\n\n\n\"'" % error_string
+        command += "'date && %s && printf \"\n\" || printf \"%s\n\n\n\n\n\"'" % ( git_command, error_string )
 
         if sublime:
             command_line_interface = cmd.Cli( None, True )

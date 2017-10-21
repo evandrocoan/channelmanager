@@ -95,7 +95,7 @@ following git tags called `3143` and `3147`.
 
 Settings tags like this is useful when a package has ceased working for old build of Sublime Text.
 For example, on Sublime Text development build 3147, the package `Notepad++ Color Scheme` stopped
-working completely: [CoreIssue$1983](https://github.com/SublimeTextIssues/Core/issues/1983) however
+working completely ([CoreIssue$1983](https://github.com/SublimeTextIssues/Core/issues/1983)) however
 the fix for build 3147 also broke completely the package for Sublime Text stable build 3143. Hence,
 we must to create a tag which targets the last commit which is working for build 3143. Moreover when
 some user using the stable build 3143 installs the `Notepad++ Color Scheme`, they must install the
@@ -187,10 +187,10 @@ being too longo commands to run. Moreover is proper to use a dedicated shell for
 the available options for the `submodules_manager.py` by running it:
 ```java
 $ python3 submodules_manager.py
-[submodules_manager.py] 10:05:26  548163    3795 Entering on main(0) None
-[submodules_manager.py] 10:05:26  548507     344 ( print_command_line_arguments ) len(sys.argv): 1
-[submodules_manager.py] 10:05:26  548638     131 ( print_command_line_arguments ) arg: submodules_manager.py
-usage: submodules_manager.py [-h] [-a] [-b] [-f] [-p]
+[submodules_manager.py] 14:44:07  454080    2707 Entering on main(0) None
+[submodules_manager.py] 14:44:07  454322     242 ( print_command_line_arguments ) len(sys.argv): 1
+[submodules_manager.py] 14:44:07  454403      81 ( print_command_line_arguments ) arg: submodules_manager.py
+usage: submodules_manager.py [-h] [-a] [-b] [-f] [-p] [-t]
 
 Update Sublime Text Channel
 
@@ -204,11 +204,13 @@ optional arguments:
                     clean the duplicated branches. The upstream data in on the
                     `.gitmodules` file on: Sublime Text `Data` folder
   -p, --pull        Perform a git pull from the remote repositories
+  -t, --push-tags   Perform a git push for all submodules tags to their
+                    respective remote repository
 ```
 
 By just calling the `submodules_manager.py` with the `--find-forks` argument, it will run
 automatically through all your git submodules listed on the file `.gitmodules`. But still to do a
-command to be passed by as a argument to allow select one specific repository to run the command,
+argument to be passed to the command to allow select one specific repository to run the command,
 instead of running it right away through all your installed repositories, thing which can take
 several hours.
 
@@ -614,6 +616,9 @@ you usually do with the default `Package Control` channel.
        { "caption": "My Brand New Channel: Generate Channel File and Tags",
                "command": "my_brand_new_channel_generate_channel_file", "args": {"create_tags": true} },
 
+       { "caption": "My Brand New Channel: Push Local Git Tags",
+               "command": "my_brand_new_channel_run", "args": {"run": "-t"} },
+
        { "caption": "My Brand New Channel: Run Backstroke Requests",
                "command": "my_brand_new_channel_run", "args": {"run": "-b"} },
 
@@ -665,6 +670,9 @@ you usually do with the default `Package Control` channel.
 
                                { "caption": "My Brand New Channel: Run Backstroke Requests",
                                        "command": "my_brand_new_channel_run", "args": {"run": "-b"} },
+
+                               { "caption": "My Brand New Channel: Push Local Git Tags",
+                                       "command": "my_brand_new_channel_run", "args": {"run": "-t"} },
 
                                { "caption": "My Brand New Channel: Pull & Rebase all Packages",
                                        "command": "my_brand_new_channel_run", "args": {"run": "-p"} },
@@ -775,16 +783,20 @@ installed the Development Version of the channel:
    run this command to ping all your URLs, so their upstreams are checked whether there are some
    missing updates.
 
+1. **YourChannelName: Push Local Git Tags** Walk through all git repositories and perform the `git
+   push --tags` command, i.e., perform a git push for all submodules tags to their respective remote
+   repository.
+
 1. **YourChannelName: Pull & Rebase all Packages** Walk through all git repositories and perform the
    `git pull --rebase` command, i.e., fetch the updates from the origin and merge the changes by
    rebase.
 
 1. **YourChannelName: Pull & Rebase all Upstreams** (Not Yet Implemented) Walk through all git
-   repositories and perform `git remote add upstream_url`, checkout on the specified remove branch,
+   repositories and perform `git remote add upstream_url`, checkout on the specified remote branch,
    and do a git merge with the upstream contents.
 
    This is not yet implemented, it should require a new settings entry key on the `.gitmodules` to
-   set which one should be the remove branch used to checkout to do the merge. Otherwise, if the
+   set which one should be the remote branch used to checkout to do the merge. Otherwise, if the
    setting is not set/present, the default branch would be used.
 
 1. **YourChannelName: Update Default Packages** Run the script `copy_default_package.py` which
@@ -870,10 +882,10 @@ ___
    This has a similar issue registered at
    [CoreIssues$1966](https://github.com/SublimeTextIssues/Core/issues/1966)(Deadlock/hang when batch
    deleting/creating settings files). The solution to this is to notice when Sublime Text is hanged
-   wich not CPU usage, i.e., for some time it is unresponsive, then you need to kill Sublime Text
+   with no CPU usage, i.e., for some time it is unresponsive, then you need to kill Sublime Text
    itself or just kill the program called `plugin_host` or `plugin_host.exe`. After killing
    `plugin_host`, Sublime Text will became responsive again, then you can save your work and restart
-   Sublime Text to restore the Sublime Text packages.
+   Sublime Text to restore the Sublime Text packages functionality.
 
 
 
