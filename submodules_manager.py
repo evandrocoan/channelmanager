@@ -240,7 +240,7 @@ class RunGitForEachSubmodulesThread(threading.Thread):
         command += "'date && %s && printf \"\n\" || printf \"%s\n\n\n\n\n\"'" % ( git_command, error_string )
 
         if sublime:
-            command_line_interface = cmd.Cli( None, True )
+            command_line_interface = cmd.Cli( None, False )
             run_command_line( command_line_interface, shlex.split( command ), CHANNEL_ROOT_DIRECTORY )
 
         else:
