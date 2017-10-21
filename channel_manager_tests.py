@@ -29,6 +29,17 @@ from .channel_manager import fix_semantic_version
 
 def main():
     log( 2, "Entering on main(2)" )
+    test_fix_semantic_version_loader()
+
+
+def test_fix_semantic_version_loader():
+
+    test_fix_semantic_version( "1.0" )
+    test_fix_semantic_version( "1.6" )
+    test_fix_semantic_version( "v1.0" )
+    test_fix_semantic_version( "v1.6" )
+    test_fix_semantic_version( "v1.6a" )
+
     test_fix_semantic_version( "1.0.0" )
     test_fix_semantic_version( "1.6.0" )
     test_fix_semantic_version( "1.6.1" )
@@ -39,7 +50,8 @@ def main():
 
 
 def test_fix_semantic_version(tag):
-    log( 1, "fix_semantic_version(%s): %s" % ( tag, fix_semantic_version(tag) ) )
+    fixed, matched = fix_semantic_version(tag)
+    log( 1, "fix_semantic_version(%s), fixed: %s, matched: %s" % ( tag, fixed, matched ) )
 
 
 def plugin_loaded():

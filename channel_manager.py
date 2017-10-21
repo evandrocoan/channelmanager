@@ -334,13 +334,15 @@ def increment_patch_version(git_tag):
     except ValueError:
         pass
 
-    matches = re.search( "(\d+)\.(\d+)\.(\d+)", git_tag )
+    fixed_tag, matched_tag = fix_semantic_version( git_tag )
+    matches = re.search( "(\d+)\.(\d+)\.(\d+)", fixed_tag )
 
     if matches:
-        return matches.group(1) + matches.group(2) + str( int( matches.group(3) ) + 1 )
+        fixed_tag = matches.group(1) + matches.group(2) + str( int( matches.group(3) ) + 1 )
+        return git_tag.replace( matched_tag, fixed_tag )
 
     log( 1, "Warning: Could not increment the git_tag: " + str( git_tag ) )
-    return "1.0.0"
+    return "master"
 
 
 def fix_sublime_text_release(release_data, gitModulesFile, section, repository_info, repositories, dependencies, url):
@@ -588,13 +590,13 @@ def fix_semantic_version(tag, regexes=[ ("(\d+)", ".0.0"), ("(\d+\.\d+)", ".0"),
         matches     = re.search( search_data[0], tag )
 
         if matches:
-            return matches.group(0) + search_data[1]
+            return matches.group(0) + search_data[1], tag[matches.start(0):matches.end(0)]
 
         else:
             del regexes[-1]
             return fix_semantic_version( tag, regexes )
 
-    return tag
+    return tag, tag
 
 
 def get_git_date(repository_path, command_line_interface):
@@ -632,17 +634,6 @@ def get_git_latest_tag(repository_path, command_line_interface):
 
     if git_tag is False:
         return "master"
-
-    # if the tag is just an integer, it should be a Sublime Text build as 3147
-    try:
-        if int( git_tag ) > 3000:
-            return git_tag
-
-        else:
-            raise ValueError( "The git_tag %s is not an Sublime Text 3 build." % git_tag )
-
-    except ValueError:
-        git_tag = fix_semantic_version( git_tag )
 
     return git_tag
 
