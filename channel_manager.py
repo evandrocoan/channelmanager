@@ -37,6 +37,7 @@ import shlex
 import subprocess
 
 from collections import OrderedDict
+from collections import deque
 from distutils.version import LooseVersion
 
 
@@ -238,6 +239,16 @@ def create_channel_file(repositories, dependencies):
     write_data_file( CHANNEL_FILE_PATH, channel_dictionary )
 
 
+def format_time(elapsedTime):
+    seconds = elapsedTime.total_seconds()
+
+    hours   = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    seconds = int(seconds % 60)
+
+    return "%02d:%02d:%02d" % ( hours, minutes, seconds )
+
+
 def get_repositories(all_packages, last_repositories, tag_current_version=False):
     gitFilePath    = os.path.join( CHANNEL_ROOT_DIRECTORY, '.gitmodules' )
     gitModulesFile = configparser.RawConfigParser()
@@ -246,10 +257,14 @@ def get_repositories(all_packages, last_repositories, tag_current_version=False)
     dependencies = []
 
     gitModulesFile.read( gitFilePath )
-    command_line_interface = cmd.Cli( None, True )
+    command_line_interface = cmd.Cli( None, False )
 
     sections       = gitModulesFile.sections()
     sections_count = count_package_sections( gitModulesFile, sections )
+
+    last_times  = deque( [2.0], 20 )
+    startTime   = datetime.datetime.now()
+    currentTime = startTime
 
     index = 0
     log( 1, "Total repositories to parse: " + str( sections_count ) )
@@ -259,12 +274,28 @@ def get_repositories(all_packages, last_repositories, tag_current_version=False)
         path   = gitModulesFile.get( section, "path" )
 
         # # For quick testing
-        # if index > 40:
+        # if index > 10:
         #     break
 
         if 'Packages' == path[0:8]:
-            log.insert_empty_line()
-            log( 1, "Processing %d of %s repositories..." % ( index, sections_count ) )
+            # log.insert_empty_line()
+            lastTime    = currentTime
+            currentTime = datetime.datetime.now()
+            elapsedTime = currentTime - startTime
+
+            accumulated = 0
+            last_times.append( currentTime.second - lastTime.second )
+
+            for time_item in last_times:
+                accumulated += time_item
+
+            remaining = ( accumulated / len( last_times ) ) * ( sections_count - index ) - elapsedTime.total_seconds()
+
+            if remaining < 0:
+                remaining = 0.0
+
+            elapsedTime = format_time( elapsedTime )
+            log( 1, "{:s} of {:>#6.2f}: Processing {:3d} of {:d} repositories... %s".format( elapsedTime, remaining, index, sections_count, path ) )
 
             url      = gitModulesFile.get( section, "url" )
             upstream = gitModulesFile.get( section, "upstream" )
