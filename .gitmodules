@@ -4,3 +4,6 @@
 [submodule "six"]
 	path = six
 	url = https://github.com/benjaminp/six
+[submodule "estimated_time_left"]
+	path = estimated_time_left
+	url = https://github.com/evandrocoan/estimated_time_left

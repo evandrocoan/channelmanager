@@ -259,3 +259,18 @@ def convert_to_unix_path(relative_path):
     return relative_path
 
 
+def progress_info(progress):
+
+    return "{:>05.2f}%, {:s} of {:s}".format(
+            progress.progress * 100, format_time( progress.elapsed_time ), format_time( progress.time_remaining() ) )
+
+
+def format_time(seconds):
+
+    hours   = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    seconds = int(seconds % 60)
+
+    return "%02d:%02d:%02d" % ( hours, minutes, seconds )
+
+

@@ -2,7 +2,7 @@
 
 The plugin `channel_manager.py` creates the files `channel.json` and `repository.json` based on the
 `.gitmodules` file on the Sublime Text Data folder (the folder at `Packages/../`). To call it, you
-can open the command palette and type `StudioChannel: Generate Channel File`. See the following
+can open the command palette and type `YourChannelName: Generate Channel File`. See the following
 threads for more information about the `Package Control` channel and repository files:
 
 1. https://packagecontrol.io/docs/dependencies  DOCS - Dependencies
@@ -13,18 +13,20 @@ threads for more information about the `Package Control` channel and repository 
 1. https://github.com/wbond/package_control/issues/1070 [Meta] What to do when a dependency update includes breaking changes?
 
 ChannelManager is dependency which manages the packages installed by git as submodules. It allows to
-create the channel files required by Package Control to list and install packages. Currently I
+create the channel files required by Package Control to list and install packages. It is Currently
 implemented two different bundle of package bounded by `.gitmodules` files. The
 [StudioChannel](https://github.com/evandrocoan/SublimeStudioChannel) and the
 [AmxxChannel](https://github.com/evandrocoan/SublimeAmxxChannel).
 
-1. **StudioChannel** This is one of the channels I implemented using the `ChannelManager`. I
+1. **StudioChannel** This is one of the first channels implemented using the `ChannelManager`. It
    contains about 100 packages for the stable version and 150 for the development version. It has a
-   custom installation wizard to guide you through the installation steps and call channel installer
-   at the `ChannelManager` passing the channel configurations.
+   custom installation wizard to guide you through the installation steps and therefore call the
+   `ChannelManager`'s installer passing the required configurations for the
+   [SublimeStudio](https://github.com/evandrocoan/SublimeStudio).
 
 1. **AmxxChannel** This is a smaller channel of packages with about 20 packages focused on just for
-   programming for AMX Mod X Pawn language.
+   programming for AMX Mod X Pawn language at
+   [SublimeAmxxSimpleIDE](https://github.com/evandrocoan/SublimeAmxxSimpleIDE)
 
 The channel creation is based on the existence of a
 [.gitmodules](https://git-scm.com/docs/gitmodules) file on the root of your Sublime Text Data
@@ -113,8 +115,8 @@ you can put them where you please most.
 Here is a sample of the structure of both files, the `Backstroke.gitmodules` is not indented on
 purpose for backward compatibility with `Python 2.7` configparser which does not allow indented
 blocks. If you are planing in only using `Python 3`, you can indent both files. The file
-`.gitmodules` is compatible with `Python 3` because I created a wrapper which removes the
-indentation before sending the files contents to the `configparser`:
+`.gitmodules` is compatible with `Python 3` due a created wrapper which removes the indentation
+before sending the files contents to the `configparser`:
 
 **.gitmodules**
 ```shell
@@ -244,6 +246,7 @@ you usually do with the default `Package Control` channel.
    <details>
    <p>
 
+   **Linux**
    ![Opening Linux Command Line](http://i.imgur.com/VA4zC7F.gif)
    </p>
    </details><br>
@@ -251,6 +254,7 @@ you usually do with the default `Package Control` channel.
    <details>
    <p>
 
+   **Windows**
    ![Opening Windows Command Line](http://i.imgur.com/iYwE4IO.gif)
    </p>
    </details><br>
@@ -260,7 +264,7 @@ you usually do with the default `Package Control` channel.
    ```bash
    cd ..
    git init
-   printf "# Main Repository\n\nFor my channel packages." > README.md
+   printf "# Main Repository\n\nFor my packages' channel." > README.md
    git add README.md
    git commit -m "Added README.md"
    git remote add origin https://github.com/your_user_name/main_repository
@@ -312,7 +316,7 @@ you usually do with the default `Package Control` channel.
    as you already have a full git repository at hand, you just need to change the remote to a new
    repository or for a fork of yours at GitHub.
 
-   Therefore as you may notice, I skipped the addition of the dependency `PythonDebugTools` as it is
+   Therefore as you may notice, was skipped the addition of the dependency `PythonDebugTools` as it is
    not dependent on git submodules and there is not much room for improvement or changes on it.
    However if you like you can also add it as a package. You just need to add the following entry to
    your `.gitmodules`:
@@ -740,9 +744,9 @@ installed the Development Version of the channel:
    Channels and Repositories](https://packagecontrol.io/docs/channels_and_repositories)
 
 1. **YourChannelName: Generate Channel File and Tags** Similar to the last command, but it also
-   create tags for each repository on based on the date of the last commit. The current tag, if it
-   exists, if fetched and then its patch component (major.minor.patch) is incremented in one, if
-   the latest
+   create tags for each repository on based on the date of the last commit. If there is no tags, a
+   first tag is created as `1.0.0`. If already there are tags, its patch component (or
+   major.minor.patch) is incremented in one.
 
 1. **YourChannelName: Run Backstroke Requests** Backstroke is a Github bot to keep repository forks up
    to date with their upstream. Therefore, if you setup your own list of Backstroke URLs, you can
@@ -802,8 +806,8 @@ ___
         Please resolve by removing the offending ignored_packages setting.
     ```
 
-    I am not sure what is setting the `ignored_packages` setting to `["Vintage"]`, that is why I wrote
-    this function:
+    It is unknown yet what is setting the `ignored_packages` setting to `["Vintage"]`. That is why
+    was wrote this function:
     ```python
     def add_packages_to_ignored_list(packages_list):
         """
@@ -840,7 +844,7 @@ ___
     contents at [pyv8-binaries](https://github.com/emmetio/pyv8-binaries) or just wait another hour
     and restart Sublime Text, so the package can download the contents by itself.
 
-1. Sublime Text my enter on deadlock, while Package Control is installing the missing dependencies.
+1. Sublime Text may enter on deadlock, while Package Control is installing the missing dependencies.
    This has a similar issue registered at
    [CoreIssues$1966](https://github.com/SublimeTextIssues/Core/issues/1966)(Deadlock/hang when batch
    deleting/creating settings files). The solution to this is to notice when Sublime Text is hanged

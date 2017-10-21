@@ -133,7 +133,7 @@ class ChannelManagerUnitTests(unittest.TestCase):
 
 
 def plugin_loaded():
-    main()
+    # main()
     pass
 
 
