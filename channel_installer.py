@@ -790,6 +790,10 @@ def set_default_settings_before(packages_to_install):
     if "PackagesManager" in packages_names:
         sync_package_control_and_manager()
 
+    else:
+        global g_package_control_settings
+        g_package_control_settings = None
+
     # The development version does not need to ignore all installed packages before starting the
     # installation process as it is not affected by the Sublime Text bug.
     if IS_DEVELOPMENT_INSTALL:
@@ -878,9 +882,12 @@ def add_package_to_installation_list(package_name):
         Sublime Text after doing it, on the next time Sublime Text starts, the Package Control and
         the PackagesManager will kill each other and probably end up uninstalling all the packages
         installed.
+
+        So, here we try to keep thing nice by syncing both `Package Control` and `PackagesManager`
+        settings files.
     """
 
-    if not IS_DEVELOPMENT_INSTALL:
+    if g_package_control_settings and not IS_DEVELOPMENT_INSTALL:
         installed_packages = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
         add_item_if_not_exists( installed_packages, package_name )
 
@@ -903,7 +910,7 @@ def uninstall_package_control():
     if "PackagesManager" in g_packages_to_uninstall:
         # Sublime Text is waiting the current thread to finish before loading the just installed
         # PackagesManager, therefore run a new thread delayed which finishes the job
-        sublime.set_timeout_async( complete_package_control, 2000 )
+        sublime.set_timeout_async( complete_package_control_uninstalltion, 2000 )
 
     else:
         log( 1, "\n\nWarning: PackagesManager is was not installed on the system!" )
@@ -911,7 +918,7 @@ def uninstall_package_control():
         g_is_installation_complete = True
 
 
-def complete_package_control(maximum_attempts=3):
+def complete_package_control_uninstalltion(maximum_attempts=3):
     log(1, "\n\nFinishing Package Control Uninstallation... maximum_attempts: " + str( maximum_attempts ) )
 
     # Import the recent installed PackagesManager
@@ -925,7 +932,7 @@ def complete_package_control(maximum_attempts=3):
         if maximum_attempts > 0:
             maximum_attempts -= 1
 
-            sublime.set_timeout_async( lambda: complete_package_control( maximum_attempts ), 2000 )
+            sublime.set_timeout_async( lambda: complete_package_control_uninstalltion( maximum_attempts ), 2000 )
             return
 
         else:
@@ -945,7 +952,7 @@ def complete_package_control(maximum_attempts=3):
 
         package_manager.remove_package( package_name, is_dependency )
 
-    clean_package_control_settings()
+    delete_package_control_settings()
 
     # Flush off the `_uningored_packages_to_flush` just appended
     accumulative_unignore_user_packages( flush_everything=True )
@@ -973,12 +980,12 @@ def add_packages_to_ignored_list(packages_list):
         time.sleep(0.1)
 
 
-def clean_package_control_settings():
+def delete_package_control_settings():
     """
         Clean it a few times because Package Control is kinda running and still flushing stuff down
         to its settings file.
     """
-    log( 1, "Calling clean_package_control_settings..." )
+    log( 1, "Calling delete_package_control_settings..." )
     global g_is_installation_complete
 
     clean_settings       = {}
