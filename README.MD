@@ -559,6 +559,23 @@ you usually do with the default `Package Control` channel.
        ]
 
 
+   def is_channel_installed():
+       """
+           Returns True if the channel is installed, i.e., there are packages added to the
+           `packages_to_uninstall` list.
+       """
+
+       # Only attempt to check it, if the settings are loaded
+       if len( g_channel_settings ) > 0:
+           channelSettingsPath = g_channel_settings['CHANNEL_INSTALLATION_SETTINGS']
+
+           if os.path.exists( channelSettingsPath ):
+               settings = load_data_file( channelSettingsPath )
+               return len( get_dictionary_key( settings, "packages_to_uninstall", [] ) ) > 0
+
+       return False
+
+
    def add_channel():
        """
            Add your channel URL to the Package Control channel list and cleans the cached channels.
@@ -581,6 +598,13 @@ you usually do with the default `Package Control` channel.
        clear_cache()
 
 
+   class MyBrandNewChannelRunUninstallation( sublime_plugin.ApplicationCommand ):
+
+       def run(self):
+           sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+           channel_uninstaller.main( g_channel_settings )
+
+
    class MyBrandNewChannelRunInstallation( sublime_plugin.ApplicationCommand ):
 
        def run(self, version="stable"):
@@ -596,12 +620,8 @@ you usually do with the default `Package Control` channel.
            sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
            channel_installer.main( g_channel_settings )
 
-
-   class MyBrandNewChannelRunUninstallation( sublime_plugin.ApplicationCommand ):
-
-       def run(self):
-           sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
-           channel_uninstaller.main( g_channel_settings )
+       def is_enabled(self):
+           return not is_channel_installed()
 
 
    class MyBrandNewChannelGenerateChannelFile( sublime_plugin.ApplicationCommand ):
@@ -610,6 +630,9 @@ you usually do with the default `Package Control` channel.
            sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
            manager_main( g_channel_settings, create_tags, command )
 
+       def is_enabled(self):
+           return is_channel_installed()
+
 
    class MyBrandNewChannelRun( sublime_plugin.ApplicationCommand ):
 
@@ -617,12 +640,18 @@ you usually do with the default `Package Control` channel.
            sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
            submodules_main( run )
 
+       def is_enabled(self):
+           return is_channel_installed()
+
 
    class MyBrandNewChannelUpdateDefaultPackages( sublime_plugin.ApplicationCommand ):
 
        def run(self):
            sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
            copy_default_main( g_channel_settings['DEFAULT_PACKAGES_FILES'], True )
+
+       def is_enabled(self):
+           return is_channel_installed()
    ```
 
 1. Lastly we need to make these commands from our configuration file named
