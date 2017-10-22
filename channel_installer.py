@@ -128,9 +128,11 @@ def unpack_settings(channel_settings):
     global USER_FOLDER_PATH
 
     global FORBIDDEN_PACKAGES
-    global PACKAGES_TO_NOT_INSTALL
     global PACKAGES_TO_INSTALL_FIRST
     global PACKAGES_TO_INSTALL_LAST
+
+    global PACKAGES_TO_NOT_INSTALL_STABLE
+    global PACKAGES_TO_NOT_INSTALL_DEVELOPMENT
 
     IS_DEVELOPMENT_INSTALL        = True if channel_settings['INSTALLATION_TYPE'] == "development" else False
     CHANNEL_INSTALLATION_SETTINGS = channel_settings['CHANNEL_INSTALLATION_SETTINGS']
@@ -146,7 +148,9 @@ def unpack_settings(channel_settings):
 
     CHANNEL_ROOT_DIRECTORY  = channel_settings['CHANNEL_ROOT_DIRECTORY']
     USER_FOLDER_PATH        = channel_settings['USER_FOLDER_PATH']
-    PACKAGES_TO_NOT_INSTALL = channel_settings['PACKAGES_TO_NOT_INSTALL']
+
+    PACKAGES_TO_NOT_INSTALL_STABLE      = channel_settings['PACKAGES_TO_NOT_INSTALL_STABLE']
+    PACKAGES_TO_NOT_INSTALL_DEVELOPMENT = channel_settings['PACKAGES_TO_NOT_INSTALL_DEVELOPMENT']
 
     FORBIDDEN_PACKAGES        = channel_settings['FORBIDDEN_PACKAGES']
     PACKAGES_TO_INSTALL_FIRST = channel_settings['PACKAGES_TO_INSTALL_FIRST']
@@ -244,7 +248,7 @@ def load_installation_settings_file():
 
 
 def install_modules(command_line_interface, git_executable_path):
-    log( 2, "install_modules_, PACKAGES_TO_NOT_INSTALL: " + str( PACKAGES_TO_NOT_INSTALL ) )
+    log( 2, "install_modules_, git_executable_path: " + str( git_executable_path ) )
 
     if IS_DEVELOPMENT_INSTALL:
         clone_sublime_text_channel( command_line_interface, git_executable_path )
@@ -280,7 +284,7 @@ def install_stable_packages(packages_to_install):
 
         When trying to install several package at once, then here I am installing them one by one.
     """
-    log( 2, "install_stable_packages, PACKAGES_TO_NOT_INSTALL: " + str( PACKAGES_TO_NOT_INSTALL ) )
+    log( 2, "install_stable_packages, PACKAGES_TO_NOT_INSTALL_STABLE: " + str( PACKAGES_TO_NOT_INSTALL_STABLE ) )
     packages_to_install_names = set_default_settings_before( packages_to_install )
 
     # Package Control: Advanced Install Package
@@ -404,7 +408,7 @@ def get_stable_packages(git_modules_file):
     # Do not try to install this own package and the Package Control, as they are currently running
     currently_running = [ "Package Control", "ChannelManager", CHANNEL_PACKAGE_NAME ]
 
-    packages_tonot_install = unique_list_join( PACKAGES_TO_NOT_INSTALL, installed_packages, g_packages_to_ignore, currently_running )
+    packages_tonot_install = unique_list_join( PACKAGES_TO_NOT_INSTALL_STABLE, installed_packages, g_packages_to_ignore, currently_running )
     log( 2, "get_stable_packages, packages_tonot_install: " + str( packages_tonot_install ) )
 
     for section in gitModulesFile.sections():
@@ -691,7 +695,7 @@ def download_not_packages_submodules(command_line_interface, git_executable_path
 
 def install_development_packages(packages_to_install, git_executable_path, command_line_interface):
     set_default_settings_before( packages_to_install )
-    log( 2, "install_submodules_packages, PACKAGES_TO_NOT_INSTALL: " + str( PACKAGES_TO_NOT_INSTALL ) )
+    log( 2, "install_submodules_packages, PACKAGES_TO_NOT_INSTALL_DEVELOPMENT: " + str( PACKAGES_TO_NOT_INSTALL_DEVELOPMENT ) )
 
     current_index      = 0
     git_packages_count = len( packages_to_install )
@@ -722,7 +726,7 @@ def get_development_packages():
     index = 0
     installed_packages = get_installed_packages( "Package Control.sublime-settings" )
 
-    packages_tonot_install = unique_list_join( PACKAGES_TO_NOT_INSTALL, installed_packages )
+    packages_tonot_install = unique_list_join( PACKAGES_TO_NOT_INSTALL_DEVELOPMENT, installed_packages )
     log( 2, "get_development_packages, packages_tonot_install: " + str( packages_tonot_install ) )
 
     packages = []

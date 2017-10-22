@@ -537,8 +537,15 @@ you usually do with the default `Package Control` channel.
            "My Second Forbidden Package",
        ]
 
-       # Packages which you do want to install when reading the `.gitmodules` packages list
-       g_channel_settings['PACKAGES_TO_NOT_INSTALL'] = \
+       # Packages which you do want to install on the Stable or Development version, when reading
+       # the `.gitmodules` packages list.
+       g_channel_settings['PACKAGES_TO_NOT_INSTALL_STABLE'] = \
+       [
+           "My First Package to not Install",
+           "My Second Package to not Install",
+       ]
+
+       g_channel_settings['PACKAGES_TO_NOT_INSTALL_DEVELOPMENT'] = \
        [
            "My First Package to not Install",
            "My Second Package to not Install",
