@@ -71,6 +71,7 @@ try:
 
     from PackagesManager.packagesmanager import cmd
     from PackagesManager.packagesmanager.thread_progress import ThreadProgress
+    from PackagesManager.packagesmanager.show_quick_panel import show_quick_panel
 
 except ImportError:
     pass
@@ -90,10 +91,10 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 # log( 2, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 
 
-def main(channel_settings, create_tags=False):
-    log( 2, "Entering on main(2)" )
+def main(channel_settings, create_tags=False, command="all"):
+    log( 2, "Entering on main(2) %s, %s" % ( str( create_tags ), str( command ) ) )
 
-    channel_thread = GenerateChannelThread(channel_settings, create_tags)
+    channel_thread = GenerateChannelThread(channel_settings, create_tags, command)
     channel_thread.start()
 
     ThreadProgress( channel_thread, "Generating Channel and Repositories files",
@@ -122,8 +123,9 @@ def unpack_settings(channel_settings):
 
 class GenerateChannelThread(threading.Thread):
 
-    def __init__(self, channel_settings, create_tags=False):
+    def __init__(self, channel_settings, create_tags=False, command="all"):
         threading.Thread.__init__(self)
+        self.command = command
 
         self.create_tags      = create_tags
         self.channel_settings = channel_settings
@@ -141,26 +143,108 @@ class GenerateChannelThread(threading.Thread):
             last_repositories = load_last_repositories()
 
             # print_some_repositories( all_packages )
-            repositories, dependencies = get_repositories( all_packages, last_repositories, self.create_tags )
-            log.insert_empty_line()
+            if self.command == "all":
+                repositories, dependencies = get_repositories( all_packages, last_repositories, self.create_tags )
+                self.save_log_file( repositories, dependencies )
 
-            create_channel_file( repositories, dependencies )
-            create_repository_file( repositories, dependencies )
+            else:
+                repositories_list      = []
+                self.repositories_list = repositories_list
+                self.last_repositories = last_repositories
 
-            create_ignored_packages()
-            print_failed_repositories()
+                for repository in last_repositories:
+                    repositories_list.append( repository )
 
-            global g_is_already_running
-            g_is_already_running = False
+                show_quick_panel( sublime.active_window(), repositories_list, self.on_done )
+
+    def save_log_file(self, repositories, dependencies):
+        """
+            @param repositories  a list of all repositories
+            @param dependencies  a list of all dependencies
+        """
+        log.insert_empty_line()
+
+        create_channel_file( repositories, dependencies )
+        create_repository_file( repositories, dependencies )
+
+        create_ignored_packages()
+        print_failed_repositories()
+
+        global g_is_already_running
+        g_is_already_running = False
+
+    def on_done(self, picked):
+
+        if picked < 0:
+            return
+
+        self.picked = picked
+
+        thread = threading.Thread( target=self.on_done_async )
+        thread.start()
+
+    def on_done_async(self):
+        package_name    = self.repositories_list[self.picked]
+        last_repository = get_dictionary_key( self.last_repositories, package_name, {} )
+
+        update_repository( last_repository, self.create_tags, package_name )
+        repositories, dependencies = split_repositories_and_depencies( self.last_repositories )
+
+        self.save_log_file( repositories, dependencies )
+
+
+def split_repositories_and_depencies(repositories_dictionary):
+    packages_list     = []
+    dependencies_list = []
+
+    for package_name in repositories_dictionary:
+        package_dicitonary             = repositories_dictionary[package_name]
+        package_dicitonary['releases'] = sort_dictionaries_on_list( package_dicitonary['releases'] )
+
+        if "load_order" in package_dicitonary:
+            dependencies_list.append( package_dicitonary )
+
+        else:
+            packages_list.append( package_dicitonary )
+
+    return sort_list_of_dictionary( packages_list), sort_list_of_dictionary( dependencies_list )
+
+
+def update_repository(last_repository, tag_current_version, package_name):
+    """
+        If tag_current_version is True, the tag will be created and also push the created tag to
+        origin.
+    """
+    log( 1, "Updating repository... %s, %s" % ( str( tag_current_version ), str( package_name ) ) )
+    force_tag_creation  = tag_current_version
+    tag_current_version = True
+
+    command_line_interface = cmd.Cli( None, True )
+    absolute_repo_path     = os.path.join( CHANNEL_ROOT_DIRECTORY, "Packages", package_name )
+
+    git_tag, date_tag, release_date = get_last_tag_fixed(
+            absolute_repo_path, command_line_interface, last_repository, tag_current_version, force_tag_creation )
+
+    release_data = last_repository['releases'][0]
+
+    release_data['date']    = release_date
+    release_data['version'] = date_tag
+    release_data['url']     = release_data['url'].replace( release_data['git_tag'], git_tag )
+    release_data['git_tag'] = git_tag
+
+    command = "git push origin %s" % git_tag
+    command_line_interface.execute( shlex.split( command ), absolute_repo_path, live_output=True, short_errors=True )
 
 
 def print_failed_repositories():
 
     if len( g_failed_repositories ) > 0:
+        log.insert_empty_line()
+        log.insert_empty_line()
         log( 1, "The following repositories failed their commands..." )
 
     for command, repository in g_failed_repositories:
-        log( 1, "command: %s (%s)" % ( command, repository ) )
+        log( 1, "Command: %s (%s)" % ( command, repository ) )
 
 
 def create_ignored_packages():
@@ -199,18 +283,18 @@ def load_deafault_channel():
 
 
 def load_last_repositories():
-    last_packages = {}
+    repositories_dictionary  = load_data_file( CHANNEL_REPOSITORY_FILE )
 
-    repositories_dictionary = load_data_file( CHANNEL_REPOSITORY_FILE )
-    packages_dictionary     = get_dictionary_key( repositories_dictionary, 'packages', {} )
-    dependencies_dictionary = get_dictionary_key( repositories_dictionary, 'dependencies', {} )
+    packages_list     = get_dictionary_key( repositories_dictionary, 'packages', {} )
+    dependencies_list = get_dictionary_key( repositories_dictionary, 'dependencies', {} )
 
-    packages_dictionary.extend( dependencies_dictionary )
+    last_packages_dictionary = {}
+    packages_list.extend( dependencies_list )
 
-    for package in packages_dictionary:
-        last_packages[package['name']] = package
+    for package in packages_list:
+        last_packages_dictionary[package['name']] = package
 
-    return last_packages
+    return last_packages_dictionary
 
 
 def create_repository_file(repositories, dependencies):
@@ -254,25 +338,22 @@ def get_repositories(all_packages, last_repositories, tag_current_version=False)
     sections       = gitModulesFile.sections()
     sections_count = count_package_sections( gitModulesFile, sections )
 
-    startTime   = datetime.datetime.now()
-    currentTime = startTime
-
     index = 0
     log( 1, "Total repositories to parse: " + str( sections_count ) )
 
     for section, pi in etc.sequence_timer( sections, info_frequency=0 ):
-        path = gitModulesFile.get( section, "path" )
+        repo_path = gitModulesFile.get( section, "path" )
 
         # # For quick testing
         # if index > 10:
         #     break
 
-        if 'Packages' == path[0:8]:
+        if 'Packages' == repo_path[0:8]:
             index   += 1
             progress = progress_info( pi )
 
             # log.insert_empty_line()
-            log( 1, "{:s} Processing {:3d} of {:d} repositories... {:s}".format( progress, index, sections_count, path ) )
+            log( 1, "{:s} Processing {:3d} of {:d} repositories... {:s}".format( progress, index, sections_count, repo_path ) )
 
             try:
                 url      = gitModulesFile.get( section, "url" )
@@ -284,7 +365,7 @@ def get_repositories(all_packages, last_repositories, tag_current_version=False)
 
             release_data    = OrderedDict()
             repository_info = OrderedDict()
-            repository_name = os.path.basename( path )
+            repository_name = os.path.basename( repo_path )
 
             if repository_name in all_packages:
                 repository_info = all_packages[repository_name]
@@ -296,24 +377,24 @@ def get_repositories(all_packages, last_repositories, tag_current_version=False)
                 release_data['platforms']    = "*"
                 release_data['sublime_text'] = ">=3126"
 
-            last_repository = get_dictionary_key( last_repositories, repository_name, {} )
-            repository_path = os.path.join( CHANNEL_ROOT_DIRECTORY, path )
+            last_repository    = get_dictionary_key( last_repositories, repository_name, {} )
+            absolute_repo_path = os.path.join( CHANNEL_ROOT_DIRECTORY, repo_path )
 
             git_tag, date_tag, release_date = get_last_tag_fixed(
-                    repository_path, command_line_interface, last_repository, tag_current_version )
+                    absolute_repo_path, command_line_interface, last_repository, tag_current_version )
 
             release_data['date']    = release_date
             release_data['version'] = date_tag
             release_data['git_tag'] = git_tag
 
             fix_sublime_text_release( release_data, gitModulesFile, section, repository_info, repositories, dependencies, url )
-            tagged_releases = get_old_compatible_versions( release_data, gitModulesFile, section, url, repository_path, command_line_interface )
+            tagged_releases = get_old_compatible_versions( release_data, gitModulesFile, section, url, absolute_repo_path, command_line_interface )
 
             user_forker = get_user_name( url )
             ensure_author_name( user_forker, upstream, repository_info )
 
             tagged_releases.insert( 0, release_data )
-            tagged_releases = sort_list_of_dictionaries( tagged_releases )
+            tagged_releases = sort_dictionaries_on_list( tagged_releases )
 
             repository_info['name']     = repository_name
             repository_info['releases'] = tagged_releases
@@ -321,19 +402,19 @@ def get_repositories(all_packages, last_repositories, tag_current_version=False)
     return sort_list_of_dictionary( repositories), sort_list_of_dictionary( dependencies )
 
 
-def get_last_tag_fixed(repository_path, command_line_interface, last_repository, tag_current_version):
+def get_last_tag_fixed(absolute_repo_path, command_line_interface, last_repository, tag_current_version, force_tag_creation=False):
     """
         This is a entry point to do some batch operation on each git submodule. We can temporarily
         insert the code we want to run with `command_line_interface` and remove later.
     """
-    release_date = get_git_date( repository_path, command_line_interface )
+    release_date = get_git_date( absolute_repo_path, command_line_interface )
     date_tag     = get_git_version( release_date )
-    git_tag      = get_git_latest_tag( repository_path, command_line_interface )
+    git_tag      = get_git_latest_tag( absolute_repo_path, command_line_interface )
 
     # # Delete all local tags not present on the remote
     # # https://stackoverflow.com/questions/1841341/remove-local-tags-that-are-no-longer
     # command = shlex.split( 'git fetch --prune origin "+refs/tags/*:refs/tags/*"')
-    # output = command_line_interface.execute( command, repository_path, short_errors=True )
+    # output = command_line_interface.execute( command, absolute_repo_path, short_errors=True )
     # log( 1, "output: " +str( output ) )
 
     if tag_current_version:
@@ -349,14 +430,29 @@ def get_last_tag_fixed(repository_path, command_line_interface, last_repository,
                 git_tag      = "1.0.0"
 
             # if it is to update
-            if LooseVersion( date_tag ) > LooseVersion( last_date_tag ):
-                is_to_create = True
-                git_tag      = increment_patch_version( git_tag, tag_current_version )
+            if force_tag_creation or LooseVersion( date_tag ) > LooseVersion( last_date_tag ):
+                next_git_tag = increment_patch_version( git_tag, tag_current_version )
+                current_tags = get_current_cummit_tags( absolute_repo_path, command_line_interface )
+
+                if len( current_tags ) > 0:
+                    log.insert_empty_line()
+                    log( 1, "Error: The current HEAD commit already has the following tags(s): %s" % current_tags )
+
+                else:
+                    git_tag      = next_git_tag
+                    is_to_create = True
 
             if is_to_create:
-                create_git_tag( git_tag, repository_path, command_line_interface )
+                create_git_tag( git_tag, absolute_repo_path, command_line_interface )
 
     return git_tag, date_tag, release_date
+
+
+def get_current_cummit_tags(absolute_repo_path, command_line_interface):
+    command = shlex.split( "git tag -l --points-at HEAD" )
+    output = command_line_interface.execute( command, absolute_repo_path, short_errors=True )
+
+    return str( output )
 
 
 def increment_patch_version(git_tag, tag_current_version=False):
@@ -451,7 +547,7 @@ def fix_sublime_text_release(release_data, gitModulesFile, section, repository_i
         release_data['sublime_text'] = ">=" +  str( acceptable_version )
 
 
-def get_old_compatible_versions(default_release_data, gitModulesFile, section, url, repository_path, command_line_interface):
+def get_old_compatible_versions(default_release_data, gitModulesFile, section, url, absolute_repo_path, command_line_interface):
     """
         Check for the existence of the `tags` section on the `gitModulesFile` iterator and add the
         correct for the listed olde compatible versions.
@@ -468,7 +564,7 @@ def get_old_compatible_versions(default_release_data, gitModulesFile, section, u
         branch, which has the latest fixes for build development build 3147.
 
         @param others                   @see the function fix_sublime_text_release()
-        @param repository_path          absolute path the the repository to retrieve the tag data
+        @param absolute_repo_path       absolute path the the repository to retrieve the tag data
         @param command_line_interface   a command line object to run the git command
 
         @return a list of dictionary releases created, otherwise a empty list if not tags exists
@@ -483,7 +579,7 @@ def get_old_compatible_versions(default_release_data, gitModulesFile, section, u
             tag_interger = int( tag )
 
             release_data = OrderedDict()
-            tag_date     = get_git_tag_date(repository_path, command_line_interface, tag)
+            tag_date     = get_git_tag_date(absolute_repo_path, command_line_interface, tag)
 
             release_data['platforms']    = "*"
             release_data['sublime_text'] = "<=%s" % tag
@@ -553,7 +649,7 @@ def is_compatible_version(release_version, acceptable_version):
     return True
 
 
-def sort_list_of_dictionaries(list_of_dictionaries):
+def sort_dictionaries_on_list(list_of_dictionaries):
     sorted_dictionaries = []
 
     for dictionary in list_of_dictionaries:
@@ -639,60 +735,61 @@ def fix_semantic_version(tag):
     return tag, tag
 
 
-def get_git_date(repository_path, command_line_interface):
+def get_git_date(absolute_repo_path, command_line_interface):
     """
         Get timestamp of the last commit in git repository
         https://gist.github.com/bitrut/1494315
     """
     # command = shlex.split( "git log -1 --date=iso" )
     command = shlex.split( "git log -1 --pretty=format:%ci" )
-    output  = command_line_interface.execute( command, repository_path, short_errors=True )
+    output  = command_line_interface.execute( command, absolute_repo_path, short_errors=True )
 
     if output is False:
-        g_failed_repositories.append( (command, repository_path) )
+        g_failed_repositories.append( (command, absolute_repo_path) )
+        return "2017-04-13 16:44:14"
 
     return output[0:19]
 
 
-def get_git_tag_date(repository_path, command_line_interface, tag):
+def get_git_tag_date(absolute_repo_path, command_line_interface, tag):
     """
         Get timestamp of the specified tag in git repository
         https://gist.github.com/bitrut/1494315
     """
     # command = shlex.split( "git log -1 --date=iso" )
     command = shlex.split( "git log -1 --pretty=format:%ci {}".format( tag ) )
-    output  = command_line_interface.execute( command, repository_path, short_errors=True )
+    output  = command_line_interface.execute( command, absolute_repo_path, short_errors=True )
 
     if output is False:
-        g_failed_repositories.append( (command, repository_path) )
+        g_failed_repositories.append( (command, absolute_repo_path) )
 
     return output[0:19]
 
 
-def get_git_latest_tag(repository_path, command_line_interface):
+def get_git_latest_tag(absolute_repo_path, command_line_interface):
     """
         Get timestamp of the last commit in git repository
         https://gist.github.com/bitrut/1494315
     """
     # command = shlex.split( "git log -1 --date=iso" )
     command = shlex.split( "git describe --abbrev=0 --tags" )
-    git_tag = command_line_interface.execute( command, repository_path, short_errors=True )
+    git_tag = command_line_interface.execute( command, absolute_repo_path, short_errors=True )
 
     if git_tag is False:
-        g_failed_repositories.append( (command, repository_path) )
+        g_failed_repositories.append( (command, absolute_repo_path) )
         return "master"
 
     return git_tag
 
 
-def create_git_tag(new_tag_name, repository_path, command_line_interface):
+def create_git_tag(new_tag_name, absolute_repo_path, command_line_interface):
     command = shlex.split( "git tag %s" % new_tag_name )
-    output = command_line_interface.execute( command, repository_path, short_errors=True )
+    output = command_line_interface.execute( command, absolute_repo_path, short_errors=True )
 
     if output is False:
-        g_failed_repositories.append( (command, repository_path) )
+        g_failed_repositories.append( (command, absolute_repo_path) )
 
-    log( 1, "Creating git tag `%s` for the package `%s`, results: %s" % ( new_tag_name, repository_path, output ) )
+    log( 1, "Creating git tag `%s` for the package `%s`, results: %s" % ( new_tag_name, absolute_repo_path, output ) )
 
 
 def get_git_version(release_date):
