@@ -254,7 +254,6 @@ def get_repositories(all_packages, last_repositories, tag_current_version=False)
     sections       = gitModulesFile.sections()
     sections_count = count_package_sections( gitModulesFile, sections )
 
-    last_times  = deque( [2.0], 20 )
     startTime   = datetime.datetime.now()
     currentTime = startTime
 
