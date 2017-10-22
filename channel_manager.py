@@ -50,9 +50,14 @@ except:
     from six.moves.configparser import NoOptionError
 
 
-from .settings import *
-from .estimated_time_left import etc
+try:
+    from .estimated_time_left import etc
 
+except:
+    pass
+
+
+from .settings import *
 g_is_already_running = False
 
 from .channel_utilities import progress_info
