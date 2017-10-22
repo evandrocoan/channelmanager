@@ -726,7 +726,11 @@ def get_development_packages():
     index = 0
     installed_packages = get_installed_packages( "Package Control.sublime-settings" )
 
-    packages_tonot_install = unique_list_join( PACKAGES_TO_NOT_INSTALL_DEVELOPMENT, installed_packages )
+    # Do not try to install `Package Control` as they are currently running, and must be uninstalled
+    # on the end, if `PackagesManager` was installed.
+    currently_running = [ "Package Control" ]
+
+    packages_tonot_install = unique_list_join( PACKAGES_TO_NOT_INSTALL_DEVELOPMENT, installed_packages, currently_running )
     log( 2, "get_development_packages, packages_tonot_install: " + str( packages_tonot_install ) )
 
     packages = []
