@@ -62,7 +62,7 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 
 
 def write_data_file(file_path, channel_dictionary):
-    log( 1, "Writing to the data file: " + file_path )
+    log( 1, "Writing to the data file: " + str( file_path ) )
 
     with open(file_path, 'w', encoding='utf-8') as output_file:
         json.dump( channel_dictionary, output_file, indent=4 )

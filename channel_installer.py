@@ -127,11 +127,12 @@ def unpack_settings(channel_settings):
     global CHANNEL_INSTALLATION_SETTINGS
     global USER_FOLDER_PATH
 
+    global FORBIDDEN_PACKAGES
     global PACKAGES_TO_NOT_INSTALL
     global PACKAGES_TO_INSTALL_FIRST
     global PACKAGES_TO_INSTALL_LAST
 
-    IS_DEVELOPMENT_INSTALL       = True if channel_settings['INSTALLATION_TYPE'] == "development" else False
+    IS_DEVELOPMENT_INSTALL        = True if channel_settings['INSTALLATION_TYPE'] == "development" else False
     CHANNEL_INSTALLATION_SETTINGS = channel_settings['CHANNEL_INSTALLATION_SETTINGS']
 
     CHANNEL_ROOT_URL      = channel_settings['CHANNEL_ROOT_URL']
@@ -147,6 +148,7 @@ def unpack_settings(channel_settings):
     PACKAGES_TO_NOT_INSTALL = channel_settings['PACKAGES_TO_NOT_INSTALL']
     USER_FOLDER_PATH        = channel_settings['USER_FOLDER_PATH']
 
+    FORBIDDEN_PACKAGES        = channel_settings['FORBIDDEN_PACKAGES']
     PACKAGES_TO_INSTALL_FIRST = channel_settings['PACKAGES_TO_INSTALL_FIRST']
     PACKAGES_TO_INSTALL_LAST  = channel_settings['PACKAGES_TO_INSTALL_LAST']
 
@@ -1036,14 +1038,13 @@ def ask_user_for_which_packages_to_install(packages_names, packages_to_install):
 
     install_message    = "Select this to not install it."
     uninstall_message  = "Select this to install it."
-    forbidden_packages = ( "PackagesManager", "ChannelManager", "Notepad++ Color Scheme" )
 
     packages_informations            = [ [ "Continue the Installation Process", "Select this when you are finished selections packages." ] ]
     selected_packages_to_not_install = []
 
     for package_name in packages_names:
 
-        if package_name in forbidden_packages:
+        if package_name in FORBIDDEN_PACKAGES:
             packages_informations.append( [ package_name, "You must install it or cancel the installation." ] )
 
         else:
@@ -1068,7 +1069,7 @@ def ask_user_for_which_packages_to_install(packages_names, packages_to_install):
         package_information = packages_informations[item_index]
         package_name        = package_information[0]
 
-        if package_name not in forbidden_packages:
+        if package_name not in FORBIDDEN_PACKAGES:
 
             if package_information[1] == install_message:
                 log( 1, "Removing package: %s" % package_name )
@@ -1089,7 +1090,7 @@ def ask_user_for_which_packages_to_install(packages_names, packages_to_install):
 
     show_quick_panel()
 
-    # show_quick_panel is a not blocking function, but we can only continue after on_done being called
+    # show_quick_panel is a non-blocking function, but we can only continue after on_done being called
     while not can_continue[0]:
         time.sleep(1)
 

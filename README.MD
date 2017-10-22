@@ -526,6 +526,14 @@ you usually do with the default `Package Control` channel.
            "My Package Last Package",
        ]
 
+       # Packages which are not allowed to be selected by the user while choosing the packages to not
+       # be installed. Useful for packages which are required for the channel maintainability.
+       g_channel_settings['FORBIDDEN_PACKAGES'] = \
+       [
+           "My First Forbidden Package",
+           "My Second Forbidden Package",
+       ]
+
        # The default user preferences file
        g_channel_settings['USER_SETTINGS_FILE'] = "Preferences.sublime-settings"
 
@@ -765,11 +773,12 @@ Package C, the implementation of the Package C, by the Channel A, will be overri
 implementation of the Channel B, i.e., they are overridden accordingly to the order of the most
 recent channel installation.
 
-Yet still not implemented on the `ChannelManager` dependency, an short installation wizard which
-should allow you to choose which packages of Channel you do not want to install. It would also
-present to you a list of packages which are currently installed and where pruned from the
-installation due they being already installed on the system. Therefore you could select which of
-these packages you would like to install over the packages you already has installed.
+It is also implemented on the `ChannelManager` dependency, an short installation wizard which should
+allow you to choose which packages of Channel you do not want to install. Therefore you could select
+which of these packages you would like to install over the packages you already has installed.
+However, this list limited by the setting `FORBIDDEN_PACKAGES` which specify packages which must be
+installed. If the user do not agree with installing these packages, then he cannot install the
+channel.
 
 
 
