@@ -133,7 +133,7 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 
 
 def main(command=None):
-    log( 1, "Entering on main(0) " + str( command ) )
+    log( 1, "Entering on main(1) " + str( command ) )
     global CHANNEL_ROOT_DIRECTORY
 
     argumentsNamespace    = None

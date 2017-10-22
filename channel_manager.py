@@ -274,8 +274,13 @@ def get_repositories(all_packages, last_repositories, tag_current_version=False)
             # log.insert_empty_line()
             log( 1, "{:s} Processing {:3d} of {:d} repositories... {:s}".format( progress, index, sections_count, path ) )
 
-            url      = gitModulesFile.get( section, "url" )
-            upstream = gitModulesFile.get( section, "upstream" )
+            try:
+                url      = gitModulesFile.get( section, "url" )
+                upstream = gitModulesFile.get( section, "upstream" )
+
+            except( NoOptionError, KeyError ) as error:
+                log( 1, "Error: %s" % error )
+                continue
 
             release_data    = OrderedDict()
             repository_info = OrderedDict()
