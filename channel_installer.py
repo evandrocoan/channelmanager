@@ -145,8 +145,8 @@ def unpack_settings(channel_settings):
     TEMPORARY_FOLDER_TO_USE = channel_settings['TEMPORARY_FOLDER_TO_USE']
 
     CHANNEL_ROOT_DIRECTORY  = channel_settings['CHANNEL_ROOT_DIRECTORY']
-    PACKAGES_TO_NOT_INSTALL = channel_settings['PACKAGES_TO_NOT_INSTALL']
     USER_FOLDER_PATH        = channel_settings['USER_FOLDER_PATH']
+    PACKAGES_TO_NOT_INSTALL = channel_settings['PACKAGES_TO_NOT_INSTALL']
 
     FORBIDDEN_PACKAGES        = channel_settings['FORBIDDEN_PACKAGES']
     PACKAGES_TO_INSTALL_FIRST = channel_settings['PACKAGES_TO_INSTALL_FIRST']
@@ -401,7 +401,10 @@ def get_stable_packages(git_modules_file):
     log( 2, "get_stable_packages, installed_packages: " + str( installed_packages ) )
     gitModulesFile.readfp( io.StringIO( git_modules_file ) )
 
-    packages_tonot_install = unique_list_join( PACKAGES_TO_NOT_INSTALL, installed_packages, g_packages_to_ignore )
+    # Do not try to install this own package and the Package Control, as they are currently running
+    currently_running = [ "Package Control", "ChannelManager", CHANNEL_PACKAGE_NAME ]
+
+    packages_tonot_install = unique_list_join( PACKAGES_TO_NOT_INSTALL, installed_packages, g_packages_to_ignore, currently_running )
     log( 2, "get_stable_packages, packages_tonot_install: " + str( packages_tonot_install ) )
 
     for section in gitModulesFile.sections():

@@ -509,6 +509,9 @@ you usually do with the default `Package Control` channel.
        g_channel_settings['CHANNEL_SETTINGS_URL']  = clean_urljoin( CHANNEL_RAW_URL, "settings.json" )
        g_channel_settings['CHANNEL_SETTINGS_PATH'] = os.path.join( CURRENT_DIRECTORY, "settings.json" )
 
+       # The default user preferences file
+       g_channel_settings['USER_SETTINGS_FILE'] = "Preferences.sublime-settings"
+
 
        # You can specify for some packages to be popped out from the list and being installed by
        # first/last in the following order presented.
@@ -534,11 +537,12 @@ you usually do with the default `Package Control` channel.
            "My Second Forbidden Package",
        ]
 
-       # The default user preferences file
-       g_channel_settings['USER_SETTINGS_FILE'] = "Preferences.sublime-settings"
-
-       # Do not try to install this own package and the Package Control, as they are currently running
-       g_channel_settings['PACKAGES_TO_NOT_INSTALL'] = [ "Package Control", CURRENT_PACKAGE_NAME ]
+       # Packages which you do want to install when reading the `.gitmodules` packages list
+       g_channel_settings['PACKAGES_TO_NOT_INSTALL'] = \
+       [
+           "My First Package to not Install",
+           "My Second Package to not Install",
+       ]
 
        # The files of the `Default.sublime-package` you are installing
        g_channel_settings['DEFAULT_PACKAGES_FILES'] = \
