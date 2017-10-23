@@ -18,6 +18,7 @@ threads for more information about the `Package Control` channel and repository 
 - [Channel Manager](#channel-manager)
   * [Table of Contents](#table-of-contents)
   * [Introduction](#introduction-go-to-top)
+    + [Tags Management](#tags-management-go-to-top)
     + [Submodules Manager](#submodules-manager-go-to-top)
     + [Channel Installer/uninstaller](#channel-installer-uninstaller-go-to-top)
   * [How to Build a Channel](#how-to-build-a-channel-go-to-top)
@@ -93,21 +94,6 @@ The `tags` is a comma separated list of remote tags and the version of Sublime t
 used. For example, `tags = 3143, 3147` indicates the repository `Notepad++ Color Scheme` has the
 following git tags called `3143` and `3147`.
 
-Settings tags like this is useful when a package has ceased working for old build of Sublime Text.
-For example, on Sublime Text development build 3147, the package `Notepad++ Color Scheme` stopped
-working completely ([CoreIssue$1983](https://github.com/SublimeTextIssues/Core/issues/1983)) however
-the fix for build 3147 also broke completely the package for Sublime Text stable build 3143. Hence,
-we must to create a tag which targets the last commit which is working for build 3143. Moreover when
-some user using the stable build 3143 installs the `Notepad++ Color Scheme`, they must install the
-one from the tag `3143`, and not the one from the master branch, which has the latest fixes for
-build development build 3147 or newer.
-
-Nonetheless, as currently we already fetch the lasted commit date version tag, it was easily
-implemented automatic tagging for based on the latest commit date. It would be useful for tagging a
-large set of packages which can be considered stable. Still also to do automatic tagging of the
-latest release package is working for Sublime Text, however this seems not much required to be done
-as should be only a few exceptions for when a packages stops working for some build of Sublime Text.
-
 The key `dependency` is comma separate lists of `dependencies` a package has. If the dependency key
 start with number like in `dependency = 50, PythonDebugTools, regex`, it would mean that the package
 `Packages/Notepad++ Color Scheme` would be a dependency with load order of 50, which requires as
@@ -124,6 +110,39 @@ the project `https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme` and cre
 Github. Now, instead of installing the original package from `evandrocoan`, you installed your fork,
 from your address `https://github.com/your_user_name/SublimeNotepadPlusPlusTheme`, then you would
 set the `upstream` key pointing to the original repository and the `url` key for your fork of it.
+
+
+### Tags Management <sub><sub>[Go to Top](#channel-manager)</sub></sub>
+
+Settings tags like `3143` is useful when a package has ceased working for old build of Sublime Text.
+For example, on Sublime Text development build 3147, the package `Notepad++ Color Scheme` stopped
+working completely ([CoreIssue$1983](https://github.com/SublimeTextIssues/Core/issues/1983)) however
+the fix for build 3147 also broke completely the package for Sublime Text stable build 3143. Hence,
+we must to create a tag which targets the last commit which is working for build 3143. Moreover when
+some user using the stable build 3143 installs the `Notepad++ Color Scheme`, they must install the
+one from the tag `3143`, and not the one from the master branch, which has the latest fixes for
+build development build 3147 or newer.
+
+This happens because currently the channel generation is limited to setting the download link to the
+repository master branch. It was implemented the checking for each submodule for the latest tag
+available, then properly setting the download URL pointing to the last tag. Still also to do
+automatic tagging of the latest release package is working for Sublime Text, however this seems not
+much required to be done as should be only a few exceptions for when a packages stops working for
+some build of Sublime Text.
+
+Nonetheless, as now it already fetch the lasted commit date version tag, then it can be implemented
+automatic tagging for based on the latest commit date. It would be useful for tagging a large set of
+packages which can be considered stable. This approach should be much batter than the current one
+where the user always download the current version available at the master branch when the user
+installed the package. Such approach is not very welcomed because would allow several clients to be
+using different versions of the package while all of them think they are using the latest version
+available at the moment, however just the most recent installations would be using the lasted
+version, whereas the other installations would be using some older version.
+
+Currently it is partially implemented the tag management, but this systems seems not easily feasible
+because some packages are tagged based on tag prefixes. Then it is needed to also implement on the
+`.gitmodules` file, the `tag_prefix` field to select which is the tag prefix, and for which platform
+it it.
 
 
 ### Submodules Manager <sub><sub>[Go to Top](#channel-manager)</sub></sub>
@@ -166,8 +185,8 @@ upstream = https://github.com/aziz/SublimeANSI
 backstroke = https://backstroke.us/_2d82221f793d50c2f75952c
 ```
 
-Hence, if you would like to receive updates from the upstream
-`https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme`, you can set the key `upstream`
+Hence, if you would like to receive updates from the
+`https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme` upstream, you can set the key `upstream`
 pointing to the upstream of the original package at
 `https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme`. Therefore, your settings file would
 look like:
@@ -180,11 +199,11 @@ look like:
     tags = 3143, 3147
 ```
 
-Sadly currently this feature is not implemented yet. However, the `upstream` key is used by the
-plugin `submodules_manager.py`, with the command line with the argument `-f`. The
-`submodules_manager.py` provides some commands which are not available from Sublime Text due they
-being too long to run. Moreover is proper to use a dedicated shell for them. You can see the
-available options for the `submodules_manager.py` by running it:
+Sadly, this feature is not implemented yet. However, the `upstream` key is used by the plugin
+`submodules_manager.py`, with the command line with the argument `-f`. The `submodules_manager.py`
+provides some commands which are not available from Sublime Text due they being too long to run.
+Moreover is proper to use a dedicated shell for them. You can see the available options for the
+`submodules_manager.py` by running it:
 ```java
 $ python3 submodules_manager.py
 [submodules_manager.py] 14:44:07  454080    2707 Entering on main(0) None
@@ -366,12 +385,12 @@ you usually do with the default `Package Control` channel.
        dependency = 49
    ```
 
-1. Now you added the basics, you may notice we were not adding them as `git submodules` by the
-   commands `git clone --recursive repo_url` and `git submodule add -- repo_url
-   "Packages/package_name"`. Moreover you can or cannot do so if you like. The `ChannelManager` only
-   requires to the file `.gitmodules` to exists in the pre-configured location, which we are about
-   do to. Other than that, you do not need to have a parent repository which holds a valid
-   `.gitmodules` file by your `git` client.
+1. Now you added the basics, you may notice they were not added as `git submodules` by the commands
+   `git clone --recursive repo_url` and `git submodule add -- repo_url "Packages/package_name"`.
+   Moreover you can or cannot do so if you like. The `ChannelManager` only requires to the file
+   `.gitmodules` to exists in the pre-configured location, which we are about do to. Other than
+   that, you do not need to have a parent repository which holds a valid `.gitmodules` file by your
+   `git` client.
 
    However, it is required for some commands available to work properly as the command `Pull &
    Rebase all Packages`. Beyond that advised and nice to have a parent repository which validly by

@@ -540,7 +540,7 @@ def fix_sublime_text_release(release_data, gitModulesFile, section, repository_i
                 repository_info['issues']     = url + "/issues"
                 repository_info['load_order'] = load_order
 
-                release_data['url']  = get_download_url( url, release_data['git_tag'] )
+                release_data['url']  = get_download_url( url, "master" )
                 release_data['base'] = url
                 release_data['tags'] = True
 
@@ -553,15 +553,15 @@ def fix_sublime_text_release(release_data, gitModulesFile, section, repository_i
             except ValueError:
                 release_data['dependencies'] = dependency_list
 
-                release_data['url'] = get_download_url( url, release_data['git_tag'] )
+                release_data['url'] = get_download_url( url, "master" )
                 repositories.append( repository_info )
 
         else:
-            release_data['url'] = get_download_url( url, release_data['git_tag'] )
+            release_data['url'] = get_download_url( url, "master" )
             repositories.append( repository_info )
 
     else:
-        release_data['url'] = get_download_url( url, release_data['git_tag'] )
+        release_data['url'] = get_download_url( url, "master" )
         repositories.append( repository_info )
 
     acceptable_version = 3092
