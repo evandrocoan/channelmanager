@@ -256,10 +256,13 @@ def update_repository(last_repository, tag_current_version, package_name):
     release_data['date']    = release_date
     release_data['version'] = date_tag
     release_data['url']     = release_data['url'].replace( release_data['git_tag'], git_tag )
-    release_data['git_tag'] = git_tag
 
-    command = "git push origin %s" % git_tag
-    command_line_interface.execute( shlex.split( command ), absolute_repo_path, live_output=True, short_errors=True )
+    # Only push the new tag, if it is not created yet.
+    if release_data['git_tag'] != git_tag:
+        release_data['git_tag'] = git_tag
+
+        command = "git push origin %s" % git_tag
+        command_line_interface.execute( shlex.split( command ), absolute_repo_path, live_output=True, short_errors=True )
 
 
 def print_failed_repositories():
