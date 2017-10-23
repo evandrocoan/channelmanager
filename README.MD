@@ -742,43 +742,43 @@ you usually do with the default `Package Control` channel.
                            "caption": "My Brand New Channel",
                            "children":
                            [
-                               { "caption": "My Brand New Channel: Generate Channel File",
+                               { "caption": "Generate Channel File",
                                        "command": "my_brand_new_channel_generate_channel_file",
                                        "args": {"create_tags": false} },
 
-                               { "caption": "My Brand New Channel: Generate Channel File and Tags",
+                               { "caption": "Generate Channel File and Tags",
                                        "command": "my_brand_new_channel_generate_channel_file",
                                        "args": {"create_tags": true} },
 
-                               { "caption": "My Brand New Channel: Select Package to Update Git Tag",
+                               { "caption": "Select Package to Update Git Tag",
                                        "command": "my_brand_new_channel_generate_channel_file",
                                        "args": { "create_tags": true, "command": "git_tag" } },
 
-                               { "caption": "My Brand New Channel: Force Update All Git Tags",
+                               { "caption": "Force Update All Git Tags",
                                        "command": "my_brand_new_channel_generate_channel_file",
                                        "args": { "create_tags": true, "command": "git_tag_all" } },
 
-                               { "caption": "My Brand New Channel: Run Backstroke Requests",
+                               { "caption": "Run Backstroke Requests",
                                        "command": "my_brand_new_channel_run", "args": {"run": "-b"} },
 
-                               { "caption": "My Brand New Channel: Push Local Git Tags",
+                               { "caption": "Push Local Git Tags",
                                        "command": "my_brand_new_channel_run", "args": {"run": "-t"} },
 
-                               { "caption": "My Brand New Channel: Pull & Rebase all Packages",
+                               { "caption": "Pull & Rebase all Packages",
                                        "command": "my_brand_new_channel_run", "args": {"run": "-p"} },
 
-                               { "caption": "My Brand New Channel: Update Default Packages",
+                               { "caption": "Update Default Packages",
                                        "command": "my_brand_new_channel_update_default_packages" },
 
-                               { "caption": "My Brand New Channel: Run Stable Installation ",
+                               { "caption": "Run Stable Installation ",
                                        "command": "my_brand_new_channel_run_installation",
                                        "args": {"version": "stable"} },
 
-                               { "caption": "My Brand New Channel: Run Development Installation",
+                               { "caption": "Run Development Installation",
                                        "command": "my_brand_new_channel_run_installation",
                                        "args": {"version": "development"} },
 
-                               { "caption": "My Brand New Channel: Run Uninstallation",
+                               { "caption": "Run Uninstallation",
                                        "command": "my_brand_new_channel_run_uninstallation" },
                            ]
                        }
@@ -986,6 +986,26 @@ ___
    itself or just kill the program called `plugin_host` or `plugin_host.exe`. After killing
    `plugin_host`, Sublime Text will became responsive again, then you can save your work and restart
    Sublime Text to restore the Sublime Text packages functionality.
+
+
+
+## Development Problems
+___
+
+1. The Development Version currently cannot install the dependencies `PythonDebugTools` and
+   `ChannelManager` as Package Control always unpack package dependencies. Because to install the
+   development packages, it required to they do not exists on the user loose `Packages` folder. But
+   as Package Control unpacks them when installing the required dependencies, the installer cannot
+   clone and install the files.
+
+   The solution to this problem is to Package Control accept some dependencies to be installed
+   inside a `sublime-package`. There is a open pull request for Package Control allowing this
+   feature: [Pull$1291](https://github.com/wbond/package_control/pull/1291) Allowed PythonDebugTools
+   to be import from a .sublime-package file.
+
+   The work around to fix this, is after the Development Version installation process to be
+   finished, delete the created folders by Package Control and clone these two repositories
+   manually.
 
 
 
