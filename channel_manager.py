@@ -464,8 +464,8 @@ def get_last_tag_fixed(absolute_repo_path, command_line_interface, last_reposito
                 current_tags = get_current_cummit_tags( absolute_repo_path, command_line_interface )
 
                 if len( current_tags ) > 0:
-                    log.insert_empty_line()
                     log( 1, "Error: The current HEAD commit already has the following tags(s): %s" % current_tags )
+                    log.insert_empty_line()
 
                 else:
 
