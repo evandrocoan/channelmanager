@@ -152,15 +152,33 @@ class GenerateChannelThread(threading.Thread):
                 repositories, dependencies = get_repositories( all_packages, last_repositories, self.create_tags )
                 self.save_log_file( repositories, dependencies )
 
-            else:
+            elif self.command == "git_tag":
                 repositories_list      = []
                 self.repositories_list = repositories_list
                 self.last_repositories = last_repositories
 
-                for repository in last_repositories:
-                    repositories_list.append( repository )
+                for package_name in last_repositories:
+                    repositories_list.append( package_name )
 
                 show_quick_panel( sublime.active_window(), repositories_list, self.on_done )
+
+            elif self.command == "git_tag_all":
+                index = 0
+                repositories_count = len( last_repositories )
+
+                for package_name, pi in etc.sequence_timer( last_repositories, info_frequency=0 ):
+                    index += 1
+                    progress = progress_info( pi )
+
+                    log.insert_empty_line()
+                    log( 1, "{:s} Processing {:3d} of {:d} repositories... {:s}".format( progress, index, repositories_count, package_name ) )
+
+                    last_repository = get_dictionary_key( last_repositories, package_name, {} )
+                    update_repository( last_repository, self.create_tags, package_name )
+
+                repositories, dependencies = split_repositories_and_depencies( last_repositories )
+                self.save_log_file( repositories, dependencies )
+
 
     def save_log_file(self, repositories, dependencies):
         """
