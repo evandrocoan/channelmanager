@@ -34,24 +34,16 @@ imp.reload( ChannelManager )
 import ChannelManager
 
 
-# print_python_envinronment()
-def assert_path(module):
-    """
-        Import a module from a relative path
-        https://stackoverflow.com/questions/279237/import-a-module-from-a-relative-path
-    """
-    if module not in sys.path:
-        sys.path.append( module )
-
-
-CURRENT_DIRECTORY = os.path.dirname( os.path.realpath( __file__ ) )
-assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools/all' ) )
-
 # Import the debugger
-from debug_tools import Debugger
+from PythonDebugTools.debug_tools import Debugger
 
 # Debugger settings: 0 - disabled, 127 - enabled
 log = Debugger( 127, os.path.basename( __file__ ) )
+
+
+def plugin_loaded():
+    # main()
+    pass
 
 
 def main():
@@ -130,10 +122,5 @@ class ChannelManagerUnitTests(unittest.TestCase):
         # log( 1, "fix_semantic_version(%s), fixed: %s, matched: %s" % ( tag, fixed, matched ) )
         self.assertEqual( fixed, fix_goal )
         self.assertEqual( matched, match_goal )
-
-
-def plugin_loaded():
-    # main()
-    pass
 
 

@@ -87,7 +87,7 @@ g_is_installation_complete     = True
 PACKAGES_COUNT_TO_IGNORE_AHEAD = 8
 
 # Import the debugger
-from debug_tools import Debugger
+from PythonDebugTools.debug_tools import Debugger
 
 # Debugger settings: 0 - disabled, 127 - enabled
 log = Debugger( 127, os.path.basename( __file__ ) )

@@ -39,15 +39,40 @@ import threading
 import subprocess
 
 
+CURRENT_DIRECTORY = os.path.dirname( os.path.realpath( __file__ ) )
+
+
+# Relative imports in Python 3
+# https://stackoverflow.com/questions/16981921/relative-imports-in-python-3
 try:
-    # Allow using this file on the website where the sublime
-    # module is unavailable
+    from .settings import *
+    from .channel_utilities import get_main_directory
+    from .channel_utilities import assert_path
+
+except( ImportError, ValueError):
+    from settings import *
+    from channel_utilities import get_main_directory
+    from channel_utilities import assert_path
+
+
+# Allow using this file on the website where the sublime
+# module is unavailable
+try:
     import sublime
     import sublime_plugin
+
+    # Import the debugger
+    from PythonDebugTools.debug_tools import Debugger
 
 except ImportError:
     sublime = None
     sublime_plugin = None
+
+    # Import the debugger. It will fail when `PythonDebugTools` is inside a `.sublime-package`,
+    # however, this is only meant to be used on the Development version, `PythonDebugTools` is
+    # unpacked at the loose packages folder as a git submodule.
+    assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools' ) )
+    from debug_tools import Debugger
 
 
 # # https://stackoverflow.com/questions/9079036/detect-python-version-at-runtime
@@ -85,19 +110,6 @@ except:
     from six.moves.configparser import NoOptionError
 
 
-# Relative imports in Python 3
-# https://stackoverflow.com/questions/16981921/relative-imports-in-python-3
-try:
-    from .settings import *
-    from .channel_utilities import get_main_directory
-    from .channel_utilities import assert_path
-
-except ModuleNotFoundError:
-    from settings import *
-    from channel_utilities import get_main_directory
-    from channel_utilities import assert_path
-
-
 # print_python_envinronment()
 CHANNEL_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, "last_session.channel-manager" )
 FIND_FORKS_PATH      = os.path.join( CURRENT_DIRECTORY, "find_forks" )
@@ -115,10 +127,6 @@ try:
 except ImportError:
     pass
 
-
-# Import the debugger
-assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools/all' ) )
-from debug_tools import Debugger
 
 # Debugger settings: 0 - disabled, 127 - enabled
 log = Debugger( 127, os.path.basename( __file__ ) )

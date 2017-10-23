@@ -47,7 +47,7 @@ from .settings import *
 UPGRADE_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, 'last_sublime_upgrade.channel-manager' )
 
 # Import the debugger
-from debug_tools import Debugger
+from PythonDebugTools.debug_tools import Debugger
 
 # Debugger settings: 0 - disabled, 127 - enabled
 log = Debugger( 127, os.path.basename( __file__ ) )

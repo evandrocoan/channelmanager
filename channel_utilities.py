@@ -34,12 +34,7 @@ import time
 import textwrap
 
 
-try:
-    import sublime
-
-except ImportError:
-    sublime = None
-
+CURRENT_DIRECTORY = os.path.dirname( os.path.realpath( __file__ ) )
 
 # print_python_envinronment()
 def assert_path(module):
@@ -51,11 +46,23 @@ def assert_path(module):
         sys.path.append( module )
 
 
-CURRENT_DIRECTORY = os.path.dirname( os.path.realpath( __file__ ) )
-assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools/all' ) )
+# Allow using this file on the website where the sublime
+# module is unavailable
+try:
+    import sublime
 
-# Import the debugger
-from debug_tools import Debugger
+    # Import the debugger
+    from PythonDebugTools.debug_tools import Debugger
+
+except ImportError:
+    sublime = None
+
+    # Import the debugger. It will fail when `PythonDebugTools` is inside a `.sublime-package`,
+    # however, this is only meant to be used on the Development version, when `PythonDebugTools` is
+    # unpacked at the loose packages folder as a git submodule.
+    assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools' ) )
+    from debug_tools import Debugger
+
 
 # Debugger settings: 0 - disabled, 127 - enabled
 log = Debugger( 127, os.path.basename( __file__ ) )

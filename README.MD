@@ -200,9 +200,9 @@ look like:
 ```
 
 Sadly, this feature is not implemented yet. However, the `upstream` key is used by the plugin
-`submodules_manager.py`, with the command line with the argument `-f`. The `submodules_manager.py`
-provides some commands which are not available from Sublime Text due they being too long to run.
-Moreover is proper to use a dedicated shell for them. You can see the available options for the
+`submodules_manager.py`, with the command line argument `-f`. The `submodules_manager.py` provides
+some commands which are not available from Sublime Text due they being too long to run. Moreover is
+proper to use a dedicated shell for them. You can see the available options for the
 `submodules_manager.py` by running it:
 ```java
 $ python3 submodules_manager.py
