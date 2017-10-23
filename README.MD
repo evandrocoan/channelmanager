@@ -694,7 +694,7 @@ you usually do with the default `Package Control` channel.
                "command": "my_brand_new_channel_generate_channel_file",
                "args": { "create_tags": true, "command": "git_tag" } },
 
-       { "caption": "My Brand New Channel: Force Update All Git Tags",
+       { "caption": "My Brand New Channel: Force Update All Packages Git Tags",
                "command": "my_brand_new_channel_generate_channel_file",
                "args": { "create_tags": true, "command": "git_tag_all" } },
 
@@ -754,7 +754,7 @@ you usually do with the default `Package Control` channel.
                                        "command": "my_brand_new_channel_generate_channel_file",
                                        "args": { "create_tags": true, "command": "git_tag" } },
 
-                               { "caption": "Force Update All Git Tags",
+                               { "caption": "Force Update All Packages Git Tags",
                                        "command": "my_brand_new_channel_generate_channel_file",
                                        "args": { "create_tags": true, "command": "git_tag_all" } },
 
@@ -875,8 +875,9 @@ installed the Development Version of the channel:
    Tags`, however the tag is only created if it does not already exists a tag for the current/latest
    commit. Also, the tag is immediately pushed to origin.
 
-1. **YourChannelName: Force Update All Git Tags** The same as the command `Select Package to Update
-   Git Tag`, but it runs for all packages/dependencies found on the channel file `channel.json`.
+1. **YourChannelName: Force Update All Packages Git Tags** The same as the command `Select Package
+   to Update Git Tag`, but it runs for all packages/dependencies found on the channel file
+   `channel.json`.
 
 1. **YourChannelName: Run Backstroke Requests** Backstroke is a Github bot to keep repository forks up
    to date with their upstream. Therefore, if you setup your own list of Backstroke URLs, you can

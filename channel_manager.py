@@ -444,13 +444,13 @@ def get_last_tag_fixed(absolute_repo_path, command_line_interface, last_reposito
 
         # If it does not exists, it means this is the first time and there was not previous data
         if 'releases' in last_repository:
-            is_to_create  = False
             release_data  = last_repository['releases'][0]
             last_date_tag = release_data['version']
 
             if "master" == git_tag:
-                is_to_create = True
-                git_tag      = "1.0.0"
+
+                if create_git_tag( "1.0.0", absolute_repo_path, command_line_interface ):
+                    git_tag = "1.0.0"
 
             # if it is to update
             if force_tag_creation or LooseVersion( date_tag ) > LooseVersion( last_date_tag ):
@@ -462,11 +462,9 @@ def get_last_tag_fixed(absolute_repo_path, command_line_interface, last_reposito
                     log( 1, "Error: The current HEAD commit already has the following tags(s): %s" % current_tags )
 
                 else:
-                    git_tag      = next_git_tag
-                    is_to_create = True
 
-            if is_to_create:
-                create_git_tag( git_tag, absolute_repo_path, command_line_interface )
+                    if create_git_tag( next_git_tag, absolute_repo_path, command_line_interface ):
+                        git_tag = next_git_tag
 
     return git_tag, date_tag, release_date
 
@@ -479,6 +477,7 @@ def get_current_cummit_tags(absolute_repo_path, command_line_interface):
 
 
 def increment_patch_version(git_tag, tag_current_version=False):
+    # log( 2, "Incrementing %s (%s)" % ( str( git_tag ), str( tag_current_version ) ) )
 
     # if the tag is just an integer, it should be a Sublime Text build as 3147
     try:
@@ -799,6 +798,8 @@ def get_git_latest_tag(absolute_repo_path, command_line_interface):
     git_tag = command_line_interface.execute( command, absolute_repo_path, short_errors=True )
 
     if git_tag is False:
+        log( 1, "Error: Failed getting git tag for the package `%s`, results: %s" % ( absolute_repo_path, git_tag ) )
+
         g_failed_repositories.append( (command, absolute_repo_path) )
         return "master"
 
@@ -810,9 +811,13 @@ def create_git_tag(new_tag_name, absolute_repo_path, command_line_interface):
     output = command_line_interface.execute( command, absolute_repo_path, short_errors=True )
 
     if output is False:
+        log( 1, "Error: Failed creating git tag `%s` for the package `%s`, results: %s" % ( new_tag_name, absolute_repo_path, output ) )
+
         g_failed_repositories.append( (command, absolute_repo_path) )
+        return False
 
     log( 1, "Creating git tag `%s` for the package `%s`, results: %s" % ( new_tag_name, absolute_repo_path, output ) )
+    return True
 
 
 def get_git_version(release_date):
