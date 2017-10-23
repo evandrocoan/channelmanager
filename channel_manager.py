@@ -454,7 +454,7 @@ def get_last_tag_fixed(absolute_repo_path, command_line_interface, last_reposito
 
             # if it is to update
             if force_tag_creation or LooseVersion( date_tag ) > LooseVersion( last_date_tag ):
-                next_git_tag = increment_patch_version( git_tag, tag_current_version )
+                next_git_tag, is_incremented = increment_patch_version( git_tag, tag_current_version )
                 current_tags = get_current_cummit_tags( absolute_repo_path, command_line_interface )
 
                 if len( current_tags ) > 0:
@@ -463,8 +463,14 @@ def get_last_tag_fixed(absolute_repo_path, command_line_interface, last_reposito
 
                 else:
 
-                    if create_git_tag( next_git_tag, absolute_repo_path, command_line_interface ):
-                        git_tag = next_git_tag
+                    if is_incremented:
+
+                        if create_git_tag( next_git_tag, absolute_repo_path, command_line_interface ):
+                            git_tag = next_git_tag
+
+                    else:
+                        log( 1, "Error: The tag `%s` could not be incremented for the package: %s" % ( next_git_tag, absolute_repo_path ) )
+                        g_failed_repositories.append( ("", absolute_repo_path) )
 
     return git_tag, date_tag, release_date
 
@@ -477,12 +483,20 @@ def get_current_cummit_tags(absolute_repo_path, command_line_interface):
 
 
 def increment_patch_version(git_tag, tag_current_version=False):
+    """
+        Increments tags on the form `0.0.0`.
+
+        @return new_tag_name       the new incremented tag if it was incremented, or the original
+                                   value or some other valid value otherwise.
+
+        @return is_incremented     False, when the tag was not incremented, True otherwise.
+    """
     # log( 2, "Incrementing %s (%s)" % ( str( git_tag ), str( tag_current_version ) ) )
 
     # if the tag is just an integer, it should be a Sublime Text build as 3147
     try:
         if int( git_tag ) > 3000:
-            return git_tag
+            return git_tag, False
 
         else:
             raise ValueError( "The git_tag %s is not an Sublime Text 3 build." % git_tag )
@@ -495,14 +509,14 @@ def increment_patch_version(git_tag, tag_current_version=False):
 
     if matches:
         fixed_tag = "%s.%s.%s" % ( matches.group(1), matches.group(2), str( int( matches.group(3) ) + 1 ) )
-        return git_tag.replace( matched_tag, fixed_tag )
+        return git_tag.replace( matched_tag, fixed_tag ), True
 
     log( 1, "Warning: Could not increment the git_tag: " + str( git_tag ) )
 
     if tag_current_version:
-        return "1.0.0"
+        return "1.0.0", True
 
-    return "master"
+    return "master", False
 
 
 def fix_sublime_text_release(release_data, gitModulesFile, section, repository_info, repositories, dependencies, url):

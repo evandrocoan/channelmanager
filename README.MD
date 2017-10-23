@@ -1008,6 +1008,11 @@ ___
    finished, delete the created folders by Package Control and clone these two repositories
    manually.
 
+1. If the latest existent tag is on the form `3144`, the command which automatically update the tag
+   will not fail to increment/create new tags after it, as they fetch the latest tags available from
+   the repository. Currently it is not implemented the code to automatically figure out such tags
+   and then try the get some older tag on the correct format.
+
 
 
 ___
