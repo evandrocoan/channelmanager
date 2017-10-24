@@ -906,6 +906,25 @@ installed the Development Version of the channel:
 ___
 ## Installation Notes <sub><sub>[Go to Top](#channel-manager)</sub></sub>
 
+1. This may show up close to the installation end:
+
+   ![error: PackagesManager](https://i.imgur.com/bmZ5Jso.png)
+   ```
+   error: PackagesManager
+
+   The package specified, Package Control, is not installed
+
+                   If there will be new messages on the next seconds,
+                   they will be show on the Sublime Text console
+   ```
+
+   You can just ignore this. It happens because both PackagesManager and the installer try to
+   uninstall `Package Control`. Someday this should be fixed, then only one of them attempt to do
+   it. It is not always required to replace the `Package Control` by the `PackagesManager`, it
+   depends on the channel configuration. However most of the commands will not work with `Package
+   Control`. This is because was added some functionality to `PackagesManager`, which is not present
+   on `Package Control`.
+
 1. Currently it has the problem of showing up this error box randomly. This may or may not happen
    when you run the installer:
 
