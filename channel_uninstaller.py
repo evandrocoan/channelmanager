@@ -116,6 +116,7 @@ def unpack_settings(channel_settings):
 
     global USER_SETTINGS_FILE
     global CHANNEL_FILE_URL
+    global FORBIDDEN_PACKAGES
 
     global USER_FOLDER_PATH
     global CHANNEL_ROOT_DIRECTORY
@@ -127,6 +128,7 @@ def unpack_settings(channel_settings):
     setup_packages_to_uninstall_last( channel_settings )
 
     CHANNEL_FILE_URL   = channel_settings['CHANNEL_FILE_URL']
+    FORBIDDEN_PACKAGES = channel_settings['FORBIDDEN_PACKAGES']
     USER_SETTINGS_FILE = channel_settings['USER_SETTINGS_FILE']
 
     CHANNEL_ROOT_DIRECTORY = channel_settings['CHANNEL_ROOT_DIRECTORY']
@@ -311,6 +313,7 @@ def uninstall_packages():
         all_packages = set( package_manager.list_packages( list_everything=True ) + get_installed_packages( "PackagesManager.sublime-settings" ) )
         dependencies = set( package_manager.list_dependencies() )
 
+    ask_user_for_which_packages_to_install( packages_to_uninstall )
     uninstall_default_package( packages_to_uninstall )
 
     for package_name in packages_to_uninstall:
@@ -748,6 +751,74 @@ def delete_channel_settings_file(maximum_attempts=3):
             """ % CHANNEL_PACKAGE_NAME ) )
 
     sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+
+
+def ask_user_for_which_packages_to_install(packages_names):
+    can_continue  = [False]
+    active_window = sublime.active_window()
+
+    install_message    = "Select this to not uninstall it."
+    uninstall_message  = "Select this to uninstall it."
+
+    packages_informations            = [ [ "Continue the Uninstallation Process", "Select this when you are finished selections packages." ] ]
+    selected_packages_to_not_install = []
+
+    for package_name in packages_names:
+
+        if package_name in FORBIDDEN_PACKAGES:
+            packages_informations.append( [ package_name, "You must uninstall it or cancel the uninstallation." ] )
+
+        else:
+            packages_informations.append( [ package_name, install_message ] )
+
+    def on_done(item_index):
+
+        if item_index < 0:
+            global g_is_already_running
+            g_is_already_running = False
+
+            log.insert_empty_line()
+            raise RuntimeError( "The user closed the uninstaller's packages pick up list." )
+
+        if item_index == 0:
+            log.insert_empty_line()
+            log( 1, "Continuing the uninstallation after the packages pick up..." )
+
+            can_continue[0] = True
+            return
+
+        package_information = packages_informations[item_index]
+        package_name        = package_information[0]
+
+        if package_name not in FORBIDDEN_PACKAGES:
+
+            if package_information[1] == install_message:
+                log( 1, "Adding package: %s" % package_name )
+
+                package_information[1] = uninstall_message
+                selected_packages_to_not_install.append( package_name )
+
+            else:
+                log( 1, "Removing package: %s" % package_name )
+
+                package_information[1] = install_message
+                selected_packages_to_not_install.remove( package_name )
+
+        show_quick_panel( item_index )
+
+    def show_quick_panel(selected_index=0):
+        active_window.show_quick_panel( packages_informations, on_done, sublime.KEEP_OPEN_ON_FOCUS_LOST, selected_index )
+
+    show_quick_panel()
+
+    # show_quick_panel is a non-blocking function, but we can only continue after on_done being called
+    while not can_continue[0]:
+        time.sleep(1)
+
+    for package_name in selected_packages_to_not_install:
+        target_index = packages_names.index( package_name )
+
+        del packages_names[target_index]
 
 
 def check_uninstalled_packages(maximum_attempts=10):
