@@ -760,8 +760,12 @@ def ask_user_for_which_packages_to_install(packages_names):
     install_message    = "Select this to not uninstall it."
     uninstall_message  = "Select this to uninstall it."
 
-    packages_informations            = [ [ "Continue the Uninstallation Process", "Select this when you are finished selections packages." ] ]
     selected_packages_to_not_install = []
+    packages_informations            = \
+    [
+        [ "Cancel the Uninstallation Process", "Select this to cancel the uninstallation process." ],
+        [ "Continue the Uninstallation Process...", "Select this when you are finished selecting packages." ],
+    ]
 
     for package_name in packages_names:
 
@@ -773,14 +777,14 @@ def ask_user_for_which_packages_to_install(packages_names):
 
     def on_done(item_index):
 
-        if item_index < 0:
+        if item_index < 1:
             global g_is_already_running
             g_is_already_running = False
 
             log.insert_empty_line()
             raise RuntimeError( "The user closed the uninstaller's packages pick up list." )
 
-        if item_index == 0:
+        if item_index == 1:
             log.insert_empty_line()
             log( 1, "Continuing the uninstallation after the packages pick up..." )
 
@@ -793,16 +797,20 @@ def ask_user_for_which_packages_to_install(packages_names):
         if package_name not in FORBIDDEN_PACKAGES:
 
             if package_information[1] == install_message:
-                log( 1, "Adding package: %s" % package_name )
+                log( 1, "Keeping the package: %s" % package_name )
 
                 package_information[1] = uninstall_message
                 selected_packages_to_not_install.append( package_name )
 
             else:
-                log( 1, "Removing package: %s" % package_name )
+                log( 1, "Removing the package: %s" % package_name )
 
                 package_information[1] = install_message
                 selected_packages_to_not_install.remove( package_name )
+
+        else:
+            log( 1, "The package %s must be uninstalled. " % package_name +
+                    "If you do not want to uninstall this package, cancel the uninstallation process." )
 
         show_quick_panel( item_index )
 

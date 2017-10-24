@@ -785,7 +785,7 @@ def set_default_settings_before(packages_to_install):
         already disabled and the new packages to be installed and must be disabled before attempting
         to install them.
     """
-    set_last_packages_to_install( packages_to_install )
+    set_first_and_last_packages_to_install( packages_to_install )
     packages_names = [ package_name[0] for package_name in packages_to_install ]
 
     ask_user_for_which_packages_to_install( packages_names, packages_to_install )
@@ -817,9 +817,10 @@ def set_development_ignored_packages(packages_to_install):
     add_packages_to_ignored_list( g_default_ignored_packages )
 
 
-def set_last_packages_to_install(packages_to_install):
+def set_first_and_last_packages_to_install(packages_to_install):
     """
-        Ignore everything except some packages, until it is finished
+        Set the packages to be installed first and last. The `PACKAGES_TO_INSTALL_LAST` has priority
+        when some package is on both lists.
     """
     set_first_packages_to_install( packages_to_install )
     last_packages = {}
@@ -1060,8 +1061,12 @@ def ask_user_for_which_packages_to_install(packages_names, packages_to_install):
     install_message    = "Select this to not install it."
     uninstall_message  = "Select this to install it."
 
-    packages_informations            = [ [ "Continue the Installation Process", "Select this when you are finished selections packages." ] ]
     selected_packages_to_not_install = []
+    packages_informations            = \
+    [
+        [ "Cancel the Installation Process", "Select this to cancel the installation process." ],
+        [ "Continue the Installation Process...", "Select this when you are finished selections packages." ]
+    ]
 
     for package_name in packages_names:
 
@@ -1073,14 +1078,14 @@ def ask_user_for_which_packages_to_install(packages_names, packages_to_install):
 
     def on_done(item_index):
 
-        if item_index < 0:
+        if item_index < 1:
             global g_is_already_running
             g_is_already_running = False
 
             log.insert_empty_line()
             raise RuntimeError( "The user closed the installer's packages pick up list." )
 
-        if item_index == 0:
+        if item_index == 1:
             log.insert_empty_line()
             log( 1, "Continuing the installation after the packages pick up..." )
 
@@ -1093,16 +1098,20 @@ def ask_user_for_which_packages_to_install(packages_names, packages_to_install):
         if package_name not in FORBIDDEN_PACKAGES:
 
             if package_information[1] == install_message:
-                log( 1, "Removing package: %s" % package_name )
+                log( 1, "Removing the package: %s" % package_name )
 
                 package_information[1] = uninstall_message
                 selected_packages_to_not_install.append( package_name )
 
             else:
-                log( 1, "Adding package: %s" % package_name )
+                log( 1, "Adding the package: %s" % package_name )
 
                 package_information[1] = install_message
                 selected_packages_to_not_install.remove( package_name )
+
+        else:
+            log( 1, "The package %s must be installed. " % package_name +
+                    "If you do not want to install this package, cancel the installation process." )
 
         show_quick_panel( item_index )
 
