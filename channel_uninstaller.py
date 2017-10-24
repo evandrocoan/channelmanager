@@ -73,7 +73,7 @@ except ImportError:
     from package_control.thread_progress import ThreadProgress
     from package_control.package_disabler import PackageDisabler
 
-    def silence_error_message_box():
+    def silence_error_message_box(value):
         pass
 
     def disable_package_control_uninstaller():
