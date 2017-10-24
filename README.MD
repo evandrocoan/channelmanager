@@ -447,6 +447,7 @@ you usually do with the default `Package Control` channel.
    import sublime_plugin
 
    from ChannelManager.channel_utilities import clean_urljoin
+   from ChannelManager.channel_utilities import load_data_file
    from ChannelManager.channel_utilities import get_main_directory
 
    from ChannelManager import channel_installer

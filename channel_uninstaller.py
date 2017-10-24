@@ -124,7 +124,7 @@ def unpack_settings(channel_settings):
     CHANNEL_PACKAGE_NAME          = channel_settings['CHANNEL_PACKAGE_NAME']
     CHANNEL_INSTALLATION_SETTINGS = channel_settings['CHANNEL_INSTALLATION_SETTINGS']
 
-    setup_packages_to_uninstall_last_and_first( channel_settings )
+    setup_packages_to_uninstall_last( channel_settings )
 
     CHANNEL_FILE_URL   = channel_settings['CHANNEL_FILE_URL']
     USER_SETTINGS_FILE = channel_settings['USER_SETTINGS_FILE']
@@ -133,7 +133,7 @@ def unpack_settings(channel_settings):
     USER_FOLDER_PATH       = channel_settings['USER_FOLDER_PATH']
 
 
-def setup_packages_to_uninstall_last_and_first(channel_settings):
+def setup_packages_to_uninstall_last(channel_settings):
     global PACKAGES_TO_UNINSTALL_FIRST
     global PACKAGES_TO_IGNORE_UNINSTALLATION
     global USER_FOLDER_PATH
