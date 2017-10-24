@@ -99,7 +99,7 @@ start with number like in `dependency = 50, PythonDebugTools, regex`, it would m
 `Packages/Notepad++ Color Scheme` would be a dependency with load order of 50, which requires as
 dependency the dependencies `PythonDebugTools` and `regex`.
 
-As well it would just be `dependency = 50`, then it would mean `Packages/Notepad++ Color Scheme` is
+As well it could just be `dependency = 50`, then it would mean `Packages/Notepad++ Color Scheme` is
 a dependency which has the loading order set as `50`. You can learn more about dependencies reading
 [Package Control, Docs: Dependencies](https://packagecontrol.io/docs/dependencies). If it had no key
 `dependency` then it mean it is just a `Package` with no dependencies.
@@ -115,34 +115,29 @@ set the `upstream` key pointing to the original repository and the `url` key for
 ### Tags Management <sub><sub>[Go to Top](#channel-manager)</sub></sub>
 
 Settings tags like `3143` is useful when a package has ceased working for old build of Sublime Text.
-For example, on Sublime Text development build 3147, the package `Notepad++ Color Scheme` stopped
+For example, on Sublime Text development build `3147`, the package `Notepad++ Color Scheme` stopped
 working completely ([CoreIssue$1983](https://github.com/SublimeTextIssues/Core/issues/1983)) however
-the fix for build 3147 also broke completely the package for Sublime Text stable build 3143. Hence,
-we must to create a tag which targets the last commit which is working for build 3143. Moreover when
-some user using the stable build 3143 installs the `Notepad++ Color Scheme`, they must install the
-one from the tag `3143`, and not the one from the master branch, which has the latest fixes for
-build development build 3147 or newer.
+the fix for build `3147` also broke completely the package for Sublime Text stable build `3143`.
+Hence, we must to create a tag which targets the last commit which is working for build `3143`.
+Moreover, when some user using the stable build `3143` installs the `Notepad++ Color Scheme`, they
+must install the one from the tag `3143`, and not the one from the master branch, which has the
+latest fixes for build development build `3144` or newer. Stills also to do automatic tagging of the
+latest release package is working for Sublime Text as the tag `3143` just mentioned, however this
+seems not much required to be done as should there be only a few exceptions for when a packages
+stops working for some build of Sublime Text.
 
-This happens because currently the channel generation is limited to setting the download link to the
-repository master branch. It was implemented the checking for each submodule for the latest tag
-available, then properly setting the download URL pointing to the last tag. Still also to do
-automatic tagging of the latest release package is working for Sublime Text, however this seems not
-much required to be done as should be only a few exceptions for when a packages stops working for
-some build of Sublime Text.
-
-Nonetheless, as now it already fetch the lasted commit date version tag, then it can be implemented
-automatic tagging for based on the latest commit date. It would be useful for tagging a large set of
-packages which can be considered stable. This approach should be much batter than the current one
-where the user always download the current version available at the master branch when the user
-installed the package. Such approach is not very welcomed because would allow several clients to be
-using different versions of the package while all of them think they are using the latest version
-available at the moment, however just the most recent installations would be using the lasted
-version, whereas the other installations would be using some older version.
-
-Currently it is partially implemented the tag management, but this systems seems not easily feasible
-because some packages are tagged based on tag prefixes. Then it is needed to also implement on the
-`.gitmodules` file, the `tag_prefix` field to select which is the tag prefix, and for which platform
-it it.
+Currently the channel generation is limited to setting the download link to the repository master
+branch. Despite it was implemented the checking for each submodule for the latest tag available,
+then properly setting the download URL pointing to the last tag, based on the latest commit date.
+Currently it is only partially implemented the tag management. It is required to also implement on
+the `.gitmodules` file, the `tag_prefix` field to select which is the tag prefix, and for which
+platform. It would be useful for tagging a large set of packages which can be considered stable.
+This approach should be much batter than the current one where the user always download the current
+version available at the master branch when the user installed the package. Such approach is not
+very welcomed because would allow several clients to be using different versions of the package
+while all of them think they are using the latest version available at the moment, however just the
+most recent installations would be using the lasted version, whereas the other installations would
+be using some older version.
 
 
 ### Submodules Manager <sub><sub>[Go to Top](#channel-manager)</sub></sub>
