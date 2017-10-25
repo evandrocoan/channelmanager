@@ -51,7 +51,7 @@ def plugin_loaded():
 
 def main():
     log( 2, "Entering on main(0)" )
-    # log.insert_empty_line()
+    # log.insert_empty_line( 2 )
 
     runner = unittest.TextTestRunner()
     runner.run( suite() )

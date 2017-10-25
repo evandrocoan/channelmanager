@@ -173,7 +173,7 @@ class GenerateChannelThread(threading.Thread):
                     index += 1
                     progress = progress_info( pi )
 
-                    log.insert_empty_line()
+                    log.insert_empty_line( 1 )
                     log( 1, "{:s} Processing {:3d} of {:d} repositories... {:s}".format( progress, index, repositories_count, package_name ) )
 
                     last_repository = get_dictionary_key( last_repositories, package_name, {} )
@@ -188,7 +188,7 @@ class GenerateChannelThread(threading.Thread):
             @param repositories  a list of all repositories
             @param dependencies  a list of all dependencies
         """
-        log.insert_empty_line()
+        log.insert_empty_line( 1 )
 
         create_channel_file( repositories, dependencies )
         create_repository_file( repositories, dependencies )
@@ -268,8 +268,8 @@ def update_repository(last_repository, tag_current_version, package_name):
 def print_failed_repositories():
 
     if len( g_failed_repositories ) > 0:
-        log.insert_empty_line()
-        log.insert_empty_line()
+        log.insert_empty_line( 1 )
+        log.insert_empty_line( 1 )
         log( 1, "The following repositories failed their commands..." )
 
     for command, repository in g_failed_repositories:
@@ -381,7 +381,7 @@ def get_repositories(all_packages, last_repositories, tag_current_version=False)
             index   += 1
             progress = progress_info( pi )
 
-            # log.insert_empty_line()
+            # log.insert_empty_line( 1 )
             log( 1, "{:s} Processing {:3d} of {:d} repositories... {:s}".format( progress, index, sections_count, repo_path ) )
 
             try:
@@ -465,7 +465,7 @@ def get_last_tag_fixed(absolute_repo_path, command_line_interface, last_reposito
 
                 if len( current_tags ) > 0:
                     log( 1, "Error: The current HEAD commit already has the following tags(s): %s" % current_tags )
-                    log.insert_empty_line()
+                    log.insert_empty_line( 1 )
 
                 else:
 

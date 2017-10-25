@@ -1082,11 +1082,11 @@ def ask_user_for_which_packages_to_install(packages_names, packages_to_install):
             global g_is_already_running
             g_is_already_running = False
 
-            log.insert_empty_line()
+            log.insert_empty_line( 1 )
             raise RuntimeError( "The user closed the installer's packages pick up list." )
 
         if item_index == 1:
-            log.insert_empty_line()
+            log.insert_empty_line( 1 )
             log( 1, "Continuing the installation after the packages pick up..." )
 
             can_continue[0] = True
