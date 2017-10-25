@@ -59,6 +59,7 @@ try:
     except:
         pass
 
+
 except( ImportError, ValueError):
     from settings import *
     from channel_utilities import get_main_directory
@@ -81,6 +82,10 @@ try:
     # Import the debugger
     from PythonDebugTools.debug_tools import Debugger
 
+    # When there is an ImportError, means that Package Control is installed instead of PackagesManager.
+    # Which means we cannot do nothing as this is only compatible with PackagesManager.
+    from PackagesManager.packagesmanager import cmd
+
 except ImportError:
     sublime = None
     sublime_plugin = None
@@ -89,7 +94,10 @@ except ImportError:
     # however, this is only meant to be used on the Development version, `PythonDebugTools` is
     # unpacked at the loose packages folder as a git submodule.
     assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools' ) )
+    assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PackagesManager' ) )
+
     from debug_tools import Debugger
+    from packagesmanager import cmd
 
 
 # # https://stackoverflow.com/questions/9079036/detect-python-version-at-runtime
@@ -112,8 +120,8 @@ else:
 def print_python_envinronment():
     index = 0;
 
-    for path in sys.path:
-        print(index, path);
+    for file_path in sys.path:
+        print(index, file_path);
         index += 1;
 
 
@@ -134,15 +142,6 @@ FIND_FORKS_PATH      = os.path.join( CURRENT_DIRECTORY, "find_forks" )
 # How many errors are acceptable when the GitHub API request fails
 MAXIMUM_REQUEST_ERRORS = 10
 g_is_already_running   = False
-
-
-# When there is an ImportError, means that Package Control is installed instead of PackagesManager.
-# Which means we cannot do nothing as this is only compatible with PackagesManager.
-try:
-    from PackagesManager.packagesmanager import cmd
-
-except ImportError:
-    pass
 
 
 # Debugger settings: 0 - disabled, 127 - enabled
@@ -203,7 +202,7 @@ def main(command=None):
         RunBackstrokeThread("backstroke").start()
 
     elif command == "-u" or argumentsNamespace and argumentsNamespace.create_upstreams:
-        RunBackstrokeThread("backstroke").start()
+        RunBackstrokeThread("create_upstreams").start()
 
     elif not command:
         argumentParser.print_help()
@@ -303,7 +302,7 @@ class RunBackstrokeThread(threading.Thread):
             if self.command_name == "find_forks":
                 settings = \
                 {
-                    'section_name': "last_findforks_session",
+                    'section_name': "last_find_forks_session",
                     'git_file_path': os.path.join( CHANNEL_ROOT_DIRECTORY, '.gitmodules' ),
                 }
 
@@ -337,26 +336,37 @@ class RunBackstrokeThread(threading.Thread):
 
     def open_last_session_data(self):
         lastSection = configparser.ConfigParser( allow_no_value=True )
+        default_sections = \
+        [
+            "last_backstroke_session",
+            "last_find_forks_session",
+            "last_create_upstreams_session",
+        ]
+
+        def create_sections():
+
+            for section in default_sections:
+
+                if not lastSection.has_section( section ):
+                    lastSection.add_section( section )
+                    lastSection.set( section, 'index', '0' )
+
+                if not lastSection.has_option( section, 'index' ):
+                    lastSection.set( section, 'index', '0' )
 
         if os.path.exists( CHANNEL_SESSION_FILE ):
             lastSection.read( CHANNEL_SESSION_FILE )
+            create_sections()
 
         else:
-            lastSection.add_section( 'last_backstroke_session' )
-            lastSection.set( 'last_backstroke_session', 'index', '0' )
-
-            lastSection.add_section( 'last_findforks_session' )
-            lastSection.set( 'last_findforks_session', 'index', '0' )
-
-            lastSection.add_section( 'last_general_command_session' )
-            lastSection.set( 'last_general_command_session', 'index', '0' )
+            create_sections()
 
         return lastSection
 
-    def get_stream_section(self, section, configSettings):
+    def get_section_option(self, section, option, configSettings):
 
-        if configSettings.has_option( section, "upstream" ):
-            return configSettings.get( section, "upstream" )
+        if configSettings.has_option( section, option ):
+            return configSettings.get( section, option )
 
         return ""
 
@@ -408,6 +418,8 @@ class RunBackstrokeThread(threading.Thread):
         sections       = generalSettingsConfigs.sections()
         sections_count = len( sections )
 
+        command_line_interface = cmd.Cli( None, False )
+
         # https://stackoverflow.com/questions/22068050/iterate-over-sections-in-a-config-file
         for section, pi in etc.sequence_timer( sections, info_frequency=0 ):
             request_index += 1
@@ -419,66 +431,50 @@ class RunBackstrokeThread(threading.Thread):
                 continue
 
             # # For quick testing
-            # index += 1
-            # if index > 3:
+            # if request_index > 3:
             #     break
 
             log( 1, "{:s}, {:3d}({:d}) of {:d}... {:s}".format(
-                    progress, index, successful_resquests, sections_count, section ) )
+                    progress, request_index, successful_resquests, sections_count, section ) )
 
             if command == "find_forks":
+                # https://docs.python.org/3/library/configparser.html#configparser.ConfigParser.get
+                forkUrl  = self.get_section_option( section, "url", generalSettingsConfigs )
+                forkPath = self.get_section_option( section, "path", generalSettingsConfigs )
+                upstream = self.get_section_option( section, "upstream", generalSettingsConfigs )
 
-                try:
-
-                    # https://docs.python.org/3/library/configparser.html#configparser.ConfigParser.get
-                    path     = generalSettingsConfigs.get( section, "path" )
-                    forkUrl  = generalSettingsConfigs.get( section, "url" )
-                    upstream = self.get_stream_section( section, generalSettingsConfigs )
-
-                except( NoOptionError, KeyError ) as error:
-                    maximum_errors -= 1
-
-                    print( "\n\n\nERROR! " + str( error ) )
-                    lastSection.set( settings['section_name'], 'index', str( request_index - 1 ) )
-
-                    self.save_session_data( maximum_errors, settings['section_name'], lastSection )
-                    return False
-
-                # log( 1, "path: " + path )
+                # log( 1, "forkPath: " + forkPath )
                 # log( 1, "upstream: " + upstream )
                 if len( upstream ) > 20:
-                    successful_resquests  += 1
-                    forkUser, _            = parse_upstream( forkUrl )
-                    user, repository       = parse_upstream( upstream )
-                    command_line_interface = cmd.Cli( None, True )
+                    successful_resquests += 1
+                    forkUser, _           = parse_upstream( forkUrl )
+                    user, repository      = parse_upstream( upstream )
 
                     # Find all forks, add them as remote and fetch them
                     run_command_line(
                         command_line_interface,
                         shlex.split( "python %s --user=%s --repo=%s" % ( FIND_FORKS_PATH, user, repository ) ),
-                        os.path.join( CHANNEL_ROOT_DIRECTORY, path ),
+                        os.path.join( CHANNEL_ROOT_DIRECTORY, forkPath ),
                     )
 
                     # Clean duplicate branches
                     run_command_line(
                         command_line_interface,
                         shlex.split( "sh %s/remove_duplicate_branches.sh %s" % ( FIND_FORKS_PATH, forkUser ) ),
-                        os.path.join( CHANNEL_ROOT_DIRECTORY, path ),
+                        os.path.join( CHANNEL_ROOT_DIRECTORY, forkPath ),
                     )
 
                 else:
-                    # print( "Missing upstream key for package path: " + path )
-                    pass
+                    print( "\n\n\nError, invalid/missing upstream: " + str( upstream ) )
 
             elif command == "backstroke":
-
                 # The GitHub API only allows about 30 requests per second for the backstroke call,
                 # then we make it take a little longer so all the requests can be performed in a row.
                 time.sleep(2)
 
                 # https://docs.python.org/3/library/configparser.html#configparser.ConfigParser.get
-                upstream   = self.get_stream_section( section, generalSettingsConfigs )
-                backstroke = generalSettingsConfigs.get( section, "backstroke" )
+                upstream   = self.get_section_option( section, "upstream", generalSettingsConfigs )
+                backstroke = self.get_section_option( section, "backstroke", generalSettingsConfigs )
 
                 # log( 1, upstream )
                 # log( 1, backstroke )
@@ -504,24 +500,47 @@ class RunBackstrokeThread(threading.Thread):
                             lastSection.set( settings['section_name'], 'index', str( request_index - 1 ) )
 
                         if maximum_errors < 1:
-                            raise LookupError( "The maximum errors limit of %d was reached!" % maximum_errors )
+                            break
 
                 else:
                     print( "\n\n\nMissing backstroke key for upstream: " + upstream )
 
-            elif command == "create_upstreams_command":
-                function_command = create_upstreams_command
+            elif command == "create_upstreams":
+                forkPath = self.get_section_option( section, "path", generalSettingsConfigs )
+                upstream = self.get_section_option( section, "upstream", generalSettingsConfigs )
+
+                if len( upstream ) > 20:
+                    successful_resquests += 1
+                    user, repository     = parse_upstream( upstream )
+
+                    remotes = command_line_interface.execute(
+                        shlex.split( "git remote" ),
+                        os.path.join( CHANNEL_ROOT_DIRECTORY, forkPath ),
+                        short_errors=True
+                    )
+
+                    if user not in remotes:
+
+                        run_command_line(
+                            command_line_interface,
+                            shlex.split( "git remote add %s %s" % ( user, upstream ) ),
+                            os.path.join( CHANNEL_ROOT_DIRECTORY, forkPath )
+                        )
+
+            else:
+                log( 1, "RunBackstrokeThread::run_general_command, Invalid command: " + str( command ) )
 
         self.save_session_data( maximum_errors, settings['section_name'], lastSection )
         return True
 
 
 def run_command_line(command_line_interface, commad, initial_folder):
-    print( "" )
-    output = command_line_interface.execute( commad, initial_folder, live_output=True )
+    output = command_line_interface.execute( commad, initial_folder, live_output=True, short_errors=True )
 
     if is_python_2:
-        print( output )
+        log.clean( 1, output )
+
+    return output
 
 
 def parse_upstream( upstream ):
