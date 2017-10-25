@@ -605,7 +605,7 @@ you usually do with the default `Package Control` channel.
        while channel_url in channels:
            channels.remove( channel_url )
 
-       channels.insert( 0, channel_url )
+       channels.append( channel_url )
        package_control_settings.set( "channels", channels )
 
        print( "Adding %s channel to %s: %s" % ( CURRENT_PACKAGE_NAME, package_control, str( channels ) ) )
