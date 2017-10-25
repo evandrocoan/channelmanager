@@ -50,12 +50,26 @@ CURRENT_DIRECTORY = os.path.dirname( os.path.realpath( __file__ ) )
 try:
     from .settings import *
     from .channel_utilities import get_main_directory
+    from .channel_utilities import progress_info
     from .channel_utilities import assert_path
+
+    try:
+        from .estimated_time_left import etc
+
+    except:
+        pass
 
 except( ImportError, ValueError):
     from settings import *
     from channel_utilities import get_main_directory
+    from channel_utilities import progress_info
     from channel_utilities import assert_path
+
+    try:
+        from estimated_time_left import etc
+
+    except:
+        pass
 
 
 # Allow using this file on the website where the sublime
@@ -169,6 +183,10 @@ def main(command=None):
         argumentParser.add_argument( "-t", "--push-tags", action="store_true",
                 help="Perform a git push for all submodules tags to their respective remote repository" )
 
+        argumentParser.add_argument( "-u", "--create-upstreams", action="store_true",
+                help="Find all repositories on the `.gitmodules` which has the key `upstream` and add"
+                "it as a remote on the respective repository." )
+
         argumentsNamespace = argumentParser.parse_args()
 
     # print( argumentsNamespace )
@@ -182,7 +200,10 @@ def main(command=None):
         RunGitForEachSubmodulesThread( "git checkout master && git pull --rebase" ).start()
 
     elif command == "-b" or argumentsNamespace and argumentsNamespace.backstroke:
-        RunBackstrokeThread(False).start()
+        RunBackstrokeThread("backstroke").start()
+
+    elif command == "-u" or argumentsNamespace and argumentsNamespace.create_upstreams:
+        RunBackstrokeThread("backstroke").start()
 
     elif not command:
         argumentParser.print_help()
@@ -196,7 +217,7 @@ def attempt_run_find_forks():
         print( "using the Sublime Text Channel Development version." )
 
     else:
-        RunBackstrokeThread(True).start()
+        RunBackstrokeThread("find_forks").start()
 
 
 def is_allowed_to_run():
@@ -270,22 +291,44 @@ class RunGitForEachSubmodulesThread(threading.Thread):
 #
 class RunBackstrokeThread(threading.Thread):
 
-    def __init__(self, is_find_forks):
+    def __init__(self, command_name):
         threading.Thread.__init__(self)
-        self._is_find_forks = is_find_forks
+        self.command_name = command_name
 
     def run(self):
         log( 1, "RunBackstrokeThread::run" )
 
         if is_allowed_to_run():
 
-            if self._is_find_forks:
+            if self.command_name == "find_forks":
+                settings = \
+                {
+                    'section_name': "last_findforks_session",
+                    'git_file_path': os.path.join( CHANNEL_ROOT_DIRECTORY, '.gitmodules' ),
+                }
 
-                if self.run_find_forks(True):
-                    self.run_find_forks()
+                self.run_general_command( settings, self.command_name )
+
+            elif self.command_name == "backstroke":
+                settings = \
+                {
+                    'section_name': "last_backstroke_session",
+                    'git_file_path': os.path.join( CHANNEL_ROOT_DIRECTORY, 'Local', 'Backstroke.gitmodules' ),
+                }
+
+                self.run_general_command( settings, self.command_name )
+
+            elif self.command_name == "create_upstreams":
+                settings = \
+                {
+                    'section_name': "last_create_upstreams_session",
+                    'git_file_path': os.path.join( CHANNEL_ROOT_DIRECTORY, '.gitmodules' ),
+                }
+
+                self.run_general_command( settings, self.command_name )
 
             else:
-                self.create_backstroke()
+                log( 1, "RunBackstrokeThread::run, Invalid command: " + str( self.command ) )
 
         global g_is_already_running
         g_is_already_running = False
@@ -305,93 +348,15 @@ class RunBackstrokeThread(threading.Thread):
             lastSection.add_section( 'last_findforks_session' )
             lastSection.set( 'last_findforks_session', 'index', '0' )
 
+            lastSection.add_section( 'last_general_command_session' )
+            lastSection.set( 'last_general_command_session', 'index', '0' )
+
         return lastSection
 
-    def create_backstroke(self):
-        log( 1, "RunBackstrokeThread::create_backstroke" )
-        backstrokeFilePath = os.path.join( CHANNEL_ROOT_DIRECTORY, 'Local', 'Backstroke.gitmodules' )
+    def get_stream_section(self, section, configSettings):
 
-        request_index        = 0
-        successful_resquests = 0
-
-        # https://pymotw.com/3/configparser/
-        lastSection    = self.open_last_session_data()
-        maximum_errors = MAXIMUM_REQUEST_ERRORS
-
-        start_index       = lastSection.getint( 'last_backstroke_session', 'index' )
-        backstrokeConfigs = configparser.RawConfigParser()
-
-        log( 1, "RunBackstrokeThread::sections: " + backstrokeFilePath )
-        backstrokeConfigs.read( backstrokeFilePath )
-
-        index          = 0
-        sections       = backstrokeConfigs.sections()
-        sections_count = len( sections )
-
-        # https://stackoverflow.com/questions/22068050/iterate-over-sections-in-a-config-file
-        for section in sections:
-            request_index += 1
-
-            # Walk until the last processed index, skipping everything else
-            if start_index > 0:
-                start_index -= 1
-                continue
-
-            # # For quick testing
-            # index += 1
-            # if index > 30:
-            #     break
-
-            # The GitHub API only allows about 30 requests per second for the backstroke call,
-            # then we make it take a little longer so all the requests can be performed in a row.
-            time.sleep(2)
-
-            log( 1, "Index: ", successful_resquests, "/", request_index, " of ", sections_count, ", ", section )
-            # for (each_key, each_val) in backstrokeConfigs.items(section):
-            #     log( 1, each_key + ': ' + each_val )
-
-            # https://docs.python.org/3/library/configparser.html#configparser.ConfigParser.get
-            upstream   = self.get_stream_section( section, backstrokeConfigs )
-            backstroke = backstrokeConfigs.get( section, "backstroke" )
-
-            # log( 1, upstream )
-            # log( 1, backstroke )
-
-            # https://stackoverflow.com/questions/2018026/what-are-the-differences-between-the-urllib-urllib2-and-requests-module
-            if len( backstroke ) > 20:
-                successful_resquests += 1
-
-                # https://stackoverflow.com/questions/28396036/python-3-4-urllib-request-error-http-403
-                req = urllib.Request( backstroke, headers={'User-Agent': 'Mozilla/5.0'} )
-
-                try:
-                    # https://stackoverflow.com/questions/2667509/curl-alternative-in-python
-                    res = urllib.urlopen( req )
-                    print( res.read() )
-
-                except HTTPError as error:
-                    maximum_errors -= 1
-                    print( "\n\n\nERROR! ", error.read() )
-
-                    # Save only where the first error happened
-                    if maximum_errors == MAXIMUM_REQUEST_ERRORS - 1:
-                        lastSection.set( 'last_backstroke_session', 'index', str( request_index - 1 ) )
-
-                    if maximum_errors < 1:
-                        break
-
-                    else:
-                        continue
-
-            else:
-                print( "\n\n\nMissing backstroke key for upstream: " + upstream )
-
-        self.save_session_data( maximum_errors, 'last_backstroke_session', lastSection )
-
-    def get_stream_section(self, section, backstrokeConfigs):
-
-        if backstrokeConfigs.has_option( section, "upstream" ):
-            return backstrokeConfigs.get( section, "upstream" )
+        if configSettings.has_option( section, "upstream" ):
+            return configSettings.get( section, "upstream" )
 
         return ""
 
@@ -414,19 +379,22 @@ class RunBackstrokeThread(threading.Thread):
     #     print( str( current_url ) )
         # curl -X POST current_url
 
-    def run_find_forks(self, isKeyErrorChecking=False):
-        log( 1, "RunBackstrokeThread::run_find_forks" )
+    def run_general_command(self, settings, command):
+        """
+            @param function_command   a function pointer to be called on each `.gitmodules` section.
+        """
+        log( 1, "RunBackstrokeThread::run_general_command" )
         maximum_errors = MAXIMUM_REQUEST_ERRORS
 
         # https://pymotw.com/3/configparser/
         lastSection = self.open_last_session_data()
-        start_index = lastSection.getint( 'last_findforks_session', 'index' )
+        start_index = lastSection.getint( settings['section_name'], 'index' )
 
         request_index        = 0
         successful_resquests = 0
 
-        gitFilePath      = os.path.join( CHANNEL_ROOT_DIRECTORY, '.gitmodules' )
-        upstreamsConfigs = configparser.RawConfigParser()
+        gitFilePath            = settings['git_file_path']
+        generalSettingsConfigs = configparser.RawConfigParser()
 
         # https://stackoverflow.com/questions/45415684/how-to-stop-tabs-on-python-2-7-rawconfigparser-throwing-parsingerror/
         with open( gitFilePath ) as fakeFile:
@@ -434,15 +402,16 @@ class RunBackstrokeThread(threading.Thread):
             fakefile = io.StringIO( fakeFile.read().replace( u"\t", u"" ) )
 
         log( 1, "RunBackstrokeThread::sections: " + gitFilePath )
-        upstreamsConfigs._read( fakefile, gitFilePath )
+        generalSettingsConfigs._read( fakefile, gitFilePath )
 
         index          = 0
-        sections       = upstreamsConfigs.sections()
+        sections       = generalSettingsConfigs.sections()
         sections_count = len( sections )
 
         # https://stackoverflow.com/questions/22068050/iterate-over-sections-in-a-config-file
-        for section in sections:
+        for section, pi in etc.sequence_timer( sections, info_frequency=0 ):
             request_index += 1
+            progress       = progress_info( pi )
 
             # Walk until the last processed index, skipping everything else
             if start_index > 0:
@@ -451,61 +420,99 @@ class RunBackstrokeThread(threading.Thread):
 
             # # For quick testing
             # index += 1
-            # if index > 30:
+            # if index > 3:
             #     break
 
-            log( 1, "Index: ", successful_resquests, "/", request_index, " of ", sections_count,", ", section )
-            # for (each_key, each_val) in upstreamsConfigs.items(section):
-            #     log( 1, each_key + ': ' + each_val )
+            log( 1, "{:s}, {:3d}({:d}) of {:d}... {:s}".format(
+                    progress, index, successful_resquests, sections_count, section ) )
 
-            try:
+            if command == "find_forks":
+
+                try:
+
+                    # https://docs.python.org/3/library/configparser.html#configparser.ConfigParser.get
+                    path     = generalSettingsConfigs.get( section, "path" )
+                    forkUrl  = generalSettingsConfigs.get( section, "url" )
+                    upstream = self.get_stream_section( section, generalSettingsConfigs )
+
+                except( NoOptionError, KeyError ) as error:
+                    maximum_errors -= 1
+
+                    print( "\n\n\nERROR! " + str( error ) )
+                    lastSection.set( settings['section_name'], 'index', str( request_index - 1 ) )
+
+                    self.save_session_data( maximum_errors, settings['section_name'], lastSection )
+                    return False
+
+                # log( 1, "path: " + path )
+                # log( 1, "upstream: " + upstream )
+                if len( upstream ) > 20:
+                    successful_resquests  += 1
+                    forkUser, _            = parse_upstream( forkUrl )
+                    user, repository       = parse_upstream( upstream )
+                    command_line_interface = cmd.Cli( None, True )
+
+                    # Find all forks, add them as remote and fetch them
+                    run_command_line(
+                        command_line_interface,
+                        shlex.split( "python %s --user=%s --repo=%s" % ( FIND_FORKS_PATH, user, repository ) ),
+                        os.path.join( CHANNEL_ROOT_DIRECTORY, path ),
+                    )
+
+                    # Clean duplicate branches
+                    run_command_line(
+                        command_line_interface,
+                        shlex.split( "sh %s/remove_duplicate_branches.sh %s" % ( FIND_FORKS_PATH, forkUser ) ),
+                        os.path.join( CHANNEL_ROOT_DIRECTORY, path ),
+                    )
+
+                else:
+                    # print( "Missing upstream key for package path: " + path )
+                    pass
+
+            elif command == "backstroke":
+
+                # The GitHub API only allows about 30 requests per second for the backstroke call,
+                # then we make it take a little longer so all the requests can be performed in a row.
+                time.sleep(2)
 
                 # https://docs.python.org/3/library/configparser.html#configparser.ConfigParser.get
-                path     = upstreamsConfigs.get( section, "path" )
-                forkUrl  = upstreamsConfigs.get( section, "url" )
-                upstream = self.get_stream_section( section, upstreamsConfigs )
+                upstream   = self.get_stream_section( section, generalSettingsConfigs )
+                backstroke = generalSettingsConfigs.get( section, "backstroke" )
 
-            except( NoOptionError, KeyError ) as error:
-                maximum_errors -= 1
+                # log( 1, upstream )
+                # log( 1, backstroke )
 
-                print( "\n\n\nERROR! " + str( error ) )
-                lastSection.set( 'last_findforks_session', 'index', str( request_index - 1 ) )
+                # https://stackoverflow.com/questions/2018026/what-are-the-differences-between-the-urllib-urllib2-and-requests-module
+                if len( backstroke ) > 20:
+                    successful_resquests += 1
 
-                self.save_session_data( maximum_errors, 'last_findforks_session', lastSection )
-                return False
+                    # https://stackoverflow.com/questions/28396036/python-3-4-urllib-request-error-http-403
+                    req = urllib.Request( backstroke, headers={'User-Agent': 'Mozilla/5.0'} )
 
-            # log( 1, "path: " + path )
-            # log( 1, "upstream: " + upstream )
+                    try:
+                        # https://stackoverflow.com/questions/2667509/curl-alternative-in-python
+                        res = urllib.urlopen( req )
+                        print( res.read() )
 
-            if isKeyErrorChecking:
-                pass
+                    except HTTPError as error:
+                        maximum_errors -= 1
+                        print( "\n\n\nERROR! ", error.read() )
 
-            elif len( upstream ) > 20:
-                successful_resquests  += 1
-                forkUser, _            = parse_upstream( forkUrl )
-                user, repository       = parse_upstream( upstream )
-                command_line_interface = cmd.Cli( None, True )
+                        # Save only where the first error happened
+                        if maximum_errors == MAXIMUM_REQUEST_ERRORS - 1:
+                            lastSection.set( settings['section_name'], 'index', str( request_index - 1 ) )
 
-                # Find all forks, add them as remote and fetch them
-                run_command_line(
-                    command_line_interface,
-                    shlex.split( "python %s --user=%s --repo=%s" % ( FIND_FORKS_PATH, user, repository ) ),
-                    os.path.join( CHANNEL_ROOT_DIRECTORY, path ),
-                )
+                        if maximum_errors < 1:
+                            raise LookupError( "The maximum errors limit of %d was reached!" % maximum_errors )
 
-                # Clean duplicate branches
-                run_command_line(
-                    command_line_interface,
-                    shlex.split( "sh %s/remove_duplicate_branches.sh %s" % ( FIND_FORKS_PATH, forkUser ) ),
-                    os.path.join( CHANNEL_ROOT_DIRECTORY, path ),
-                )
+                else:
+                    print( "\n\n\nMissing backstroke key for upstream: " + upstream )
 
-            else:
-                # print( "Missing upstream key for package path: " + path )
-                pass
+            elif command == "create_upstreams_command":
+                function_command = create_upstreams_command
 
-
-        self.save_session_data( maximum_errors, 'last_findforks_session', lastSection )
+        self.save_session_data( maximum_errors, settings['section_name'], lastSection )
         return True
 
 
