@@ -704,6 +704,9 @@ you usually do with the default `Package Control` channel.
        { "caption": "My Brand New Channel: Pull & Rebase all Packages",
                "command": "my_brand_new_channel_run", "args": {"run": "-p"} },
 
+       { "caption": "My Brand New Channel: Add All Upstreams Remotes",
+               "command": "my_brand_new_channel_run", "args": {"run": "-u"} },
+
        { "caption": "My Brand New Channel: Update Default Packages",
                "command": "my_brand_new_channel_update_default_packages" },
 
@@ -763,6 +766,9 @@ you usually do with the default `Package Control` channel.
 
                                { "caption": "Pull & Rebase all Packages",
                                        "command": "my_brand_new_channel_run", "args": {"run": "-p"} },
+
+                               { "caption": "Add All Upstreams Remotes",
+                                       "command": "my_brand_new_channel_run", "args": {"run": "-u"} },
 
                                { "caption": "Update Default Packages",
                                        "command": "my_brand_new_channel_update_default_packages" },
