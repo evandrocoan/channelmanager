@@ -84,7 +84,11 @@ try:
 
     # When there is an ImportError, means that Package Control is installed instead of PackagesManager.
     # Which means we cannot do nothing as this is only compatible with PackagesManager.
-    from PackagesManager.packagesmanager import cmd
+    try:
+        from PackagesManager.packagesmanager import cmd
+
+    except:
+        pass
 
 except ImportError:
     sublime = None
