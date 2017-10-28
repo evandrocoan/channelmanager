@@ -126,18 +126,23 @@ latest release package is working for Sublime Text as the tag `3143` just mentio
 seems not much required to be done as should there be only a few exceptions for when a packages
 stops working for some build of Sublime Text.
 
-Currently the channel generation is limited to setting the download link to the repository master
-branch. Despite it was implemented the checking for each submodule for the latest tag available,
-then properly setting the download URL pointing to the last tag, based on the latest commit date.
+Currently the channel generation is limited to setting the download link to a tag pointing to the
+the repository master branch. For now, it is disabled all tag prefixes, i.e., tags which are not
+strictly "0.0.0", because we cannot handle repositories which have a tag prefix for each platforms
+as Linux and Windows. Then we create a unified tag which is based on the current master branch.
+Despite it was implemented the checking for each submodule for the latest tag available, then
+properly setting the download URL pointing to the last tag, based on the latest commit date.
 Currently it is only partially implemented the tag management. It is required to also implement on
 the `.gitmodules` file, the `tag_prefix` field to select which is the tag prefix, and for which
-platform. It would be useful for tagging a large set of packages which can be considered stable.
-This approach should be much batter than the current one where the user always download the current
-version available at the master branch when the user installed the package. Such approach is not
-very welcomed because would allow several clients to be using different versions of the package
-while all of them think they are using the latest version available at the moment, however just the
-most recent installations would be using the lasted version, whereas the other installations would
-be using some older version.
+platform.
+
+It would be useful for tagging a large set of packages which can be considered stable. This approach
+should be much batter than the current one where the user always download the current version
+available at the master branch when the user installed the package. Such approach is not very
+welcomed because would allow several clients to be using different versions of the package while all
+of them think they are using the latest version available at the moment, however just the most
+recent installations would be using the lasted version, whereas the other installations would be
+using some older version.
 
 
 ### Submodules Manager <sub><sub>[Go to Top](#channel-manager)</sub></sub>
