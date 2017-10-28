@@ -197,6 +197,9 @@ def main(command=None):
         argumentParser.add_argument( "-o", "--pull-origins", action="store_true",
                 help="Find all repositories on the `.gitmodules` and perform a git pull --rebase" )
 
+        argumentParser.add_argument( "-fo", "--fetch-origins", action="store_true",
+                help="Find all repositories on the `.gitmodules` and perform a git fetch origin" )
+
         argumentsNamespace = argumentParser.parse_args()
 
     # print( argumentsNamespace )
@@ -211,6 +214,9 @@ def main(command=None):
 
     elif command == "-o" or argumentsNamespace and argumentsNamespace.pull_origins:
         RunBackstrokeThread("pull_origins").start()
+
+    elif command == "-fo" or argumentsNamespace and argumentsNamespace.fetch_origins:
+        RunBackstrokeThread("fetch_origins").start()
 
     elif command == "-b" or argumentsNamespace and argumentsNamespace.backstroke:
         RunBackstrokeThread("backstroke").start()
@@ -283,6 +289,7 @@ class RunBackstrokeThread(threading.Thread):
 
             elif self.command == "create_upstreams" \
                     or self.command == "delete_remotes" \
+                    or self.command == "fetch_origins" \
                     or self.command == "pull_origins":
 
                 settings = \
@@ -529,6 +536,18 @@ class RunBackstrokeThread(threading.Thread):
                 run_command_line(
                     command_line_interface,
                     shlex.split( "git pull --rebase" ),
+                    os.path.join( base_root_directory, forkPath )
+                )
+
+                self.recursiveily_process_submodules( base_root_directory, command, settings, forkPath )
+
+            elif command == "fetch_origins":
+                successful_resquests += 1
+                forkPath = self.get_section_option( section, "path", generalSettingsConfigs )
+
+                run_command_line(
+                    command_line_interface,
+                    shlex.split( "git fetch origin" ),
                     os.path.join( base_root_directory, forkPath )
                 )
 

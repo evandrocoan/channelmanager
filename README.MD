@@ -700,17 +700,20 @@ you usually do with the default `Package Control` channel.
                "command": "my_brand_new_channel_generate_channel_file",
                "args": { "create_tags": true, "command": "git_tag_all" } },
 
-       { "caption": "My Brand New Channel: Push Local Git Tags",
-               "command": "my_brand_new_channel_run", "args": {"run": "-t"} },
-
        { "caption": "My Brand New Channel: Run Backstroke Requests",
                "command": "my_brand_new_channel_run", "args": {"run": "-b"} },
 
-       { "caption": "My Brand New Channel: Pull & Rebase all Packages (git)",
+       { "caption": "My Brand New Channel: Fetch All Submodules remote origin",
+               "command": "my_brand_new_channel_run", "args": {"run": "-fo"} },
+
+       { "caption": "My Brand New Channel: Pull & Rebase All Submodules (git)",
                "command": "my_brand_new_channel_run", "args": {"run": "-p"} },
 
-       { "caption": "My Brand New Channel: Pull & Rebase all Packages (python)",
+       { "caption": "My Brand New Channel: Pull & Rebase All Submodules (python)",
                "command": "my_brand_new_channel_run", "args": {"run": "-o"} },
+
+       { "caption": "My Brand New Channel: Push Local Git Tags",
+               "command": "my_brand_new_channel_run", "args": {"run": "-t"} },
 
        { "caption": "My Brand New Channel: Add All Upstreams Remotes",
                "command": "my_brand_new_channel_run", "args": {"run": "-u"} },
@@ -772,14 +775,17 @@ you usually do with the default `Package Control` channel.
                                { "caption": "Run Backstroke Requests",
                                        "command": "my_brand_new_channel_run", "args": {"run": "-b"} },
 
-                               { "caption": "Push Local Git Tags",
-                                       "command": "my_brand_new_channel_run", "args": {"run": "-t"} },
+                               { "caption": "Fetch All Submodules remote origin",
+                                       "command": "my_brand_new_channel_run", "args": {"run": "-fo"} },
 
-                               { "caption": "Pull & Rebase all Packages (git)",
+                               { "caption": "Pull & Rebase All Submodules (git)",
                                        "command": "my_brand_new_channel_run", "args": {"run": "-p"} },
 
-                               { "caption": "Pull & Rebase all Packages (python)",
+                               { "caption": "Pull & Rebase All Submodules (python)",
                                        "command": "my_brand_new_channel_run", "args": {"run": "-o"} },
+
+                               { "caption": "Push Local Git Tags",
+                                       "command": "my_brand_new_channel_run", "args": {"run": "-t"} },
 
                                { "caption": "Add All Upstreams Remotes",
                                        "command": "my_brand_new_channel_run", "args": {"run": "-u"} },
@@ -908,20 +914,24 @@ installed the Development Version of the channel:
    push --tags` command, i.e., perform a git push for all submodules tags to their respective remote
    repository.
 
-1. **YourChannelName: Pull & Rebase all Packages (git)** Walk through all git repositories and
+1. **YourChannelName: Fetch All Submodules remote origin** Walk through all git repositories and
+   perform the `git fetch origin` command, i.e., fetch the updates from the origin, using python
+   script which walk recursively into submodules of submodules. This command also which display the
+   remaining time.
+
+1. **YourChannelName: Pull & Rebase all Submodules (git)** Walk through all git repositories and
    perform the `git pull --rebase` command, i.e., fetch the updates from the origin and merge the
    changes by rebase, using git submodules which walk recursively into submodules of submodules and
    performing checkout on their master branch.
 
-1. **YourChannelName: Pull & Rebase all Packages (python)** Walk through all git repositories and
+1. **YourChannelName: Pull & Rebase all Submodules (python)** Walk through all git repositories and
    perform the `git pull --rebase` command, i.e., fetch the updates from the origin and merge the
    changes by rebase, using python script which walk recursively into submodules of submodules but
    does not checkout on their master branch.
 
    Notice it is required to they to be checkout on some branch before doing git pull. Then it is
    useful to run first the command `Pull & Rebase all Packages (git)` when you first install the git
-   submodules and on the remaining times, call this command which is faster and display the
-   remaining time.
+   submodules and on the remaining times, call this command which display the remaining time.
 
 1. **YourChannelName: Pull & Rebase all Upstreams** (Not Yet Implemented) Walk through all git
    repositories and perform `git remote add upstream_url`, checkout on the specified remote branch,
