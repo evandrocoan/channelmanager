@@ -724,7 +724,7 @@ you usually do with the default `Package Control` channel.
        { "caption": "My Brand New Channel: Update Default Packages",
                "command": "my_brand_new_channel_update_default_packages" },
 
-       { "caption": "My Brand New Channel: Run Stable Installation ",
+       { "caption": "My Brand New Channel: Run Stable Installation",
                "command": "my_brand_new_channel_run_installation", "args": {"version": "stable"} },
 
        { "caption": "My Brand New Channel: Run Development Installation",
@@ -796,7 +796,7 @@ you usually do with the default `Package Control` channel.
                                { "caption": "Update Default Packages",
                                        "command": "my_brand_new_channel_update_default_packages" },
 
-                               { "caption": "Run Stable Installation ",
+                               { "caption": "Run Stable Installation",
                                        "command": "my_brand_new_channel_run_installation",
                                        "args": {"version": "stable"} },
 
@@ -954,6 +954,30 @@ installed the Development Version of the channel:
    folder which the Sublime Text loose packages are, not inside it. This command automatically runs
    when you install a new version of Sublime Text, therefore the command is only here when you want
    to force it to override the current files.
+
+1. **YourChannelName: Run Stable Installation** Run the script `channel_installer.py` which install
+   all the channel Stable Version packages which are configured to be installed accordingly to the
+   file `settings.py` at `YourChannelName` channel repository.
+
+   The installer can only be run once. If the installation was interrupted by closing Sublime Text,
+   you first need to call the command `Run Uninstallation` to uninstall all the installed packages
+   and only then to call this installer the `Run Stable Installation` command again.
+
+1. **YourChannelName: Run Development Installation** Run the script `channel_installer.py` which
+   install all the channel Development Version packages which are configured to be installed
+   accordingly to the file `settings.py` at `YourChannelName` channel repository.
+
+   The installer can only be run once. If the installation was interrupted by closing Sublime Text,
+   you first need to call the command `Run Uninstallation` to uninstall all the installed packages
+   and only then to call this installer the `Run Stable Installation` command again.
+
+1. **YourChannelName: Run Uninstallation** Run the script `channel_uninstaller.py` which uninstall
+   all the channel Stable or Development Version packages which were installed accordingly to the
+   file `settings.py` at `YourChannelName` channel repository.
+
+   The uninstaller run multiple, if the uninstallation was interrupted by closing Sublime Text, you
+   can call the command `Run Uninstallation` continue to uninstall all the installed packages once
+   you start Sublime Text again.
 
 
 
