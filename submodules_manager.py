@@ -190,6 +190,10 @@ def main(command=None):
                 help="Find all repositories on the `.gitmodules` which has the key `upstream` and add"
                 "it as a remote on the respective repository." )
 
+        argumentParser.add_argument( "-d", "--delete-remotes", action="store_true",
+                help="Find all repositories on the `.gitmodules` which has the key `upstream` and delete"
+                "all its git remote repositories which are not the origin or the upstream user." )
+
         argumentsNamespace = argumentParser.parse_args()
 
     # print( argumentsNamespace )
@@ -208,8 +212,14 @@ def main(command=None):
     elif command == "-u" or argumentsNamespace and argumentsNamespace.create_upstreams:
         RunBackstrokeThread("create_upstreams").start()
 
+    elif command == "-d" or argumentsNamespace and argumentsNamespace.delete_remotes:
+        RunBackstrokeThread("delete_remotes").start()
+
     elif not command:
         argumentParser.print_help()
+
+    else:
+        log( 1, "Invalid command: " + str( command ) )
 
     # unittest.main()
 
@@ -294,41 +304,41 @@ class RunGitForEachSubmodulesThread(threading.Thread):
 #
 class RunBackstrokeThread(threading.Thread):
 
-    def __init__(self, command_name):
+    def __init__(self, command):
         threading.Thread.__init__(self)
-        self.command_name = command_name
+        self.command = command
 
     def run(self):
         log( 1, "RunBackstrokeThread::run" )
 
         if is_allowed_to_run():
 
-            if self.command_name == "find_forks":
+            if self.command == "find_forks":
                 settings = \
                 {
                     'section_name': "last_find_forks_session",
                     'git_file_path': os.path.join( CHANNEL_ROOT_DIRECTORY, '.gitmodules' ),
                 }
 
-                self.run_general_command( settings, self.command_name )
+                self.run_general_command( settings, self.command )
 
-            elif self.command_name == "backstroke":
+            elif self.command == "backstroke":
                 settings = \
                 {
                     'section_name': "last_backstroke_session",
                     'git_file_path': os.path.join( CHANNEL_ROOT_DIRECTORY, 'Local', 'Backstroke.gitmodules' ),
                 }
 
-                self.run_general_command( settings, self.command_name )
+                self.run_general_command( settings, self.command )
 
-            elif self.command_name == "create_upstreams":
+            elif self.command == "create_upstreams" or self.command == "delete_remotes":
                 settings = \
                 {
                     'section_name': "last_create_upstreams_session",
                     'git_file_path': os.path.join( CHANNEL_ROOT_DIRECTORY, '.gitmodules' ),
                 }
 
-                self.run_general_command( settings, self.command_name )
+                self.run_general_command( settings, self.command )
 
             else:
                 log( 1, "RunBackstrokeThread::run, Invalid command: " + str( self.command ) )
@@ -509,7 +519,7 @@ class RunBackstrokeThread(threading.Thread):
                 else:
                     print( "\n\n\nMissing backstroke key for upstream: " + upstream )
 
-            elif command == "create_upstreams":
+            elif command == "create_upstreams" or command == "delete_remotes":
                 forkPath = self.get_section_option( section, "path", generalSettingsConfigs )
                 upstream = self.get_section_option( section, "upstream", generalSettingsConfigs )
 
@@ -523,13 +533,35 @@ class RunBackstrokeThread(threading.Thread):
                         short_errors=True
                     )
 
-                    if user not in remotes:
+                    if command == "create_upstreams":
 
-                        run_command_line(
-                            command_line_interface,
-                            shlex.split( "git remote add %s %s" % ( user, upstream ) ),
-                            os.path.join( CHANNEL_ROOT_DIRECTORY, forkPath )
-                        )
+                        if user not in remotes:
+
+                            run_command_line(
+                                command_line_interface,
+                                shlex.split( "git remote add %s %s" % ( user, upstream ) ),
+                                os.path.join( CHANNEL_ROOT_DIRECTORY, forkPath )
+                            )
+
+                    else:
+                        remotes_list  = remotes.split( "\n" )
+                        remotes_count = len( remotes_list ) - 2
+                        remote_index  = 0
+
+                        for remote, pi in etc.sequence_timer( remotes_list, info_frequency=0 ):
+
+                            if remote not in ( "origin", user ):
+                                progress      = progress_info( pi )
+                                remote_index += 1
+
+                                log( 1, "Cleaning remote {:3d} of {:d} ({:s}): {:<20s} {:s}".format(
+                                        remote_index, remotes_count, progress, remote, forkPath ) )
+
+                                run_command_line(
+                                    command_line_interface,
+                                    shlex.split( "git remote rm %s" % ( remote ) ),
+                                    os.path.join( CHANNEL_ROOT_DIRECTORY, forkPath )
+                                )
 
             else:
                 log( 1, "RunBackstrokeThread::run_general_command, Invalid command: " + str( command ) )

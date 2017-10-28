@@ -707,6 +707,9 @@ you usually do with the default `Package Control` channel.
        { "caption": "My Brand New Channel: Add All Upstreams Remotes",
                "command": "my_brand_new_channel_run", "args": {"run": "-u"} },
 
+       { "caption": "My Brand New Channel: Delete All remote Except origin",
+               "command": "my_brand_new_channel_run", "args": {"run": "-d"} },
+
        { "caption": "My Brand New Channel: Update Default Packages",
                "command": "my_brand_new_channel_update_default_packages" },
 
@@ -769,6 +772,9 @@ you usually do with the default `Package Control` channel.
 
                                { "caption": "Add All Upstreams Remotes",
                                        "command": "my_brand_new_channel_run", "args": {"run": "-u"} },
+
+                               { "caption": "Delete All remote Except origin",
+                                       "command": "my_brand_new_channel_run", "args": {"run": "-d"} },
 
                                { "caption": "Update Default Packages",
                                        "command": "my_brand_new_channel_update_default_packages" },
@@ -902,6 +908,14 @@ installed the Development Version of the channel:
    This is not yet implemented, it should require a new settings entry key on the `.gitmodules` to
    set which one should be the remote branch used to checkout to do the merge. Otherwise, if the
    setting is not set/present, the default branch would be used.
+
+1. **YourChannelName: Add All Upstreams Remotes** Walk through all git repositories and add as
+   remote their upstream set on the file `.gitmodules`, if it exists. The upstream will have the
+   username of the upstream user.
+
+1. **YourChannelName: Delete All remote Except origin** Walk through all git repositories and delete
+   all remotes which are not `origin` and the `upstream username`. This is useful to clean all the
+   remotes repositories after running the `find_forks` command.
 
 1. **YourChannelName: Update Default Packages** Run the script `copy_default_package.py` which
    unpack_settings the `Default.sublime-package` at the on the `Packages/../` folder, i.e., on the
