@@ -398,13 +398,13 @@ def get_repositories(all_packages, last_repositories, tag_current_version=False)
 
             if repository_name in all_packages:
                 repository_info = all_packages[repository_name]
-                release_data    = repository_info['releases'][0]
+                # release_data    = repository_info['releases'][0]
 
             else:
                 repository_info['details']   = url
 
-                release_data['platforms']    = "*"
-                release_data['sublime_text'] = ">=3126"
+            release_data['platforms']    = "*"
+            release_data['sublime_text'] = ">=3126"
 
             last_repository    = get_dictionary_key( last_repositories, repository_name, {} )
             absolute_repo_path = os.path.join( CHANNEL_ROOT_DIRECTORY, repo_path )
