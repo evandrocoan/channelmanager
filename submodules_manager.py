@@ -194,6 +194,9 @@ def main(command=None):
                 help="Find all repositories on the `.gitmodules` which has the key `upstream` and delete"
                 "all its git remote repositories which are not the origin or the upstream user." )
 
+        argumentParser.add_argument( "-o", "--pull-origins", action="store_true",
+                help="Find all repositories on the `.gitmodules` and perform a git pull --rebase" )
+
         argumentsNamespace = argumentParser.parse_args()
 
     # print( argumentsNamespace )
@@ -205,6 +208,9 @@ def main(command=None):
 
     elif command == "-p" or argumentsNamespace and argumentsNamespace.pull:
         RunGitForEachSubmodulesThread( "git checkout master && git pull --rebase" ).start()
+
+    elif command == "-o" or argumentsNamespace and argumentsNamespace.pull_origins:
+        RunBackstrokeThread("pull_origins").start()
 
     elif command == "-b" or argumentsNamespace and argumentsNamespace.backstroke:
         RunBackstrokeThread("backstroke").start()
@@ -244,62 +250,6 @@ def is_allowed_to_run():
     return True
 
 
-#
-# Repositories which are a fork from outside the Github, which need manually checking.
-#
-# https://github.com/sublimehq/Packages
-# https://github.com/evandrocoan/SublimeAMXX_Editor
-# https://github.com/evandrocoan/SublimePreferencesEditor
-
-class RunGitForEachSubmodulesThread(threading.Thread):
-
-    def __init__(self, git_command):
-        threading.Thread.__init__(self)
-        self.git_command = git_command
-
-    def run(self):
-
-        if is_allowed_to_run():
-            self.update_submodules( self.git_command )
-
-        global g_is_already_running
-        g_is_already_running = False
-
-    def update_submodules(self, git_command):
-        error_list = []
-        log( 1, "update_submodules::Current directory: " + CHANNEL_ROOT_DIRECTORY )
-
-        for _ in range(0, 100):
-            error_list.append( "Error! " )
-
-        # What is the most efficient string concatenation method in python?
-        # https://stackoverflow.com/questions/1316887/what-is-the-most-efficient-string-concatenation-method-in-python
-        error_string = ''.join( error_list )
-
-        # git submodule foreach - Robust way to recursively commit a child module first?
-        # https://stackoverflow.com/questions/14846967/git-submodule-foreach-robust-way-to-recursively-commit-a-child-module-first
-        command  = "git submodule foreach --recursive "
-
-        # Continue looping over submodules with the “git submodule foreach” command after a non-zero exit
-        # https://stackoverflow.com/questions/19728933/continue-looping-over-submodules-with-the-git-submodule-foreach-command-after
-        command += "'date && %s && printf \"\n\" || printf \"%s\n\n\n\n\n\"'" % ( git_command, error_string )
-
-        if sublime:
-            command_line_interface = cmd.Cli( None, False )
-            run_command_line( command_line_interface, shlex.split( command ), CHANNEL_ROOT_DIRECTORY )
-
-        else:
-            # Python os.system() call runs in incorrect directory
-            # https://stackoverflow.com/questions/18066278/python-os-system-call-runs-in-incorrect-directory
-            os.chdir( CHANNEL_ROOT_DIRECTORY )
-
-            # Calling an external command in Python
-            # https://stackoverflow.com/questions/89228/calling-an-external-command-in-python
-            os.system( command )
-
-        log( 1, "Process finished! If there are any, review its log output looking for 'Error!' messages." )
-
-
 # My forks upstreams
 #
 class RunBackstrokeThread(threading.Thread):
@@ -331,7 +281,10 @@ class RunBackstrokeThread(threading.Thread):
 
                 self.run_general_command( settings, self.command )
 
-            elif self.command == "create_upstreams" or self.command == "delete_remotes":
+            elif self.command == "create_upstreams" \
+                    or self.command == "delete_remotes" \
+                    or self.command == "pull_origins":
+
                 settings = \
                 {
                     'section_name': "last_create_upstreams_session",
@@ -543,6 +496,12 @@ class RunBackstrokeThread(threading.Thread):
                                 os.path.join( CHANNEL_ROOT_DIRECTORY, forkPath )
                             )
 
+                        run_command_line(
+                            command_line_interface,
+                            shlex.split( "git fetch %s" % ( user ) ),
+                            os.path.join( CHANNEL_ROOT_DIRECTORY, forkPath )
+                        )
+
                     else:
                         remotes_list  = remotes.split( "\n" )
                         remotes_count = len( remotes_list ) - 2
@@ -562,6 +521,15 @@ class RunBackstrokeThread(threading.Thread):
                                     shlex.split( "git remote rm %s" % ( remote ) ),
                                     os.path.join( CHANNEL_ROOT_DIRECTORY, forkPath )
                                 )
+
+            elif command == "pull_origins":
+                forkPath = self.get_section_option( section, "path", generalSettingsConfigs )
+
+                run_command_line(
+                    command_line_interface,
+                    shlex.split( "git fetch origin" ),
+                    os.path.join( CHANNEL_ROOT_DIRECTORY, forkPath )
+                )
 
             else:
                 log( 1, "RunBackstrokeThread::run_general_command, Invalid command: " + str( command ) )
@@ -603,6 +571,62 @@ def print_command_line_arguments():
 
     except AttributeError:
         pass
+
+
+#
+# Repositories which are a fork from outside the Github, which need manually checking.
+#
+# https://github.com/sublimehq/Packages
+# https://github.com/evandrocoan/SublimeAMXX_Editor
+# https://github.com/evandrocoan/SublimePreferencesEditor
+
+class RunGitForEachSubmodulesThread(threading.Thread):
+
+    def __init__(self, git_command):
+        threading.Thread.__init__(self)
+        self.git_command = git_command
+
+    def run(self):
+
+        if is_allowed_to_run():
+            self.update_submodules( self.git_command )
+
+        global g_is_already_running
+        g_is_already_running = False
+
+    def update_submodules(self, git_command):
+        error_list = []
+        log( 1, "update_submodules::Current directory: " + CHANNEL_ROOT_DIRECTORY )
+
+        for _ in range(0, 100):
+            error_list.append( "Error! " )
+
+        # What is the most efficient string concatenation method in python?
+        # https://stackoverflow.com/questions/1316887/what-is-the-most-efficient-string-concatenation-method-in-python
+        error_string = ''.join( error_list )
+
+        # git submodule foreach - Robust way to recursively commit a child module first?
+        # https://stackoverflow.com/questions/14846967/git-submodule-foreach-robust-way-to-recursively-commit-a-child-module-first
+        command  = "git submodule foreach --recursive "
+
+        # Continue looping over submodules with the “git submodule foreach” command after a non-zero exit
+        # https://stackoverflow.com/questions/19728933/continue-looping-over-submodules-with-the-git-submodule-foreach-command-after
+        command += "'date && %s && printf \"\n\" || printf \"%s\n\n\n\n\n\"'" % ( git_command, error_string )
+
+        if sublime:
+            command_line_interface = cmd.Cli( None, False )
+            run_command_line( command_line_interface, shlex.split( command ), CHANNEL_ROOT_DIRECTORY )
+
+        else:
+            # Python os.system() call runs in incorrect directory
+            # https://stackoverflow.com/questions/18066278/python-os-system-call-runs-in-incorrect-directory
+            os.chdir( CHANNEL_ROOT_DIRECTORY )
+
+            # Calling an external command in Python
+            # https://stackoverflow.com/questions/89228/calling-an-external-command-in-python
+            os.system( command )
+
+        log( 1, "Process finished! If there are any, review its log output looking for 'Error!' messages." )
 
 
 if __name__ == "__main__":

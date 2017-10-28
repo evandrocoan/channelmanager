@@ -701,8 +701,11 @@ you usually do with the default `Package Control` channel.
        { "caption": "My Brand New Channel: Run Backstroke Requests",
                "command": "my_brand_new_channel_run", "args": {"run": "-b"} },
 
-       { "caption": "My Brand New Channel: Pull & Rebase all Packages",
+       { "caption": "My Brand New Channel: Pull & Rebase all Packages (git)",
                "command": "my_brand_new_channel_run", "args": {"run": "-p"} },
+
+       { "caption": "My Brand New Channel: Pull & Rebase all Packages (python)",
+               "command": "my_brand_new_channel_run", "args": {"run": "-o"} },
 
        { "caption": "My Brand New Channel: Add All Upstreams Remotes",
                "command": "my_brand_new_channel_run", "args": {"run": "-u"} },
@@ -767,8 +770,11 @@ you usually do with the default `Package Control` channel.
                                { "caption": "Push Local Git Tags",
                                        "command": "my_brand_new_channel_run", "args": {"run": "-t"} },
 
-                               { "caption": "Pull & Rebase all Packages",
+                               { "caption": "Pull & Rebase all Packages (git)",
                                        "command": "my_brand_new_channel_run", "args": {"run": "-p"} },
+
+                               { "caption": "Pull & Rebase all Packages (python)",
+                                       "command": "my_brand_new_channel_run", "args": {"run": "-o"} },
 
                                { "caption": "Add All Upstreams Remotes",
                                        "command": "my_brand_new_channel_run", "args": {"run": "-u"} },
@@ -897,9 +903,14 @@ installed the Development Version of the channel:
    push --tags` command, i.e., perform a git push for all submodules tags to their respective remote
    repository.
 
-1. **YourChannelName: Pull & Rebase all Packages** Walk through all git repositories and perform the
-   `git pull --rebase` command, i.e., fetch the updates from the origin and merge the changes by
-   rebase.
+1. **YourChannelName: Pull & Rebase all Packages (git)** Walk through all git repositories and
+   perform the `git pull --rebase` command, i.e., fetch the updates from the origin and merge the
+   changes by rebase, using git submodules which walk recursively into submodules of submodules.
+
+1. **YourChannelName: Pull & Rebase all Packages (python)** Walk through all git repositories and
+   perform the `git pull --rebase` command, i.e., fetch the updates from the origin and merge the
+   changes by rebase, using python script which does not walk recursively into submodules of
+   submodules.
 
 1. **YourChannelName: Pull & Rebase all Upstreams** (Not Yet Implemented) Walk through all git
    repositories and perform `git remote add upstream_url`, checkout on the specified remote branch,
