@@ -523,6 +523,7 @@ class RunBackstrokeThread(threading.Thread):
                                 )
 
             elif command == "pull_origins":
+                successful_resquests += 1
                 forkPath = self.get_section_option( section, "path", generalSettingsConfigs )
 
                 run_command_line(
