@@ -270,7 +270,7 @@ class RunBackstrokeThread(threading.Thread):
                     'git_file_path': os.path.join( CHANNEL_ROOT_DIRECTORY, '.gitmodules' ),
                 }
 
-                self.run_general_command( settings, self.command )
+                self.run_general_command( CHANNEL_ROOT_DIRECTORY, settings, self.command )
 
             elif self.command == "backstroke":
                 settings = \
@@ -279,7 +279,7 @@ class RunBackstrokeThread(threading.Thread):
                     'git_file_path': os.path.join( CHANNEL_ROOT_DIRECTORY, 'Local', 'Backstroke.gitmodules' ),
                 }
 
-                self.run_general_command( settings, self.command )
+                self.run_general_command( CHANNEL_ROOT_DIRECTORY, settings, self.command )
 
             elif self.command == "create_upstreams" \
                     or self.command == "delete_remotes" \
@@ -291,7 +291,7 @@ class RunBackstrokeThread(threading.Thread):
                     'git_file_path': os.path.join( CHANNEL_ROOT_DIRECTORY, '.gitmodules' ),
                 }
 
-                self.run_general_command( settings, self.command )
+                self.run_general_command( CHANNEL_ROOT_DIRECTORY, settings, self.command )
 
             else:
                 log( 1, "RunBackstrokeThread::run, Invalid command: " + str( self.command ) )
@@ -356,7 +356,7 @@ class RunBackstrokeThread(threading.Thread):
     #     print( str( current_url ) )
         # curl -X POST current_url
 
-    def run_general_command(self, settings, command):
+    def run_general_command(self, base_root_directory, settings, command):
         """
             @param function_command   a function pointer to be called on each `.gitmodules` section.
         """
@@ -421,14 +421,14 @@ class RunBackstrokeThread(threading.Thread):
                     run_command_line(
                         command_line_interface,
                         shlex.split( "python %s --user=%s --repo=%s" % ( FIND_FORKS_PATH, user, repository ) ),
-                        os.path.join( CHANNEL_ROOT_DIRECTORY, forkPath ),
+                        os.path.join( base_root_directory, forkPath ),
                     )
 
                     # Clean duplicate branches
                     run_command_line(
                         command_line_interface,
                         shlex.split( "sh %s/remove_duplicate_branches.sh %s" % ( FIND_FORKS_PATH, forkUser ) ),
-                        os.path.join( CHANNEL_ROOT_DIRECTORY, forkPath ),
+                        os.path.join( base_root_directory, forkPath ),
                     )
 
                 else:
@@ -482,7 +482,7 @@ class RunBackstrokeThread(threading.Thread):
 
                     remotes = command_line_interface.execute(
                         shlex.split( "git remote" ),
-                        os.path.join( CHANNEL_ROOT_DIRECTORY, forkPath ),
+                        os.path.join( base_root_directory, forkPath ),
                         short_errors=True
                     )
 
@@ -493,13 +493,13 @@ class RunBackstrokeThread(threading.Thread):
                             run_command_line(
                                 command_line_interface,
                                 shlex.split( "git remote add %s %s" % ( user, upstream ) ),
-                                os.path.join( CHANNEL_ROOT_DIRECTORY, forkPath )
+                                os.path.join( base_root_directory, forkPath )
                             )
 
                         run_command_line(
                             command_line_interface,
                             shlex.split( "git fetch %s" % ( user ) ),
-                            os.path.join( CHANNEL_ROOT_DIRECTORY, forkPath )
+                            os.path.join( base_root_directory, forkPath )
                         )
 
                     else:
@@ -519,7 +519,7 @@ class RunBackstrokeThread(threading.Thread):
                                 run_command_line(
                                     command_line_interface,
                                     shlex.split( "git remote rm %s" % ( remote ) ),
-                                    os.path.join( CHANNEL_ROOT_DIRECTORY, forkPath )
+                                    os.path.join( base_root_directory, forkPath )
                                 )
 
             elif command == "pull_origins":
@@ -528,15 +528,28 @@ class RunBackstrokeThread(threading.Thread):
 
                 run_command_line(
                     command_line_interface,
-                    shlex.split( "git fetch origin" ),
-                    os.path.join( CHANNEL_ROOT_DIRECTORY, forkPath )
+                    shlex.split( "git pull --rebase" ),
+                    os.path.join( base_root_directory, forkPath )
                 )
+
+                self.recursiveily_process_submodules( base_root_directory, command, settings, forkPath )
 
             else:
                 log( 1, "RunBackstrokeThread::run_general_command, Invalid command: " + str( command ) )
 
-        self.save_session_data( maximum_errors, settings['section_name'], lastSection )
+        # Only save the session file when finishing the main thread
+        if base_root_directory == CHANNEL_ROOT_DIRECTORY:
+            self.save_session_data( maximum_errors, settings['section_name'], lastSection )
+
         return True
+
+    def recursiveily_process_submodules(self, base_root_directory, command, settings, forkPath):
+        base_root_directory    = os.path.join( base_root_directory, forkPath )
+        nested_submodules_file = os.path.join( base_root_directory, ".gitmodules" )
+
+        if os.path.exists( nested_submodules_file ):
+            settings['git_file_path'] = nested_submodules_file
+            self.run_general_command( base_root_directory, settings, command )
 
 
 def run_command_line(command_line_interface, commad, initial_folder):

@@ -910,12 +910,18 @@ installed the Development Version of the channel:
 
 1. **YourChannelName: Pull & Rebase all Packages (git)** Walk through all git repositories and
    perform the `git pull --rebase` command, i.e., fetch the updates from the origin and merge the
-   changes by rebase, using git submodules which walk recursively into submodules of submodules.
+   changes by rebase, using git submodules which walk recursively into submodules of submodules and
+   performing checkout on their master branch.
 
 1. **YourChannelName: Pull & Rebase all Packages (python)** Walk through all git repositories and
    perform the `git pull --rebase` command, i.e., fetch the updates from the origin and merge the
-   changes by rebase, using python script which does not walk recursively into submodules of
-   submodules.
+   changes by rebase, using python script which walk recursively into submodules of submodules but
+   does not checkout on their master branch.
+
+   Notice it is required to they to be checkout on some branch before doing git pull. Then it is
+   useful to run first the command `Pull & Rebase all Packages (git)` when you first install the git
+   submodules and on the remaining times, call this command which is faster and display the
+   remaining time.
 
 1. **YourChannelName: Pull & Rebase all Upstreams** (Not Yet Implemented) Walk through all git
    repositories and perform `git remote add upstream_url`, checkout on the specified remote branch,
