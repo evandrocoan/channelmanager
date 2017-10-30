@@ -1,9 +1,12 @@
 [submodule "find_forks"]
 	path = find_forks
 	url = https://github.com/evandrocoan/find_forks
+	upstream = https://github.com/frost-nzcr4/find_forks
 [submodule "six"]
 	path = six
 	url = https://github.com/evandrocoan/six
+	upstream = https://github.com/benjaminp/six
 [submodule "estimated_time_left"]
 	path = estimated_time_left
 	url = https://github.com/evandrocoan/estimated_time_left
+	upstream = https://github.com/arp2600/Etc
