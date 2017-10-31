@@ -379,18 +379,20 @@ def get_repositories(all_packages, last_repositories, tag_current_version=False)
 
         if 'Packages' == repo_path[0:8]:
             index   += 1
+            upstream = ""
             progress = progress_info( pi )
 
             # log.insert_empty_line( 1 )
             log( 1, "{:s} Processing {:3d} of {:d} repositories... {:s}".format( progress, index, sections_count, repo_path ) )
 
             try:
-                url      = gitModulesFile.get( section, "url" )
+            url = gitModulesFile.get( section, "url" )
+
+            if gitModulesFile.has_option( section, "upstream" ):
                 upstream = gitModulesFile.get( section, "upstream" )
 
-            except( NoOptionError, KeyError ) as error:
-                log( 1, "Error: %s" % error )
-                continue
+            else:
+                log( 1, "\n\nError: The section `%s` does not has the option: %s" % ( section, "upstream" ) )
 
             release_data    = OrderedDict()
             repository_info = OrderedDict()
