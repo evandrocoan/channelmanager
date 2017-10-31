@@ -196,6 +196,8 @@ class GenerateChannelThread(threading.Thread):
         create_ignored_packages()
         print_failed_repositories()
 
+        sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+
         global g_is_already_running
         g_is_already_running = False
 
@@ -384,8 +386,6 @@ def get_repositories(all_packages, last_repositories, tag_current_version=False)
 
             # log.insert_empty_line( 1 )
             log( 1, "{:s} Processing {:3d} of {:d} repositories... {:s}".format( progress, index, sections_count, repo_path ) )
-
-            try:
             url = gitModulesFile.get( section, "url" )
 
             if gitModulesFile.has_option( section, "upstream" ):
