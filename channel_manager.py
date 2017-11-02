@@ -99,10 +99,10 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 # log( 2, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 
 
-def main(channel_settings, create_tags=False, command="all"):
-    log( 2, "Entering on main(2) %s, %s" % ( str( create_tags ), str( command ) ) )
+def main(channel_settings, command="all"):
+    log( 2, "Entering on main(2) %s" % ( str( command ) ) )
 
-    channel_thread = GenerateChannelThread(channel_settings, create_tags, command)
+    channel_thread = GenerateChannelThread(channel_settings, command)
     channel_thread.start()
 
     ThreadProgress( channel_thread, "Generating Channel and Repositories files",
@@ -131,11 +131,9 @@ def unpack_settings(channel_settings):
 
 class GenerateChannelThread(threading.Thread):
 
-    def __init__(self, channel_settings, create_tags=False, command="all"):
+    def __init__(self, channel_settings, command="all"):
         threading.Thread.__init__(self)
-        self.command = command
-
-        self.create_tags      = create_tags
+        self.command          = command
         self.channel_settings = channel_settings
 
     def run(self):
@@ -152,7 +150,7 @@ class GenerateChannelThread(threading.Thread):
 
             # print_some_repositories( all_packages )
             if self.command == "all":
-                repositories, dependencies = get_repositories( all_packages, last_repositories, self.create_tags )
+                repositories, dependencies = get_repositories( all_packages, last_repositories )
                 self.save_log_file( repositories, dependencies )
 
             elif self.command == "git_tag":
@@ -173,14 +171,21 @@ class GenerateChannelThread(threading.Thread):
                     index += 1
                     progress = progress_info( pi )
 
+                    # # For quick testing
+                    # if index > 5:
+                    #     break
+
                     log.insert_empty_line( 1 )
                     log( 1, "{:s} Processing {:3d} of {:d} repositories... {:s}".format( progress, index, repositories_count, package_name ) )
 
                     last_repository = get_dictionary_key( last_repositories, package_name, {} )
-                    update_repository( last_repository, self.create_tags, package_name )
+                    update_repository( last_repository, package_name )
 
                 repositories, dependencies = split_repositories_and_depencies( last_repositories )
                 self.save_log_file( repositories, dependencies )
+
+            else:
+                log( 1, "Invalid command: " + str( self.command ) )
 
 
     def save_log_file(self, repositories, dependencies):
@@ -215,7 +220,7 @@ class GenerateChannelThread(threading.Thread):
         package_name    = self.repositories_list[self.picked]
         last_repository = get_dictionary_key( self.last_repositories, package_name, {} )
 
-        update_repository( last_repository, self.create_tags, package_name )
+        update_repository( last_repository, package_name )
         repositories, dependencies = split_repositories_and_depencies( self.last_repositories )
 
         self.save_log_file( repositories, dependencies )
@@ -238,20 +243,14 @@ def split_repositories_and_depencies(repositories_dictionary):
     return sort_list_of_dictionary( packages_list), sort_list_of_dictionary( dependencies_list )
 
 
-def update_repository(last_repository, tag_current_version, package_name):
-    """
-        If tag_current_version is True, the tag will be created and also push the created tag to
-        origin.
-    """
-    log( 1, "Updating repository... %s, %s" % ( str( tag_current_version ), str( package_name ) ) )
-    force_tag_creation  = tag_current_version
-    tag_current_version = True
+def update_repository(last_repository, package_name):
+    log( 1, "Updating repository... %s" % ( str( package_name ) ) )
 
     command_line_interface = cmd.Cli( None, True )
     absolute_repo_path     = os.path.join( CHANNEL_ROOT_DIRECTORY, "Packages", package_name )
 
     git_tag, date_tag, release_date = get_last_tag_fixed(
-            absolute_repo_path, command_line_interface, last_repository, tag_current_version, force_tag_creation )
+            absolute_repo_path, command_line_interface, last_repository, True )
 
     release_data = last_repository['releases'][0]
 
@@ -356,7 +355,7 @@ def create_channel_file(repositories, dependencies):
     write_data_file( CHANNEL_FILE_PATH, channel_dictionary )
 
 
-def get_repositories(all_packages, last_repositories, tag_current_version=False):
+def get_repositories(all_packages, last_repositories):
     gitFilePath    = os.path.join( CHANNEL_ROOT_DIRECTORY, '.gitmodules' )
     gitModulesFile = configparser.RawConfigParser()
 
@@ -412,7 +411,7 @@ def get_repositories(all_packages, last_repositories, tag_current_version=False)
             absolute_repo_path = os.path.join( CHANNEL_ROOT_DIRECTORY, repo_path )
 
             git_tag, date_tag, release_date = get_last_tag_fixed(
-                    absolute_repo_path, command_line_interface, last_repository, tag_current_version )
+                    absolute_repo_path, command_line_interface, last_repository )
 
             release_data['date']    = release_date
             release_data['version'] = date_tag
@@ -433,10 +432,12 @@ def get_repositories(all_packages, last_repositories, tag_current_version=False)
     return sort_list_of_dictionary( repositories), sort_list_of_dictionary( dependencies )
 
 
-def get_last_tag_fixed(absolute_repo_path, command_line_interface, last_repository, tag_current_version, force_tag_creation=False):
+def get_last_tag_fixed(absolute_repo_path, command_line_interface, last_repository, force_tag_creation=False):
     """
         This is a entry point to do some batch operation on each git submodule. We can temporarily
         insert the code we want to run with `command_line_interface` and remove later.
+
+        @param force_tag_creation if True, the tag will be created and also push the created tag to origin.
     """
     release_date = get_git_date( absolute_repo_path, command_line_interface )
     date_tag     = get_git_version( release_date )
@@ -448,7 +449,7 @@ def get_last_tag_fixed(absolute_repo_path, command_line_interface, last_reposito
     # output  = command_line_interface.execute( command, absolute_repo_path, short_errors=True )
     # log( 1, "output: " + str( output ) )
 
-    if tag_current_version:
+    if force_tag_creation:
 
         # If it does not exists, it means this is the first time and there was not previous data
         if 'releases' in last_repository:
@@ -461,8 +462,8 @@ def get_last_tag_fixed(absolute_repo_path, command_line_interface, last_reposito
                     git_tag = "1.0.0"
 
             # if it is to update
-            if force_tag_creation or LooseVersion( date_tag ) > LooseVersion( last_date_tag ):
-                next_git_tag, is_incremented, unprefixed_tag = increment_patch_version( git_tag, tag_current_version )
+            if True: # LooseVersion( date_tag ) > LooseVersion( last_date_tag ):
+                next_git_tag, is_incremented, unprefixed_tag = increment_patch_version( git_tag, force_tag_creation )
                 current_tags = get_current_cummit_tags( absolute_repo_path, command_line_interface )
 
                 if len( current_tags ) > 0:
@@ -536,7 +537,7 @@ def get_current_cummit_tags(absolute_repo_path, command_line_interface):
     return str( output )
 
 
-def increment_patch_version(git_tag, tag_current_version=False):
+def increment_patch_version(git_tag, force_tag_creation=False):
     """
         Increments tags on the form `0.0.0`.
 
@@ -545,12 +546,12 @@ def increment_patch_version(git_tag, tag_current_version=False):
 
         @return is_incremented     False, when the tag was not incremented, True otherwise.
     """
-    # log( 2, "Incrementing %s (%s)" % ( str( git_tag ), str( tag_current_version ) ) )
+    # log( 2, "Incrementing %s (%s)" % ( str( git_tag ), str( force_tag_creation ) ) )
 
     # if the tag is just an integer, it should be a Sublime Text build as 3147
     try:
         if int( git_tag ) > 3000:
-            return git_tag, False
+            return git_tag, False, git_tag
 
         else:
             raise ValueError( "The git_tag %s is not an Sublime Text 3 build." % git_tag )
@@ -567,10 +568,10 @@ def increment_patch_version(git_tag, tag_current_version=False):
 
     log( 1, "Warning: Could not increment the git_tag: " + str( git_tag ) )
 
-    if tag_current_version:
-        return "1.0.0", True
+    if force_tag_creation:
+        return "1.0.0", True, "1.0.0"
 
-    return "master", False
+    return "master", False, "master"
 
 
 def fix_sublime_text_release(release_data, gitModulesFile, section, repository_info, repositories, dependencies, url):

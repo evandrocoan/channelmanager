@@ -647,9 +647,9 @@ you usually do with the default `Package Control` channel.
 
    class MyBrandNewChannelGenerateChannelFile( sublime_plugin.ApplicationCommand ):
 
-       def run(self, create_tags, command="all"):
+       def run(self, command="all"):
            sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
-           manager_main( g_channel_settings, create_tags, command )
+           manager_main( g_channel_settings, command )
 
        def is_enabled(self):
            return is_channel_installed()
@@ -687,18 +687,16 @@ you usually do with the default `Package Control` channel.
    ```javascript
    [
        { "caption": "My Brand New Channel: Generate Channel File",
-               "command": "my_brand_new_channel_generate_channel_file", "args": {"create_tags": false} },
-
-       { "caption": "My Brand New Channel: Generate Channel File and Tags",
-               "command": "my_brand_new_channel_generate_channel_file", "args": {"create_tags": true} },
+               "command": "my_brand_new_channel_generate_channel_file",
+               "args": {} },
 
        { "caption": "My Brand New Channel: Select Package to Update Git Tag",
                "command": "my_brand_new_channel_generate_channel_file",
-               "args": { "create_tags": true, "command": "git_tag" } },
+               "args": {"command": "git_tag" } },
 
-       { "caption": "My Brand New Channel: Force Update All Packages Git Tags",
+       { "caption": "My Brand New Channel: Create and Push All Packages Tags",
                "command": "my_brand_new_channel_generate_channel_file",
-               "args": { "create_tags": true, "command": "git_tag_all" } },
+               "args": {"command": "git_tag_all" } },
 
        { "caption": "My Brand New Channel: Run Backstroke Requests",
                "command": "my_brand_new_channel_run", "args": {"run": "-b"} },
@@ -758,19 +756,15 @@ you usually do with the default `Package Control` channel.
                            [
                                { "caption": "Generate Channel File",
                                        "command": "my_brand_new_channel_generate_channel_file",
-                                       "args": {"create_tags": false} },
-
-                               { "caption": "Generate Channel File and Tags",
-                                       "command": "my_brand_new_channel_generate_channel_file",
-                                       "args": {"create_tags": true} },
+                                       "args": {} },
 
                                { "caption": "Select Package to Update Git Tag",
                                        "command": "my_brand_new_channel_generate_channel_file",
-                                       "args": { "create_tags": true, "command": "git_tag" } },
+                                       "args": {"command": "git_tag" } },
 
-                               { "caption": "Force Update All Packages Git Tags",
+                               { "caption": "Create and Push All Packages Tags",
                                        "command": "my_brand_new_channel_generate_channel_file",
-                                       "args": { "create_tags": true, "command": "git_tag_all" } },
+                                       "args": {"command": "git_tag_all" } },
 
                                { "caption": "Run Backstroke Requests",
                                        "command": "my_brand_new_channel_run", "args": {"run": "-b"} },
@@ -890,20 +884,16 @@ installed the Development Version of the channel:
    the Stable Version of the channel. You can read more about them at [Package Control, Docs:
    Channels and Repositories](https://packagecontrol.io/docs/channels_and_repositories)
 
-1. **YourChannelName: Generate Channel File and Tags** Similar to the last command, but it also
-   create tags for each repository on based on the date of the last commit. If there is no tags, a
-   first tag is created as `1.0.0`. If already there are tags, its patch component (or
-   major.minor.patch) is incremented in one.
-
 1. **YourChannelName: Select Package to Update Git Tag** Before running this command, you must have
-   already called `Generate Channel File` before it to create the channel files, as this commands
-   just load those files and create a git tag as performed on the command `Generate Channel File and
-   Tags`, however the tag is only created if it does not already exists a tag for the current/latest
+   already called `Generate Channel File` to create the channel files, as this commands just load
+   those files and create a git tag as performed on the command `Generate Channel File and Tags`,
+   however the tag is only created if it does not already exists a tag for the current/latest
    commit. Also, the tag is immediately pushed to origin.
 
-1. **YourChannelName: Force Update All Packages Git Tags** The same as the command `Select Package
-   to Update Git Tag`, but it runs for all packages/dependencies found on the channel file
-   `channel.json`.
+1. **YourChannelName: Create and Push All Packages Tags** Similar to the last command `Select Package
+   to Update Git Tag`, but it create tags for each repository on based on the date of the last
+   commit. If there is no tags, a first tag is created as `1.0.0`. If already there are tags, its
+   patch component (or major.minor.patch) is incremented in one.
 
 1. **YourChannelName: Run Backstroke Requests** Backstroke is a Github bot to keep repository forks up
    to date with their upstream. Therefore, if you setup your own list of Backstroke URLs, you can
