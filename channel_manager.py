@@ -866,7 +866,7 @@ def get_git_latest_tag(absolute_repo_path, command_line_interface):
     command = shlex.split( "git describe --abbrev=0 --tags" )
     git_tag = command_line_interface.execute( command, absolute_repo_path, short_errors=True )
 
-    if git_tag is False:
+    if git_tag is False or "warning:" in git_tag:
         log( 1, "Error: Failed getting git tag for the package `%s`, results: %s" % ( absolute_repo_path, git_tag ) )
 
         g_failed_repositories.append( (command, absolute_repo_path) )
