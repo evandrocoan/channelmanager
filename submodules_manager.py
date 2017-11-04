@@ -503,11 +503,11 @@ class RunBackstrokeThread(threading.Thread):
                                 os.path.join( base_root_directory, forkPath )
                             )
 
-                        run_command_line(
-                            command_line_interface,
-                            shlex.split( "git fetch %s" % ( user ) ),
-                            os.path.join( base_root_directory, forkPath )
-                        )
+                            run_command_line(
+                                command_line_interface,
+                                shlex.split( "git fetch %s" % ( user ) ),
+                                os.path.join( base_root_directory, forkPath )
+                            )
 
                     else:
                         remotes_list  = remotes.split( "\n" )
