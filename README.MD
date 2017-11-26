@@ -694,7 +694,7 @@ you usually do with the default `Package Control` channel.
                "command": "my_brand_new_channel_generate_channel_file",
                "args": {"command": "git_tag" } },
 
-       { "caption": "My Brand New Channel: Create and Push All Packages Tags",
+       { "caption": "My Brand New Channel: Update All Packages Git Tag",
                "command": "my_brand_new_channel_generate_channel_file",
                "args": {"command": "git_tag_all" } },
 
@@ -762,7 +762,7 @@ you usually do with the default `Package Control` channel.
                                        "command": "my_brand_new_channel_generate_channel_file",
                                        "args": {"command": "git_tag" } },
 
-                               { "caption": "Create and Push All Packages Tags",
+                               { "caption": "Update All Packages Git Tag",
                                        "command": "my_brand_new_channel_generate_channel_file",
                                        "args": {"command": "git_tag_all" } },
 
@@ -890,7 +890,7 @@ installed the Development Version of the channel:
    however the tag is only created if it does not already exists a tag for the current/latest
    commit. Also, the tag is immediately pushed to origin.
 
-1. **YourChannelName: Create and Push All Packages Tags** Similar to the last command `Select Package
+1. **YourChannelName: Update All Packages Git Tag** Similar to the last command `Select Package
    to Update Git Tag`, but it create tags for each repository on based on the date of the last
    commit. If there is no tags, a first tag is created as `1.0.0`. If already there are tags, its
    patch component (or major.minor.patch) is incremented in one.
