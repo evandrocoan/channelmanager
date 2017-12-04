@@ -375,7 +375,7 @@ def get_repositories(all_packages, last_repositories):
         repo_path = gitModulesFile.get( section, "path" )
 
         # # For quick testing
-        # if index > 30:
+        # if index > 3:
         #     break
 
         if 'Packages' == repo_path[0:8]:
@@ -862,18 +862,28 @@ def get_git_latest_tag(absolute_repo_path, command_line_interface):
     """
         Get timestamp of the last commit in git repository
         https://gist.github.com/bitrut/1494315
+
+        Getting latest tag on git repository
+        https://gist.github.com/rponte/fdc0724dd984088606b0
+
+        How can I list all tags in my Git repository by the date they were created?
+        https://stackoverflow.com/questions/6269927/how-can-i-list-all-tags-in-my-git-repository-by-the-date-they-were-created
     """
     # command = shlex.split( "git log -1 --date=iso" )
-    command = shlex.split( "git describe --abbrev=0 --tags" )
-    git_tag = command_line_interface.execute( command, absolute_repo_path, short_errors=True )
+    command = shlex.split( "git tag --sort=-creatordate" )
+    git_tags = command_line_interface.execute( command, absolute_repo_path, short_errors=True )
 
-    if git_tag is False or "warning:" in git_tag:
+    if git_tags is False \
+            or "warning:" in git_tags \
+            or len( git_tags ) < 3:
+
         log( 1, "Error: Failed getting git tag for the package `%s`, results: %s" % ( absolute_repo_path, git_tag ) )
-
         g_failed_repositories.append( (command, absolute_repo_path) )
+
         return "master"
 
-    return git_tag
+    git_tags = git_tags.split( "\n" )
+    return git_tags[0]
 
 
 def create_git_tag(new_tag_name, absolute_repo_path, command_line_interface):
