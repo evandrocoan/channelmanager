@@ -868,22 +868,35 @@ def get_git_latest_tag(absolute_repo_path, command_line_interface):
 
         How can I list all tags in my Git repository by the date they were created?
         https://stackoverflow.com/questions/6269927/how-can-i-list-all-tags-in-my-git-repository-by-the-date-they-were-created
+
+        How to sort git tags by version string order of form rc-X.Y.Z.W?
+        https://stackoverflow.com/questions/14273531/how-to-sort-git-tags-by-version-string-order-of-form-rc-x-y-z-w/22634649#22634649
     """
     # command = shlex.split( "git log -1 --date=iso" )
-    command = shlex.split( "git tag --sort=-creatordate" )
-    git_tags = command_line_interface.execute( command, absolute_repo_path, short_errors=True )
+    command = shlex.split( "git tag --sort=-creatordate --sort=version:refname" )
+
+    git_tags  = command_line_interface.execute( command, absolute_repo_path, short_errors=True )
+    clean_tag = "master"
 
     if git_tags is False \
             or "warning:" in git_tags \
             or len( git_tags ) < 3:
 
-        log( 1, "Error: Failed getting git tag for the package `%s`, results: %s" % ( absolute_repo_path, git_tag ) )
+        log( 1, "Error: Failed getting git tag for the package `%s`, results: %s" % ( absolute_repo_path, git_tags ) )
         g_failed_repositories.append( (command, absolute_repo_path) )
 
-        return "master"
+        return clean_tag
 
-    git_tags = git_tags.split( "\n" )
-    return git_tags[0]
+    git_tags  = git_tags.split( "\n" )
+    clean_tag = git_tags[-1]
+
+    # Takes the latest tag which is numeric on the form `0.0anything` (number.number)
+    for index, git_tag in enumerate( git_tags ):
+
+        if re.search( "^(\d+)\.(\d+)(.+)?$", git_tag ):
+            clean_tag = git_tag
+
+    return clean_tag
 
 
 def create_git_tag(new_tag_name, absolute_repo_path, command_line_interface):
