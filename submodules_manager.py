@@ -510,9 +510,11 @@ class RunBackstrokeThread(threading.Thread):
                             )
 
                     else:
-                        remotes_list  = remotes.split( "\n" )
+                        remote_index = 0
+                        remotes_list = remotes.split( "\n" )
+
+                        # -2 because I am discarding myself and my upstream
                         remotes_count = len( remotes_list ) - 2
-                        remote_index  = 0
 
                         for remote, pi in etc.sequence_timer( remotes_list, info_frequency=0 ):
 
