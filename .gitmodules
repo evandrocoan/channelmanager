@@ -6,7 +6,3 @@
 	path = six
 	url = https://github.com/evandrocoan/six
 	upstream = https://github.com/benjaminp/six
-[submodule "estimated_time_left"]
-	path = estimated_time_left
-	url = https://github.com/evandrocoan/estimated_time_left
-	upstream = https://github.com/arp2600/Etc

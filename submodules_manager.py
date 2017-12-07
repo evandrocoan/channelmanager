@@ -53,24 +53,11 @@ try:
     from .channel_utilities import progress_info
     from .channel_utilities import assert_path
 
-    try:
-        from .estimated_time_left import etc
-
-    except:
-        pass
-
-
 except( ImportError, ValueError):
     from settings import *
     from channel_utilities import get_main_directory
     from channel_utilities import progress_info
     from channel_utilities import assert_path
-
-    try:
-        from estimated_time_left import etc
-
-    except:
-        pass
 
 
 # Allow using this file on the website where the sublime
@@ -79,7 +66,7 @@ try:
     import sublime
     import sublime_plugin
 
-    # Import the debugger
+    from estimated_time_left import etc
     from PythonDebugTools.debug_tools import Debugger
 
     # When there is an ImportError, means that Package Control is installed instead of PackagesManager.
@@ -99,7 +86,9 @@ except ImportError:
     # unpacked at the loose packages folder as a git submodule.
     assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools' ) )
     assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PackagesManager' ) )
+    assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'estimated_time_left' ) )
 
+    import etc
     from debug_tools import Debugger
     from packagesmanager import cmd
 

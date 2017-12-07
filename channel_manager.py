@@ -54,7 +54,7 @@ except:
 
 
 try:
-    from .estimated_time_left import etc
+    from estimated_time_left import etc
 
 except:
     pass
