@@ -719,7 +719,7 @@ you usually do with the default `Package Control` channel.
        { "caption": "My Brand New Channel: Delete All remote Except origin",
                "command": "my_brand_new_channel_run", "args": {"run": "-d"} },
 
-       { "caption": "My Brand New Channel: Update Default Packages",
+       { "caption": "My Brand New Channel: Extract Default Package",
                "command": "my_brand_new_channel_update_default_packages" },
 
        { "caption": "My Brand New Channel: Run Stable Installation",
@@ -787,7 +787,7 @@ you usually do with the default `Package Control` channel.
                                { "caption": "Delete All remote Except origin",
                                        "command": "my_brand_new_channel_run", "args": {"run": "-d"} },
 
-                               { "caption": "Update Default Packages",
+                               { "caption": "Extract Default Package",
                                        "command": "my_brand_new_channel_update_default_packages" },
 
                                { "caption": "Run Stable Installation",
@@ -939,7 +939,7 @@ installed the Development Version of the channel:
    all remotes which are not `origin` and the `upstream username`. This is useful to clean all the
    remotes repositories after running the `find_forks` command.
 
-1. **YourChannelName: Update Default Packages** Run the script `copy_default_package.py` which
+1. **YourChannelName: Extract Default Package** Run the script `copy_default_package.py` which
    unpack_settings the `Default.sublime-package` at the on the `Packages/../` folder, i.e., on the
    folder which the Sublime Text loose packages are, not inside it. This command automatically runs
    when you install a new version of Sublime Text, therefore the command is only here when you want
