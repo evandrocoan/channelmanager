@@ -66,7 +66,7 @@ try:
     import sublime
     import sublime_plugin
 
-    from estimated_time_left import etc
+    from estimated_time_left import estimated_time_left
     from PythonDebugTools.debug_tools import Debugger
 
     # When there is an ImportError, means that Package Control is installed instead of PackagesManager.
@@ -88,7 +88,7 @@ except ImportError:
     assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PackagesManager' ) )
     assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'estimated_time_left' ) )
 
-    import etc
+    import estimated_time_left
     from debug_tools import Debugger
     from packagesmanager import cmd
 
@@ -384,7 +384,7 @@ class RunBackstrokeThread(threading.Thread):
         command_line_interface = cmd.Cli( None, False )
 
         # https://stackoverflow.com/questions/22068050/iterate-over-sections-in-a-config-file
-        for section, pi in etc.sequence_timer( sections, info_frequency=0 ):
+        for section, pi in estimated_time_left.sequence_timer( sections, info_frequency=0 ):
             request_index += 1
             progress       = progress_info( pi )
 
@@ -505,7 +505,7 @@ class RunBackstrokeThread(threading.Thread):
                         # -2 because I am discarding myself and my upstream
                         remotes_count = len( remotes_list ) - 2
 
-                        for remote, pi in etc.sequence_timer( remotes_list, info_frequency=0 ):
+                        for remote, pi in estimated_time_left.sequence_timer( remotes_list, info_frequency=0 ):
 
                             if remote not in ( "origin", user ):
                                 progress      = progress_info( pi )
