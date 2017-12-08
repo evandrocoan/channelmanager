@@ -316,13 +316,14 @@ def uninstall_packages():
     ask_user_for_which_packages_to_install( packages_to_uninstall )
     uninstall_default_package( packages_to_uninstall )
 
-    for package_name in packages_to_uninstall:
-        silence_error_message_box(61.0)
-
-        is_dependency  = is_package_dependency( package_name, dependencies, all_packages )
+    for package_name, pi in estimated_time_left.sequence_timer( packages_to_uninstall, info_frequency=0 ):
         current_index += 1
+        progress = progress_info( pi )
 
-        log( 1, "\n\nUninstalling %d of %d: %s (%s)" % ( current_index, git_packages_count, str( package_name ), str( is_dependency ) ) )
+        silence_error_message_box(61.0)
+        is_dependency = is_package_dependency( package_name, dependencies, all_packages )
+
+        log( 1, "\n\n%s Uninstalling %d of %d: %s (%s)" % ( progress, current_index, git_packages_count, str( package_name ), str( is_dependency ) ) )
         ignore_next_packages( package_disabler, package_name, packages_to_uninstall )
 
         package_manager.remove_package( package_name, is_dependency )
@@ -515,14 +516,12 @@ def uninstall_packagesmanger(package_manager, installed_packages):
     log(1, "\n\nFinishing PackagesManager Uninstallation..." )
     packages_to_remove = []
 
-    # Only uninstall it when it is installed
+    # Only uninstall them when they were installed
     if "PackagesManager" in installed_packages:
         packages_to_remove.extend( [ ("PackagesManager", False), ("0_packagesmanager_loader", None) ] )
 
-    # By last uninstall itself `CHANNEL_PACKAGE_NAME`
+    # By last uninstall itself `CHANNEL_PACKAGE_NAME` and let the package be unloaded by Sublime Text
     packages_to_remove.extend( [ (CHANNEL_PACKAGE_NAME, False) ] )
-
-    # Let the package be unloaded by Sublime Text1
     add_packages_to_ignored_list( [ package_name for package_name, _ in packages_to_remove ] )
 
     for package_name, is_dependency in packages_to_remove:

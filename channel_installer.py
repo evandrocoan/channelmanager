@@ -65,8 +65,10 @@ from .channel_utilities import remove_item_if_exists
 from .channel_utilities import convert_to_unix_path
 from .channel_utilities import _delete_read_only_file
 from .channel_utilities import wrap_text
+from .channel_utilities import progress_info
 
 from collections import OrderedDict
+from estimated_time_left import estimated_time_left
 
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
@@ -302,13 +304,16 @@ def install_stable_packages(packages_to_install):
     current_index      = 0
     git_packages_count = len( packages_to_install )
 
-    for package_name, is_dependency in packages_to_install:
+    for package_info, pi in estimated_time_left.sequence_timer( packages_to_install, info_frequency=0 ):
         current_index += 1
+        progress = progress_info( pi )
 
         # # For quick testing
         # if current_index > 3:
         #     break
-        log( 1, "\n\nInstalling %d of %d: %s (%s)" % ( current_index, git_packages_count, str( package_name ), str( is_dependency ) ) )
+
+        package_name, is_dependency = package_info
+        log( 1, "\n\n%s Installing %d of %d: %s (%s)" % ( progress, current_index, git_packages_count, str( package_name ), str( is_dependency ) ) )
 
         ignore_next_packages( package_disabler, package_name, packages_to_install_names )
         package_manager.install_package( package_name, is_dependency )
@@ -703,14 +708,16 @@ def install_development_packages(packages_to_install, git_executable_path, comma
     current_index      = 0
     git_packages_count = len( packages_to_install )
 
-    for package_name, url, path in packages_to_install:
+    for package_info, pi in estimated_time_left.sequence_timer( packages_to_install, info_frequency=0 ):
         current_index += 1
+        progress = progress_info( pi )
 
         # # For quick testing
         # if current_index > 3:
         #     break
 
-        log( 1, "\n\nInstalling %d of %d: %s" % ( current_index, git_packages_count, str( package_name ) ) )
+        package_name, url, path = package_info
+        log( 1, "\n\n%s Installing %d of %d: %s" % ( progress, current_index, git_packages_count, str( package_name ) ) )
 
         command = shlex.split( '"%s" clone --recursive "%s" "%s"' % ( git_executable_path, url, path) )
         output  = str( command_line_interface.execute( command, cwd=CHANNEL_ROOT_DIRECTORY ) )
