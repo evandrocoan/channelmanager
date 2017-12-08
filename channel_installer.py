@@ -175,9 +175,11 @@ class StartInstallChannelThread(threading.Thread):
         """
 
         if is_allowed_to_run():
+            global g_failed_repositories
             global g_is_installation_complete
             global _uningored_packages_to_flush
 
+            g_failed_repositories        = []
             g_is_installation_complete   = False
             _uningored_packages_to_flush = []
 
@@ -191,13 +193,25 @@ class StartInstallChannelThread(threading.Thread):
                     'The %s was successfully installed.' % installation_type )
 
             installer_thread.join()
-            set_default_settings_after(1)
+            save_default_settings(1)
 
             # Wait PackagesManager to load the found dependencies, before announcing it to the user
             sublime.set_timeout_async( check_installed_packages, 2000 )
 
         global g_is_already_running
         g_is_already_running = False
+
+
+def print_failed_repositories():
+    sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+
+    if len( g_failed_repositories ) > 0:
+        log.insert_empty_line( 1 )
+        log.insert_empty_line( 1 )
+        log( 1, "The following repositories failed their commands..." )
+
+    for package_name in g_failed_repositories:
+        log( 1, "Package: %s" % ( package_name ) )
 
 
 def is_allowed_to_run():
@@ -290,7 +304,7 @@ def install_stable_packages(packages_to_install):
         When trying to install several package at once, then here I am installing them one by one.
     """
     log( 2, "install_stable_packages, PACKAGES_TO_NOT_INSTALL_STABLE: " + str( PACKAGES_TO_NOT_INSTALL_STABLE ) )
-    packages_to_install_names = set_default_settings_before( packages_to_install )
+    packages_to_install_names = set_default_settings( packages_to_install )
 
     # Package Control: Advanced Install Package
     # https://github.com/wbond/package_control/issues/1191
@@ -316,7 +330,9 @@ def install_stable_packages(packages_to_install):
         log( 1, "\n\n%s Installing %d of %d: %s (%s)" % ( progress, current_index, git_packages_count, str( package_name ), str( is_dependency ) ) )
 
         ignore_next_packages( package_disabler, package_name, packages_to_install_names )
-        package_manager.install_package( package_name, is_dependency )
+
+        if package_manager.install_package( package_name, is_dependency ) is False:
+            g_failed_repositories.append( package_name )
 
         add_package_to_installation_list( package_name )
         accumulative_unignore_user_packages( package_name )
@@ -557,7 +573,7 @@ def clone_sublime_text_channel(command_line_interface, git_executable_path):
         shutil.rmtree( channel_temporary_folder, onerror=_delete_read_only_file )
 
         # Progressively saves the installation data, in case the user closes Sublime Text
-        set_default_settings_after()
+        save_default_settings()
 
 
 def copy_overrides(root_source_folder, root_destine_folder, move_files=False):
@@ -698,11 +714,11 @@ def download_not_packages_submodules(command_line_interface, git_executable_path
                 log( 1, "download_not_packages_submodules, output: " + str( output ) )
 
                 # Progressively saves the installation data, in case the user closes Sublime Text
-                set_default_settings_after()
+                save_default_settings()
 
 
 def install_development_packages(packages_to_install, git_executable_path, command_line_interface):
-    set_default_settings_before( packages_to_install )
+    set_default_settings( packages_to_install )
     log( 2, "install_submodules_packages, PACKAGES_TO_NOT_INSTALL_DEVELOPMENT: " + str( PACKAGES_TO_NOT_INSTALL_DEVELOPMENT ) )
 
     current_index      = 0
@@ -782,7 +798,7 @@ def get_development_packages():
     return packages
 
 
-def set_default_settings_before(packages_to_install):
+def set_default_settings(packages_to_install):
     """
         Set some package to be enabled at last due their settings being dependent on other packages
         which need to be installed first.
@@ -859,7 +875,7 @@ def set_first_packages_to_install(packages_to_install):
             packages_to_install.insert( 0, first_packages[package_name] )
 
 
-def set_default_settings_after(print_settings=0):
+def save_default_settings(is_installation_completed=0):
     """
         When uninstalling this channel we can only remove our packages, keeping the user's original
         ignored packages intact.
@@ -875,11 +891,16 @@ def set_default_settings_after(print_settings=0):
     g_channelSettings['packages_to_unignore']    = g_packages_to_unignore
     g_channelSettings['files_to_uninstall']      = g_files_to_uninstall
     g_channelSettings['folders_to_uninstall']    = g_folders_to_uninstall
-    g_channelSettings['next_packages_to_ignore'] = g_next_packages_to_ignore
+
+    if 1 & is_installation_completed:
+        g_channelSettings['next_packages_to_ignore'] = g_next_packages_to_ignore
+
+    else:
+        g_channelSettings['next_packages_to_ignore'] = []
 
     g_channelSettings = sort_dictionary( g_channelSettings )
+    log( 1, "save_default_settings, g_channelSettings: " + json.dumps( g_channelSettings, indent=4 ) )
 
-    log( 1 & print_settings, "set_default_settings_after, g_channelSettings: " + json.dumps( g_channelSettings, indent=4 ) )
     write_data_file( CHANNEL_INSTALLATION_SETTINGS, g_channelSettings )
 
 
@@ -908,7 +929,7 @@ def add_package_to_installation_list(package_name):
     add_item_if_not_exists( g_packages_to_uninstall, package_name )
 
     # Progressively saves the installation data, in case the user closes Sublime Text
-    set_default_settings_after()
+    save_default_settings()
 
 
 def uninstall_package_control():
@@ -979,7 +1000,7 @@ def add_packages_to_ignored_list(packages_list):
     global g_next_packages_to_ignore
     g_next_packages_to_ignore = packages_list
 
-    set_default_settings_after()
+    save_default_settings()
 
     ignored_packages = g_userSettings.get( "ignored_packages", [] )
     unique_list_append( ignored_packages, packages_list )
@@ -1160,7 +1181,7 @@ def check_installed_packages(maximum_attempts=10):
                 Check you Sublime Text Console for more information.
                 """ % CHANNEL_PACKAGE_NAME ) )
 
-        sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+        print_failed_repositories()
         return
 
     if maximum_attempts > 0:
@@ -1176,6 +1197,6 @@ def check_installed_packages(maximum_attempts=10):
                 so later others can see what happened try to fix it.
                 """ % CHANNEL_PACKAGE_NAME ) )
 
-        sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+        print_failed_repositories()
 
 
