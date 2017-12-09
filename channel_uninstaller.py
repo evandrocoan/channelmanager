@@ -60,7 +60,6 @@ from .channel_utilities import wrap_text
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
 # or vice-versa. Which means we cannot do nothing as this is only compatible with PackagesManager.
 try:
-    from PackagesManager.packagesmanager.settings import disable_package_control_uninstaller
     from PackagesManager.packagesmanager.show_error import silence_error_message_box
 
     from PackagesManager.packagesmanager.package_manager import PackageManager
@@ -214,12 +213,10 @@ class UninstallChannelFilesThread(threading.Thread):
         g_channelSettings           = load_data_file( CHANNEL_INSTALLATION_SETTINGS )
 
         _uningored_packages_to_flush = []
-
         log( 1, "Loaded g_channelSettings: " + str( g_channelSettings ) )
-        g_packages_to_unignore = get_dictionary_key( g_channelSettings, "packages_to_unignore", [] )
 
+        g_packages_to_unignore = get_dictionary_key( g_channelSettings, "packages_to_unignore", [] )
         load_package_manager_settings()
-        disable_amxmodx_errors()
 
         uninstall_packages()
         remove_channel()
@@ -228,20 +225,6 @@ class UninstallChannelFilesThread(threading.Thread):
         uninstall_folders()
 
         finish_uninstallation()
-
-
-def disable_amxmodx_errors():
-    """
-        Disable the error message when uninstalling it
-    """
-    disable_package_control_uninstaller()
-
-    try:
-        import amxmodx
-        amxmodx.AMXXEditor.g_is_package_loading = True
-
-    except( ImportError, AttributeError ):
-        pass
 
 
 def finish_uninstallation():
