@@ -926,8 +926,10 @@ def get_git_tag_version(tag_date, tag):
         Get timestamp of the last commit in git repository
         https://gist.github.com/bitrut/1494315
     """
-    tag_date = tag_date.replace("-", ".")[0:10]
-    return tag + "." + tag_date[:4] + tag_date[5:]
+    tag_date      = tag_date.replace("-", ".")[0:10]
+    patch_version = tag_date[5:].replace(".", "")
+
+    return tag + "." + tag_date[:4] + "." + patch_version
 
 
 def count_package_sections(gitModulesFile, sections):
