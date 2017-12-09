@@ -66,8 +66,17 @@ try:
     import sublime
     import sublime_plugin
 
-    from estimated_time_left import estimated_time_left
-    from PythonDebugTools.debug_tools import Debugger
+    # If a dependency fail running, the subsequent dependencies are not installed by Package Control
+    # https://github.com/wbond/package_control/issues/1301
+    try:
+        from estimated_time_left import estimated_time_left
+        from PythonDebugTools.debug_tools import Debugger
+
+        # Debugger settings: 0 - disabled, 127 - enabled
+        log = Debugger( 127, os.path.basename( __file__ ) )
+
+    except Exception as error:
+        print( "Could not import PythonDebugTools! " + str( error ) )
 
     # When there is an ImportError, means that Package Control is installed instead of PackagesManager.
     # Which means we cannot do nothing as this is only compatible with PackagesManager.
@@ -136,9 +145,6 @@ FIND_FORKS_PATH      = os.path.join( CURRENT_DIRECTORY, "find_forks" )
 MAXIMUM_REQUEST_ERRORS = 10
 g_is_already_running   = False
 
-
-# Debugger settings: 0 - disabled, 127 - enabled
-log = Debugger( 127, os.path.basename( __file__ ) )
 
 #log.log_to_file( "Debug.txt" )
 #log.clear_log_file()

@@ -68,7 +68,6 @@ from .channel_utilities import wrap_text
 from .channel_utilities import progress_info
 
 from collections import OrderedDict
-from estimated_time_left import estimated_time_left
 
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
@@ -91,11 +90,18 @@ except ImportError:
 g_is_installation_complete     = True
 PACKAGES_COUNT_TO_IGNORE_AHEAD = 8
 
-# Import the debugger
-from PythonDebugTools.debug_tools import Debugger
+# If a dependency fail running, the subsequent dependencies are not installed by Package Control
+# https://github.com/wbond/package_control/issues/1301
+try:
+    from estimated_time_left import estimated_time_left
+    from PythonDebugTools.debug_tools import Debugger
 
-# Debugger settings: 0 - disabled, 127 - enabled
-log = Debugger( 127, os.path.basename( __file__ ) )
+    # Debugger settings: 0 - disabled, 127 - enabled
+    log = Debugger( 127, os.path.basename( __file__ ) )
+
+except Exception as error:
+    print( "Could not import PythonDebugTools! " + str( error ) )
+
 
 # log( 2, "..." )
 # log( 2, "..." )

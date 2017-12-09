@@ -37,11 +37,16 @@ imp.reload( ChannelManager )
 import ChannelManager
 
 
-# Import the debugger
-from PythonDebugTools.debug_tools import Debugger
+# If a dependency fail running, the subsequent dependencies are not installed by Package Control
+# https://github.com/wbond/package_control/issues/1301
+try:
+    from PythonDebugTools.debug_tools import Debugger
 
-# Debugger settings: 0 - disabled, 127 - enabled
-log = Debugger( 127, os.path.basename( __file__ ) )
+    # Debugger settings: 0 - disabled, 127 - enabled
+    log = Debugger( 127, os.path.basename( __file__ ) )
+
+except Exception as error:
+    print( "Could not import PythonDebugTools! " + str( error ) )
 
 
 def plugin_loaded():

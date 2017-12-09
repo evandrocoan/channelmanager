@@ -54,8 +54,16 @@ def assert_path(module):
 try:
     import sublime
 
-    # Import the debugger
-    from PythonDebugTools.debug_tools import Debugger
+    # If a dependency fail running, the subsequent dependencies are not installed by Package Control
+    # https://github.com/wbond/package_control/issues/1301
+    try:
+        from PythonDebugTools.debug_tools import Debugger
+
+        # Debugger settings: 0 - disabled, 127 - enabled
+        log = Debugger( 127, os.path.basename( __file__ ) )
+
+    except Exception as error:
+        print( "Could not import PythonDebugTools! " + str( error ) )
 
 except ImportError:
     sublime = None
@@ -65,10 +73,6 @@ except ImportError:
     # unpacked at the loose packages folder as a git submodule.
     assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools' ) )
     from debug_tools import Debugger
-
-
-# Debugger settings: 0 - disabled, 127 - enabled
-log = Debugger( 127, os.path.basename( __file__ ) )
 
 
 def write_data_file(file_path, channel_dictionary):
