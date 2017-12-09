@@ -78,7 +78,7 @@ try:
 
     except Exception as error:
         Debugger = None
-        print( "Could not import PythonDebugTools! " + str( error ) )
+        log( 1, "Could not import PythonDebugTools! " + str( error ) )
 
     # When there is an ImportError, means that Package Control is installed instead of PackagesManager.
     # Which means we cannot do nothing as this is only compatible with PackagesManager.
@@ -203,7 +203,7 @@ def main(command=None):
 
         argumentsNamespace = argumentParser.parse_args()
 
-    # print( argumentsNamespace )
+    # log( 1, argumentsNamespace )
     if argumentsNamespace and argumentsNamespace.find_forks:
         attempt_run_find_forks()
 
@@ -239,8 +239,8 @@ def main(command=None):
 
 def attempt_run_find_forks():
     if sublime:
-        print( "The find forks command is only available running by the command line, while" )
-        print( "using the Sublime Text Channel Development version." )
+        log( 1, "The find forks command is only available running by the command line, while" )
+        log( 1, "using the Sublime Text Channel Development version." )
 
     else:
         RunBackstrokeThread("find_forks").start()
@@ -250,7 +250,7 @@ def is_allowed_to_run():
     global g_is_already_running
 
     if g_is_already_running:
-        print( "You are already running a command. Wait until it finishes or restart Sublime Text" )
+        log( 1, "You are already running a command. Wait until it finishes or restart Sublime Text" )
         return False
 
     g_is_already_running = True
@@ -350,18 +350,23 @@ class RunBackstrokeThread(threading.Thread):
         with open( CHANNEL_SESSION_FILE, 'wt' ) as configfile:
 
             if maximum_errors == MAXIMUM_REQUEST_ERRORS:
-                print( "\n\nCongratulations! It was a successful execution." )
+                log.insert_empty_line( 1 )
+                log.insert_empty_line( 1 )
+                log( 1, "Congratulations! It was a successful execution." )
 
                 lastSection.set( session_key, 'index', "0" )
                 lastSection.write( configfile )
 
             else:
-                print( "\n\nAttention! There were errors on execution, please review its output." )
+                log.insert_empty_line( 1 )
+                log.insert_empty_line( 1 )
+
+                log( 1, "Attention! There were errors on execution, please review its output." )
                 lastSection.write( configfile )
 
     # Now loop through the above array
     # for current_url in backstroke_request_list:
-    #     print( str( current_url ) )
+    #     log( 1, str( current_url ) )
         # curl -X POST current_url
 
     def run_general_command(self, base_root_directory, settings, command):
@@ -440,7 +445,10 @@ class RunBackstrokeThread(threading.Thread):
                     )
 
                 else:
-                    print( "\n\n\nError, invalid/missing upstream: " + str( upstream ) )
+                    log.insert_empty_line( 1 )
+                    log.insert_empty_line( 1 )
+                    log.insert_empty_line( 1 )
+                    log( 1, "Error, invalid/missing upstream: " + str( upstream ) )
 
             elif command == "backstroke":
                 # The GitHub API only allows about 30 requests per second for the backstroke call,
@@ -464,11 +472,15 @@ class RunBackstrokeThread(threading.Thread):
                     try:
                         # https://stackoverflow.com/questions/2667509/curl-alternative-in-python
                         res = urllib.urlopen( req )
-                        print( res.read() )
+                        log( 1, res.read() )
 
                     except HTTPError as error:
                         maximum_errors -= 1
-                        print( "\n\n\nERROR! ", error.read() )
+
+                        log.insert_empty_line( 1 )
+                        log.insert_empty_line( 1 )
+                        log.insert_empty_line( 1 )
+                        log( 1, "ERROR! ", error.read() )
 
                         # Save only where the first error happened
                         if maximum_errors == MAXIMUM_REQUEST_ERRORS - 1:
@@ -478,7 +490,10 @@ class RunBackstrokeThread(threading.Thread):
                             break
 
                 else:
-                    print( "\n\n\nMissing backstroke key for upstream: " + upstream )
+                    log.insert_empty_line( 1 )
+                    log.insert_empty_line( 1 )
+                    log.insert_empty_line( 1 )
+                    log( 1, "Missing backstroke key for upstream: " + upstream )
 
             elif command == "create_upstreams" or command == "delete_remotes":
                 forkPath = self.get_section_option( section, "path", generalSettingsConfigs )

@@ -330,7 +330,10 @@ def uninstall_packages():
         silence_error_message_box(61.0)
         is_dependency = is_package_dependency( package_name, dependencies, all_packages )
 
-        log( 1, "\n\n%s Uninstalling %d of %d: %s (%s)" % ( progress, current_index, git_packages_count, str( package_name ), str( is_dependency ) ) )
+        log.insert_empty_line( 1 )
+        log.insert_empty_line( 1 )
+
+        log( 1, "%s Uninstalling %d of %d: %s (%s)" % ( progress, current_index, git_packages_count, str( package_name ), str( is_dependency ) ) )
         ignore_next_packages( package_disabler, package_name, packages_to_uninstall )
 
         package_manager.remove_package( package_name, is_dependency )
@@ -344,7 +347,10 @@ def uninstall_packages():
 def uninstall_default_package(packages_names):
 
     if 'Default' in packages_names:
-        log( 1, "\n\nUninstalling `Default Package` files..." )
+        log.insert_empty_line( 1 )
+        log.insert_empty_line( 1 )
+
+        log( 1, "Uninstalling `Default Package` files..." )
         default_packages_path = os.path.join( CHANNEL_ROOT_DIRECTORY, "Packages", "Default" )
 
         packages_names.remove('Default')
@@ -445,8 +451,10 @@ def is_package_dependency(package, dependencies, packages):
 
 def install_package_control(package_manager):
     package_name = "Package Control"
+    log.insert_empty_line( 1 )
+    log.insert_empty_line( 1 )
 
-    log( 1, "\n\nInstalling: %s" % str( package_name ) )
+    log( 1, "Installing: %s" % str( package_name ) )
     package_manager.install_package( package_name, False )
 
 
@@ -520,7 +528,10 @@ def uninstall_packagesmanger(package_manager, installed_packages):
         Uninstals PackagesManager only if Control was installed, otherwise the user will end up with
         no package manager.
     """
-    log(1, "\n\nFinishing PackagesManager Uninstallation..." )
+    log.insert_empty_line( 1 )
+    log.insert_empty_line( 1 )
+
+    log(1, "Finishing PackagesManager Uninstallation..." )
     packages_to_remove = []
 
     # Only uninstall them when they were installed
@@ -532,7 +543,9 @@ def uninstall_packagesmanger(package_manager, installed_packages):
     add_packages_to_ignored_list( [ package_name for package_name, _ in packages_to_remove ] )
 
     for package_name, is_dependency in packages_to_remove:
-        log( 1, "\n\nUninstalling: %s..." % str( package_name ) )
+        log.insert_empty_line( 1 )
+        log.insert_empty_line( 1 )
+        log( 1, "Uninstalling: %s..." % str( package_name ) )
 
         silence_error_message_box(62.0)
         package_manager.remove_package( package_name, is_dependency )
@@ -598,7 +611,10 @@ def clean_packagesmanager_settings(maximum_attempts=3):
 
 def uninstall_folders():
     folders_to_remove = get_dictionary_key( g_channelSettings, "folders_to_uninstall", [] )
-    log( 1, "\n\nUninstalling added folders: %s" % str( folders_to_remove ) )
+
+    log.insert_empty_line( 1 )
+    log.insert_empty_line( 1 )
+    log( 1, "Uninstalling added folders: %s" % str( folders_to_remove ) )
 
     for folder in reversed( folders_to_remove ):
         folders_not_empty = []
@@ -686,9 +702,11 @@ def _removeEmptyFolders(path):
 
 def uninstall_files():
     git_folders = []
-
     files_to_remove = get_dictionary_key( g_channelSettings, "files_to_uninstall", [] )
-    log( 1, "\n\nUninstalling added files: %s" % str( files_to_remove ) )
+
+    log.insert_empty_line( 1 )
+    log.insert_empty_line( 1 )
+    log( 1, "Uninstalling added files: %s" % str( files_to_remove ) )
 
     for file in files_to_remove:
         log( 1, "Uninstalling file: %s" % str( file ) )
@@ -733,7 +751,10 @@ def delete_channel_settings_file(maximum_attempts=3):
         Ensure the file is deleted
     """
     if maximum_attempts == 3:
-        log( 1, "\n\nUninstalling channel settings file: %s" % str( CHANNEL_INSTALLATION_SETTINGS ) )
+        log.insert_empty_line( 1 )
+        log.insert_empty_line( 1 )
+
+        log( 1, "Uninstalling channel settings file: %s" % str( CHANNEL_INSTALLATION_SETTINGS ) )
         write_data_file( CHANNEL_INSTALLATION_SETTINGS, {} )
 
     else:

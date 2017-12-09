@@ -400,7 +400,9 @@ def get_repositories(all_packages, last_repositories):
                 upstream = gitModulesFile.get( section, "upstream" )
 
             else:
-                log( 1, "\n\nError: The section `%s` does not has the option: %s" % ( section, "upstream" ) )
+                log.insert_empty_line( 1 )
+                log.insert_empty_line( 1 )
+                log( 1, "Error: The section `%s` does not has the option: %s" % ( section, "upstream" ) )
 
             release_data    = OrderedDict()
             repository_info = OrderedDict()

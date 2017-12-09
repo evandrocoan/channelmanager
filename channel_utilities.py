@@ -100,7 +100,10 @@ def load_data_file(file_path, wait_on_error=True):
                     return json.load( data_file )
 
             except ValueError as error:
-                log( 1, "\n\nError, maximum_attempts %d, load_data_file: %s" % ( maximum_attempts, error ) )
+                log.insert_empty_line( 1 )
+                log.insert_empty_line( 1 )
+
+                log( 1, "Error, maximum_attempts %d, load_data_file: %s" % ( maximum_attempts, error ) )
                 maximum_attempts -= 1
 
                 if wait_on_error:

@@ -351,8 +351,10 @@ def install_stable_packages(packages_to_install):
         #     break
 
         package_name, is_dependency = package_info
-        log( 1, "\n\n%s Installing %d of %d: %s (%s)" % ( progress, current_index, git_packages_count, str( package_name ), str( is_dependency ) ) )
+        log.insert_empty_line( 1 )
+        log.insert_empty_line( 1 )
 
+        log( 1, "%s Installing %d of %d: %s (%s)" % ( progress, current_index, git_packages_count, str( package_name ), str( is_dependency ) ) )
         ignore_next_packages( package_disabler, package_name, packages_to_install_names )
 
         if package_manager.install_package( package_name, is_dependency ) is False:
@@ -587,7 +589,11 @@ def clone_sublime_text_channel(command_line_interface, git_executable_path):
     main_git_folder = os.path.join( CHANNEL_ROOT_DIRECTORY, ".git" )
 
     if os.path.exists( main_git_folder ):
-        log( 1, "\n\nError: The folder '%s' already exists.\nYou already has some custom channel git installation.\n\n" % main_git_folder )
+        log.insert_empty_line( 1 )
+        log.insert_empty_line( 1 )
+
+        log( 1, "Error: The folder '%s' already exists.\nYou already has some custom channel git installation." % main_git_folder )
+        log.insert_empty_line( 1 )
 
     else:
         channel_temporary_folder = os.path.join( CHANNEL_ROOT_DIRECTORY, TEMPORARY_FOLDER_TO_USE )
@@ -683,7 +689,10 @@ def add_folders_and_files_for_removal(root_source_folder, relative_path):
 
 
 def download_main_repository(command_line_interface, git_executable_path, channel_temporary_folder):
-    log( 1, "download_main_repository, \n\nInstalling: %s" % ( str( CHANNEL_ROOT_URL ) ) )
+    log( 1, "download_main_repository..." )
+    log.insert_empty_line( 1 )
+    log.insert_empty_line( 1 )
+    log( 1, "Installing: %s" % ( str( CHANNEL_ROOT_URL ) ) )
 
     if os.path.isdir( channel_temporary_folder ):
         shutil.rmtree( channel_temporary_folder )
@@ -729,7 +738,10 @@ def download_not_packages_submodules(command_line_interface, git_executable_path
                 is_empty = False
 
             if is_empty:
-                log( 1, "download_not_packages_submodules, \n\nInstalling: %s" % ( str( url ) ) )
+                log( 1, "download_not_packages_submodules..." )
+                log.insert_empty_line( 1 )
+                log.insert_empty_line( 1 )
+                log( 1, "Installing: %s" % ( str( url ) ) )
 
                 command = shlex.split( '"%s" clone "%s" "%s"' % ( git_executable_path, url, path ) )
                 output  = str( command_line_interface.execute( command, cwd=CHANNEL_ROOT_DIRECTORY ) )
@@ -750,14 +762,17 @@ def install_development_packages(packages_to_install, git_executable_path, comma
 
     for package_info, pi in estimated_time_left.sequence_timer( packages_to_install, info_frequency=0 ):
         current_index += 1
+
         progress = progress_info( pi )
+        package_name, url, path = package_info
 
         # # For quick testing
         # if current_index > 3:
         #     break
 
-        package_name, url, path = package_info
-        log( 1, "\n\n%s Installing %d of %d: %s" % ( progress, current_index, git_packages_count, str( package_name ) ) )
+        log.insert_empty_line( 1 )
+        log.insert_empty_line( 1 )
+        log( 1, "%s Installing %d of %d: %s" % ( progress, current_index, git_packages_count, str( package_name ) ) )
 
         command = shlex.split( '"%s" clone --recursive "%s" "%s"' % ( git_executable_path, url, path) )
         output  = str( command_line_interface.execute( command, cwd=CHANNEL_ROOT_DIRECTORY ) )
@@ -969,13 +984,18 @@ def uninstall_package_control():
         sublime.set_timeout_async( complete_package_control_uninstalltion, 2000 )
 
     else:
-        log( 1, "\n\nWarning: PackagesManager is was not installed on the system!" )
+        log.insert_empty_line( 1 )
+        log.insert_empty_line( 1 )
+        log( 1, "Warning: PackagesManager is was not installed on the system!" )
+
         global g_is_installation_complete
         g_is_installation_complete = True
 
 
 def complete_package_control_uninstalltion(maximum_attempts=3):
-    log(1, "\n\nFinishing Package Control Uninstallation... maximum_attempts: " + str( maximum_attempts ) )
+    log.insert_empty_line( 1 )
+    log.insert_empty_line( 1 )
+    log(1, "Finishing Package Control Uninstallation... maximum_attempts: " + str( maximum_attempts ) )
 
     # Import the recent installed PackagesManager
     try:
@@ -1004,8 +1024,10 @@ def complete_package_control_uninstalltion(maximum_attempts=3):
     unique_list_append( _uningored_packages_to_flush, packages_names )
 
     for package_name, is_dependency in packages_to_remove:
-        log( 1, "\n\nUninstalling: %s..." % str( package_name ) )
+        log.insert_empty_line( 1 )
+        log.insert_empty_line( 1 )
 
+        log( 1, "Uninstalling: %s..." % str( package_name ) )
         package_manager.remove_package( package_name, is_dependency )
 
     delete_package_control_settings()
