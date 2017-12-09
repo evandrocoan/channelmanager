@@ -31,6 +31,7 @@ import sublime
 import sublime_plugin
 
 import os
+import sys
 import time
 import shutil
 
@@ -109,22 +110,34 @@ try:
 
 except Exception as error:
     print( "Could not import PythonDebugTools! " + str( error ) )
+    channel_installer_module = sys.modules[__name__]
 
-    def satisfy_dependencies():
-        sublime.active_window().run_command( "satisfy_dependencies" )
+    # How do I check if a variable exists?
+    # https://stackoverflow.com/questions/843277/how-do-i-check-if-a-variable-exists
+    try:
+        channel_installer_module.__channel_manager_maximum_attempts
 
-        def reload_all_package_files():
-            sublime_plugin.reload_plugin( CURRENT_PACKAGE_NAME + ".settings" )
-            sublime_plugin.reload_plugin( CURRENT_PACKAGE_NAME + ".channel_installer" )
-            sublime_plugin.reload_plugin( CURRENT_PACKAGE_NAME + ".channel_manager" )
-            sublime_plugin.reload_plugin( CURRENT_PACKAGE_NAME + ".channel_uninstaller" )
-            sublime_plugin.reload_plugin( CURRENT_PACKAGE_NAME + ".channel_utilities" )
-            sublime_plugin.reload_plugin( CURRENT_PACKAGE_NAME + ".copy_default_package" )
-            sublime_plugin.reload_plugin( CURRENT_PACKAGE_NAME + ".submodules_manager" )
+    except NameError:
+        channel_installer_module.__channel_manager_maximum_attempts = 2
 
-        sublime.set_timeout_async( reload_all_package_files, 3000 )
+    if channel_installer_module.__channel_manager_maximum_attempts > 0:
+        channel_installer_module.__channel_manager_maximum_attempts -= 1
 
-    sublime.set_timeout_async( satisfy_dependencies, 3000 )
+        def satisfy_dependencies():
+            sublime.active_window().run_command( "satisfy_dependencies" )
+
+            def reload_all_package_files():
+                sublime_plugin.reload_plugin( CURRENT_PACKAGE_NAME + ".settings" )
+                sublime_plugin.reload_plugin( CURRENT_PACKAGE_NAME + ".channel_installer" )
+                sublime_plugin.reload_plugin( CURRENT_PACKAGE_NAME + ".channel_manager" )
+                sublime_plugin.reload_plugin( CURRENT_PACKAGE_NAME + ".channel_uninstaller" )
+                sublime_plugin.reload_plugin( CURRENT_PACKAGE_NAME + ".channel_utilities" )
+                sublime_plugin.reload_plugin( CURRENT_PACKAGE_NAME + ".copy_default_package" )
+                sublime_plugin.reload_plugin( CURRENT_PACKAGE_NAME + ".submodules_manager" )
+
+            sublime.set_timeout_async( reload_all_package_files, 3000 )
+
+        sublime.set_timeout_async( satisfy_dependencies, 3000 )
 
 
 def main(channel_settings):
