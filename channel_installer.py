@@ -951,7 +951,7 @@ def save_default_settings(is_installation_completed=0):
         g_channelSettings['next_packages_to_ignore'] = []
 
     g_channelSettings = sort_dictionary( g_channelSettings )
-    log( 1, "save_default_settings, g_channelSettings: " + json.dumps( g_channelSettings, indent=4 ) )
+    log( 1 & is_installation_completed, "save_default_settings, g_channelSettings: " + json.dumps( g_channelSettings, indent=4 ) )
 
     write_data_file( CHANNEL_INSTALLATION_SETTINGS, g_channelSettings )
 
