@@ -438,8 +438,16 @@ you usually do with the default `Package Control` channel.
        path = Packages/MyBrandNewChannel
        url = https://github.com/your_user_name/MyBrandNewChannel
        upstream =
-       dependency = ChannelManager
+       dependency = ChannelManager, PythonDebugTools
    ```
+
+   * Note: Due Package Control currently not accept dependencies requiring dependencies, we also
+     need to add the `ChannelManager` dependencies to the `MyBrandNewChannel` dependencies list. On
+     this case, we added the dependency `PythonDebugTools` to the `MyBrandNewChannel` dependencies
+     list, as `ChannelManager` requires the `PythonDebugTools` as dependency. See the following
+     issue for details about when this should be correctly supported by `Package Control`:
+
+     1. [package_control#1300](https://github.com/wbond/package_control/issues/1300) If a dependency has a dependency, its dependencies are not installed
 
 1. Now on this new package called `Packages/MyBrandNewChannel`, you need to create the plugin to
    call the channel manager passing the required configurations. In the following we may see a full
@@ -451,13 +459,13 @@ you usually do with the default `Package Control` channel.
    import sublime
    import sublime_plugin
 
-   from ChannelManager.channel_utilities import clean_urljoin
-   from ChannelManager.channel_utilities import load_data_file
-   from ChannelManager.channel_utilities import get_main_directory
-   from ChannelManager.channel_utilities import get_dictionary_key
+   from channel_manager.channel_utilities import clean_urljoin
+   from channel_manager.channel_utilities import load_data_file
+   from channel_manager.channel_utilities import get_main_directory
+   from channel_manager.channel_utilities import get_dictionary_key
 
-   from ChannelManager import channel_installer
-   from ChannelManager import channel_uninstaller
+   from channel_manager import channel_installer
+   from channel_manager import channel_uninstaller
 
    try:
        from package_control.package_manager import clear_cache
@@ -465,9 +473,9 @@ you usually do with the default `Package Control` channel.
    except ImportError:
        pass
 
-   from ChannelManager.channel_manager import main as manager_main
-   from ChannelManager.submodules_manager import main as submodules_main
-   from ChannelManager.copy_default_package import main as copy_default_main
+   from channel_manager.channel_manager import main as manager_main
+   from channel_manager.submodules_manager import main as submodules_main
+   from channel_manager.copy_default_package import main as copy_default_main
 
 
    # Infer the correct package name and current directory absolute path

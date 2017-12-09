@@ -42,15 +42,7 @@ import subprocess
 from collections import OrderedDict
 from distutils.version import LooseVersion
 
-
-# https://stackoverflow.com/questions/14087598/python-3-importerror-no-module-named-configparser
-try:
-    import configparser
-    from configparser import NoOptionError
-
-except:
-    from six.moves import configparser
-    from six.moves.configparser import NoOptionError
+import configparser
 
 
 from .settings import CURRENT_DIRECTORY
@@ -83,8 +75,8 @@ except ImportError:
 # If a dependency fail running, the subsequent dependencies are not installed by Package Control
 # https://github.com/wbond/package_control/issues/1301
 try:
-    from estimated_time_left import sequence_timer
     from python_debug_tools import Debugger
+    from estimated_time_left import sequence_timer
 
     # Debugger settings: 0 - disabled, 127 - enabled
     log = Debugger( 127, os.path.basename( __file__ ) )
@@ -104,7 +96,7 @@ except Exception as error:
 def main(channel_settings, command="all"):
     log( 2, "Entering on main(2) %s" % ( str( command ) ) )
 
-    channel_thread = GenerateChannelThread(channel_settings, command)
+    channel_thread = GenerateChannelThread( channel_settings, command )
     channel_thread.start()
 
     ThreadProgress( channel_thread, "Generating Channel and Repositories files",

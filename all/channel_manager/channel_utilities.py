@@ -37,7 +37,16 @@ import time
 import textwrap
 
 
-CURRENT_DIRECTORY = os.path.dirname( os.path.realpath( __file__ ) )
+# Relative imports in Python 3
+# https://stackoverflow.com/questions/16981921/relative-imports-in-python-3
+try:
+    from .settings import CURRENT_DIRECTORY
+    from .settings import CURRENT_PACKAGE_NAME
+
+except( ImportError, ValueError):
+    from settings import CURRENT_DIRECTORY
+    from settings import CURRENT_PACKAGE_NAME
+
 
 # print_python_envinronment()
 def assert_path(module):
@@ -49,8 +58,7 @@ def assert_path(module):
         sys.path.append( module )
 
 
-# Allow using this file on the website where the sublime
-# module is unavailable
+# Allow using this file on the website where the sublime module is unavailable
 try:
     import sublime
 

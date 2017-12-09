@@ -35,21 +35,12 @@ import zipfile
 import threading
 import contextlib
 
-
-# https://stackoverflow.com/questions/14087598/python-3-importerror-no-module-named-configparser
-try:
-    import configparser
-    from configparser import NoOptionError
-
-except:
-    from six.moves import configparser
-    from six.moves.configparser import NoOptionError
-
+import configparser
 
 from .settings import CURRENT_DIRECTORY
 from .settings import CURRENT_PACKAGE_NAME
 
-UPGRADE_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, 'last_sublime_upgrade.channel-manager' )
+UPGRADE_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, "all", "last_sublime_upgrade.channel-manager" )
 
 
 # If a dependency fail running, the subsequent dependencies are not installed by Package Control

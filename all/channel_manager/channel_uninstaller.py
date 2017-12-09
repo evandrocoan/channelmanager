@@ -87,8 +87,8 @@ PACKAGES_COUNT_TO_IGNORE_AHEAD = 8
 # If a dependency fail running, the subsequent dependencies are not installed by Package Control
 # https://github.com/wbond/package_control/issues/1301
 try:
-    from estimated_time_left import sequence_timer
     from python_debug_tools import Debugger
+    from estimated_time_left import sequence_timer
 
     # Debugger settings: 0 - disabled, 127 - enabled
     log = Debugger( 127, os.path.basename( __file__ ) )
@@ -146,8 +146,8 @@ def setup_packages_to_uninstall_last(channel_settings):
     global PACKAGES_TO_IGNORE_UNINSTALLATION
     global USER_FOLDER_PATH
 
-    PACKAGES_TO_IGNORE_UNINSTALLATION  = [ "PackagesManager" ]
-    PACKAGES_TO_UNINSTALL_FIRST        = list( reversed( channel_settings['PACKAGES_TO_INSTALL_LAST'] ) )
+    PACKAGES_TO_IGNORE_UNINSTALLATION = [ "PackagesManager" ]
+    PACKAGES_TO_UNINSTALL_FIRST       = list( reversed( channel_settings['PACKAGES_TO_INSTALL_LAST'] ) )
 
     # We need to remove it by last, after installing Package Control back
     for package in PACKAGES_TO_IGNORE_UNINSTALLATION:

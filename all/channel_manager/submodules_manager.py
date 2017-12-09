@@ -42,9 +42,6 @@ import threading
 import subprocess
 
 
-CURRENT_DIRECTORY = os.path.dirname( os.path.realpath( __file__ ) )
-
-
 # Relative imports in Python 3
 # https://stackoverflow.com/questions/16981921/relative-imports-in-python-3
 try:
@@ -132,16 +129,14 @@ def print_python_envinronment():
 # https://stackoverflow.com/questions/14087598/python-3-importerror-no-module-named-configparser
 try:
     import configparser
-    from configparser import NoOptionError
 
 except:
     from six.moves import configparser
-    from six.moves.configparser import NoOptionError
 
 
 # print_python_envinronment()
-CHANNEL_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, "last_session.channel-manager" )
-FIND_FORKS_PATH      = os.path.join( CURRENT_DIRECTORY, "find_forks" )
+CHANNEL_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, "all", "last_session.channel-manager" )
+FIND_FORKS_PATH      = os.path.join( CURRENT_DIRECTORY, "all", "find_forks" )
 
 # How many errors are acceptable when the GitHub API request fails
 MAXIMUM_REQUEST_ERRORS = 10
@@ -165,7 +160,7 @@ def main(command=None):
     log( 1, "Entering on main(1) " + str( command ) )
     global CHANNEL_ROOT_DIRECTORY
 
-    argumentsNamespace    = None
+    argumentsNamespace     = None
     CHANNEL_ROOT_DIRECTORY = get_main_directory( CURRENT_DIRECTORY )
 
     # https://stackoverflow.com/questions/6382804/how-to-use-getopt-optarg-in-python-how-to-shift

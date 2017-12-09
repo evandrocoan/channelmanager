@@ -31,10 +31,8 @@ import os
 import sys
 import unittest
 
-import imp
-import ChannelManager
-imp.reload( ChannelManager )
-import ChannelManager
+from .channel_manager import fix_semantic_version
+from .channel_manager import increment_patch_version
 
 
 # If a dependency fail running, the subsequent dependencies are not installed by Package Control
@@ -99,7 +97,7 @@ class ChannelManagerUnitTests(unittest.TestCase):
         self.increment_patch_version( "v1.1.1", True, "v1.1.2" )
 
     def increment_patch_version(self, tag, increment, goal):
-        fixed = ChannelManager.channel_manager.increment_patch_version( tag, increment )
+        fixed = increment_patch_version( tag, increment )
 
         # log( 1, "increment_patch_version(%s), fixed: %s" % ( tag, fixed ) )
         self.assertEqual( fixed, goal )
@@ -125,7 +123,7 @@ class ChannelManagerUnitTests(unittest.TestCase):
         self.fix_semantic_version( "v1.6.1", "1.6.1", "1.6.1" )
 
     def fix_semantic_version(self, tag, fix_goal, match_goal):
-        fixed, matched = ChannelManager.channel_manager.fix_semantic_version(tag)
+        fixed, matched = fix_semantic_version(tag)
 
         # log( 1, "fix_semantic_version(%s), fixed: %s, matched: %s" % ( tag, fixed, matched ) )
         self.assertEqual( fixed, fix_goal )
