@@ -105,6 +105,7 @@ try:
     # log( 2, "CURRENT_DIRECTORY_:     " + CURRENT_DIRECTORY )
 
 except Exception as error:
+    sublime.run_command( "satisfy_dependencies" )
     print( "Could not import PythonDebugTools! " + str( error ) )
 
 
