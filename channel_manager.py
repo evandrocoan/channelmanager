@@ -83,7 +83,7 @@ except ImportError:
 # If a dependency fail running, the subsequent dependencies are not installed by Package Control
 # https://github.com/wbond/package_control/issues/1301
 try:
-    from EstimatedTimeLeft import estimated_time_left
+    from estimated_time_left import sequence_timer
     from PythonDebugTools.debug_tools import Debugger
 
     # Debugger settings: 0 - disabled, 127 - enabled
@@ -169,7 +169,7 @@ class GenerateChannelThread(threading.Thread):
                 index = 0
                 repositories_count = len( last_repositories )
 
-                for package_name, pi in estimated_time_left.sequence_timer( last_repositories, info_frequency=0 ):
+                for package_name, pi in sequence_timer( last_repositories, info_frequency=0 ):
                     index += 1
                     progress = progress_info( pi )
 
@@ -373,7 +373,7 @@ def get_repositories(all_packages, last_repositories):
     index = 0
     log( 1, "Total repositories to parse: " + str( sections_count ) )
 
-    for section, pi in estimated_time_left.sequence_timer( sections, info_frequency=0 ):
+    for section, pi in sequence_timer( sections, info_frequency=0 ):
         repo_path = gitModulesFile.get( section, "path" )
 
         # # For quick testing
@@ -512,7 +512,7 @@ def delete_tags_list(tags_list, absolute_repo_path, command_line_interface):
     tags_count   = len( tags_list )
     remote_index = 0
 
-    for tag, pi in estimated_time_left.sequence_timer( tags_list, info_frequency=0 ):
+    for tag, pi in sequence_timer( tags_list, info_frequency=0 ):
         progress      = progress_info( pi )
         remote_index += 1
 

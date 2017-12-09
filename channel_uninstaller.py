@@ -87,7 +87,7 @@ PACKAGES_COUNT_TO_IGNORE_AHEAD = 8
 # If a dependency fail running, the subsequent dependencies are not installed by Package Control
 # https://github.com/wbond/package_control/issues/1301
 try:
-    from EstimatedTimeLeft import estimated_time_left
+    from estimated_time_left import sequence_timer
     from PythonDebugTools.debug_tools import Debugger
 
     # Debugger settings: 0 - disabled, 127 - enabled
@@ -306,7 +306,7 @@ def uninstall_packages():
     ask_user_for_which_packages_to_install( packages_to_uninstall )
     uninstall_default_package( packages_to_uninstall )
 
-    for package_name, pi in estimated_time_left.sequence_timer( packages_to_uninstall, info_frequency=0 ):
+    for package_name, pi in sequence_timer( packages_to_uninstall, info_frequency=0 ):
         current_index += 1
         progress = progress_info( pi )
 

@@ -73,7 +73,7 @@ try:
     # If a dependency fail running, the subsequent dependencies are not installed by Package Control
     # https://github.com/wbond/package_control/issues/1301
     try:
-        from EstimatedTimeLeft import estimated_time_left
+        from estimated_time_left import sequence_timer
         from PythonDebugTools.debug_tools import Debugger
 
     except Exception as error:
@@ -97,9 +97,9 @@ except ImportError:
     # unpacked at the loose packages folder as a git submodule.
     assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools' ) )
     assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PackagesManager' ) )
-    assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'estimated_time_left' ) )
+    assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'EstimatedTimeLeft/all' ) )
 
-    import estimated_time_left
+    from estimated_time_left import sequence_timer
     from debug_tools import Debugger
     from packagesmanager import cmd
 
@@ -401,7 +401,7 @@ class RunBackstrokeThread(threading.Thread):
         command_line_interface = cmd.Cli( None, False )
 
         # https://stackoverflow.com/questions/22068050/iterate-over-sections-in-a-config-file
-        for section, pi in estimated_time_left.sequence_timer( sections, info_frequency=0 ):
+        for section, pi in sequence_timer( sections, info_frequency=0 ):
             request_index += 1
             progress       = progress_info( pi )
 
@@ -532,7 +532,7 @@ class RunBackstrokeThread(threading.Thread):
                         # -2 because I am discarding myself and my upstream
                         remotes_count = len( remotes_list ) - 2
 
-                        for remote, pi in estimated_time_left.sequence_timer( remotes_list, info_frequency=0 ):
+                        for remote, pi in sequence_timer( remotes_list, info_frequency=0 ):
 
                             if remote not in ( "origin", user ):
                                 progress      = progress_info( pi )

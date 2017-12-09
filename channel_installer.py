@@ -97,7 +97,7 @@ PACKAGES_COUNT_TO_IGNORE_AHEAD = 8
 # If a dependency fail running, the subsequent dependencies are not installed by Package Control
 # https://github.com/wbond/package_control/issues/1301
 try:
-    from EstimatedTimeLeft import estimated_time_left
+    from estimated_time_left import sequence_timer
     from PythonDebugTools.debug_tools import Debugger
 
     # Debugger settings: 0 - disabled, 127 - enabled
@@ -355,7 +355,7 @@ def install_stable_packages(packages_to_install):
     current_index      = 0
     git_packages_count = len( packages_to_install )
 
-    for package_info, pi in estimated_time_left.sequence_timer( packages_to_install, info_frequency=0 ):
+    for package_info, pi in sequence_timer( packages_to_install, info_frequency=0 ):
         current_index += 1
         progress = progress_info( pi )
 
@@ -773,7 +773,7 @@ def install_development_packages(packages_to_install, git_executable_path, comma
     current_index      = 0
     git_packages_count = len( packages_to_install )
 
-    for package_info, pi in estimated_time_left.sequence_timer( packages_to_install, info_frequency=0 ):
+    for package_info, pi in sequence_timer( packages_to_install, info_frequency=0 ):
         current_index += 1
 
         progress = progress_info( pi )
