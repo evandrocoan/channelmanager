@@ -3,8 +3,8 @@
     {
         "*":
         [
-            "estimated_time_left",
-            "PythonDebugTools"
+            "PythonDebugTools",
+            "estimated_time_left"
         ]
     }
 }
