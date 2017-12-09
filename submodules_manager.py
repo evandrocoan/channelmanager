@@ -48,13 +48,17 @@ CURRENT_DIRECTORY = os.path.dirname( os.path.realpath( __file__ ) )
 # Relative imports in Python 3
 # https://stackoverflow.com/questions/16981921/relative-imports-in-python-3
 try:
-    from .settings import *
+    from .settings import CURRENT_DIRECTORY
+    from .settings import CURRENT_PACKAGE_NAME
+
     from .channel_utilities import get_main_directory
     from .channel_utilities import progress_info
     from .channel_utilities import assert_path
 
 except( ImportError, ValueError):
-    from settings import *
+    from settings import CURRENT_DIRECTORY
+    from settings import CURRENT_PACKAGE_NAME
+
     from channel_utilities import get_main_directory
     from channel_utilities import progress_info
     from channel_utilities import assert_path

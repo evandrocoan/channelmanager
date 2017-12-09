@@ -60,7 +60,9 @@ except:
     pass
 
 
-from .settings import *
+from .settings import CURRENT_DIRECTORY
+from .settings import CURRENT_PACKAGE_NAME
+
 g_is_already_running = False
 
 from .channel_utilities import progress_info

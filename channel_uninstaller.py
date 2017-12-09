@@ -40,7 +40,8 @@ import threading
 g_is_already_running           = False
 g_is_package_control_installed = False
 
-from .settings import *
+from .settings import CURRENT_DIRECTORY
+from .settings import CURRENT_PACKAGE_NAME
 
 from .channel_utilities import get_installed_packages
 from .channel_utilities import unique_list_join

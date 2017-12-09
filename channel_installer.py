@@ -49,7 +49,9 @@ except:
     from six.moves.configparser import NoOptionError
 
 
-from .settings import *
+from .settings import CURRENT_DIRECTORY
+from .settings import CURRENT_PACKAGE_NAME
+
 g_is_already_running = False
 
 from .channel_utilities import get_installed_packages
@@ -105,8 +107,23 @@ try:
     # log( 2, "CURRENT_DIRECTORY_:     " + CURRENT_DIRECTORY )
 
 except Exception as error:
-    sublime.active_window().run_command( "satisfy_dependencies" )
     print( "Could not import PythonDebugTools! " + str( error ) )
+
+    def satisfy_dependencies():
+        sublime.active_window().run_command( "satisfy_dependencies" )
+
+        def reload_all_package_files():
+            sublime_plugin.reload_plugin( CURRENT_PACKAGE_NAME + ".settings" )
+            sublime_plugin.reload_plugin( CURRENT_PACKAGE_NAME + ".channel_installer" )
+            sublime_plugin.reload_plugin( CURRENT_PACKAGE_NAME + ".channel_manager" )
+            sublime_plugin.reload_plugin( CURRENT_PACKAGE_NAME + ".channel_uninstaller" )
+            sublime_plugin.reload_plugin( CURRENT_PACKAGE_NAME + ".channel_utilities" )
+            sublime_plugin.reload_plugin( CURRENT_PACKAGE_NAME + ".copy_default_package" )
+            sublime_plugin.reload_plugin( CURRENT_PACKAGE_NAME + ".submodules_manager" )
+
+        sublime.set_timeout_async( reload_all_package_files, 3000 )
+
+    sublime.set_timeout_async( satisfy_dependencies, 3000 )
 
 
 def main(channel_settings):

@@ -46,7 +46,9 @@ except:
     from six.moves.configparser import NoOptionError
 
 
-from .settings import *
+from .settings import CURRENT_DIRECTORY
+from .settings import CURRENT_PACKAGE_NAME
+
 UPGRADE_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, 'last_sublime_upgrade.channel-manager' )
 
 
