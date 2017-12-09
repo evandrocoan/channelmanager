@@ -53,13 +53,6 @@ except:
     from six.moves.configparser import NoOptionError
 
 
-try:
-    from estimated_time_left import estimated_time_left
-
-except:
-    pass
-
-
 from .settings import CURRENT_DIRECTORY
 from .settings import CURRENT_PACKAGE_NAME
 
@@ -90,7 +83,7 @@ except ImportError:
 # If a dependency fail running, the subsequent dependencies are not installed by Package Control
 # https://github.com/wbond/package_control/issues/1301
 try:
-    from estimated_time_left import estimated_time_left
+    from EstimatedTimeLeft import estimated_time_left
     from PythonDebugTools.debug_tools import Debugger
 
     # Debugger settings: 0 - disabled, 127 - enabled

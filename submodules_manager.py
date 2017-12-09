@@ -73,7 +73,7 @@ try:
     # If a dependency fail running, the subsequent dependencies are not installed by Package Control
     # https://github.com/wbond/package_control/issues/1301
     try:
-        from estimated_time_left import estimated_time_left
+        from EstimatedTimeLeft import estimated_time_left
         from PythonDebugTools.debug_tools import Debugger
 
     except Exception as error:
