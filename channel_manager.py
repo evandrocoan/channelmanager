@@ -94,17 +94,16 @@ try:
     # Debugger settings: 0 - disabled, 127 - enabled
     log = Debugger( 127, os.path.basename( __file__ ) )
 
+    #log.log_to_file( "Debug.txt" )
+    #log.clear_log_file()
+
+    # log( 2, "..." )
+    # log( 2, "..." )
+    # log( 2, "Debugging" )
+    # log( 2, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
+
 except Exception as error:
     print( "Could not import PythonDebugTools! " + str( error ) )
-
-
-#log.log_to_file( "Debug.txt" )
-#log.clear_log_file()
-
-# log( 2, "..." )
-# log( 2, "..." )
-# log( 2, "Debugging" )
-# log( 2, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 
 
 def main(channel_settings, command="all"):

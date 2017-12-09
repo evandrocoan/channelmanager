@@ -72,10 +72,8 @@ try:
         from estimated_time_left import estimated_time_left
         from PythonDebugTools.debug_tools import Debugger
 
-        # Debugger settings: 0 - disabled, 127 - enabled
-        log = Debugger( 127, os.path.basename( __file__ ) )
-
     except Exception as error:
+        Debugger = None
         print( "Could not import PythonDebugTools! " + str( error ) )
 
     # When there is an ImportError, means that Package Control is installed instead of PackagesManager.
@@ -146,13 +144,17 @@ MAXIMUM_REQUEST_ERRORS = 10
 g_is_already_running   = False
 
 
-#log.log_to_file( "Debug.txt" )
-#log.clear_log_file()
+if Debugger:
+    # Debugger settings: 0 - disabled, 127 - enabled
+    log = Debugger( 127, os.path.basename( __file__ ) )
 
-# log( 1, "..." )
-# log( 1, "..." )
-# log( 1, "Debugging" )
-# log( 1, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
+    #log.log_to_file( "Debug.txt" )
+    #log.clear_log_file()
+
+    # log( 1, "..." )
+    # log( 1, "..." )
+    # log( 1, "Debugging" )
+    # log( 1, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 
 
 def main(command=None):
