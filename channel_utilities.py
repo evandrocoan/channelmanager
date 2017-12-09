@@ -57,7 +57,7 @@ try:
     # If a dependency fail running, the subsequent dependencies are not installed by Package Control
     # https://github.com/wbond/package_control/issues/1301
     try:
-        from PythonDebugTools.debug_tools import Debugger
+        from python_debug_tools import Debugger
 
         # Debugger settings: 0 - disabled, 127 - enabled
         log = Debugger( 127, os.path.basename( __file__ ) )
@@ -71,8 +71,8 @@ except ImportError:
     # Import the debugger. It will fail when `PythonDebugTools` is inside a `.sublime-package`,
     # however, this is only meant to be used on the Development version, when `PythonDebugTools` is
     # unpacked at the loose packages folder as a git submodule.
-    assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools' ) )
-    from debug_tools import Debugger
+    assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools/all' ) )
+    from python_debug_tools import Debugger
 
 
 def write_data_file(file_path, channel_dictionary):

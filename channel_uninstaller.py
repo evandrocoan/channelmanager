@@ -88,7 +88,7 @@ PACKAGES_COUNT_TO_IGNORE_AHEAD = 8
 # https://github.com/wbond/package_control/issues/1301
 try:
     from estimated_time_left import sequence_timer
-    from PythonDebugTools.debug_tools import Debugger
+    from python_debug_tools import Debugger
 
     # Debugger settings: 0 - disabled, 127 - enabled
     log = Debugger( 127, os.path.basename( __file__ ) )

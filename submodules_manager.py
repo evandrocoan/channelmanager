@@ -73,8 +73,8 @@ try:
     # If a dependency fail running, the subsequent dependencies are not installed by Package Control
     # https://github.com/wbond/package_control/issues/1301
     try:
+        from python_debug_tools import Debugger
         from estimated_time_left import sequence_timer
-        from PythonDebugTools.debug_tools import Debugger
 
     except Exception as error:
         Debugger = None
@@ -95,13 +95,13 @@ except ImportError:
     # Import the debugger. It will fail when `PythonDebugTools` is inside a `.sublime-package`,
     # however, this is only meant to be used on the Development version, `PythonDebugTools` is
     # unpacked at the loose packages folder as a git submodule.
-    assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools' ) )
+    assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools/all' ) )
     assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PackagesManager' ) )
     assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'EstimatedTimeLeft/all' ) )
 
-    from estimated_time_left import sequence_timer
-    from debug_tools import Debugger
     from packagesmanager import cmd
+    from python_debug_tools import Debugger
+    from estimated_time_left import sequence_timer
 
 
 # # https://stackoverflow.com/questions/9079036/detect-python-version-at-runtime
