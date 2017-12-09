@@ -117,7 +117,7 @@ except Exception as error:
     try:
         channel_installer_module.__channel_manager_maximum_attempts
 
-    except NameError:
+    except (NameError, AttributeError) as error:
         channel_installer_module.__channel_manager_maximum_attempts = 2
 
     if channel_installer_module.__channel_manager_maximum_attempts > 0:
