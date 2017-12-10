@@ -99,7 +99,7 @@ try:
     # log( 2, "CURRENT_DIRECTORY_: " + CURRENT_DIRECTORY )
 
 except Exception as error:
-    print( "Could not import PythonDebugTools! " + str( error ) )
+    print( "Could not import the required dependencies! " + str( error ) )
 
 
 def main(channel_settings):

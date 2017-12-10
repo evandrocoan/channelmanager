@@ -75,7 +75,7 @@ try:
 
     except Exception as error:
         Debugger = None
-        print( "Could not import PythonDebugTools! " + str( error ) )
+        print( "Could not import the required dependencies! " + str( error ) )
 
     # When there is an ImportError, means that Package Control is installed instead of PackagesManager.
     # Which means we cannot do nothing as this is only compatible with PackagesManager.

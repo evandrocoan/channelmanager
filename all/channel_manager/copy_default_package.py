@@ -58,7 +58,7 @@ try:
 
 except Exception as error:
     Debugger = None
-    print( "Could not import PythonDebugTools! " + str( error ) )
+    print( "Could not import the required dependencies! " + str( error ) )
 
 
 def main(default_packages_files=[], is_forced=False):

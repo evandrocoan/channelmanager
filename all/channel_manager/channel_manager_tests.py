@@ -44,7 +44,7 @@ try:
     log = Debugger( 127, os.path.basename( __file__ ) )
 
 except Exception as error:
-    print( "Could not import PythonDebugTools! " + str( error ) )
+    print( "Could not import the required dependencies! " + str( error ) )
 
 
 def plugin_loaded():
