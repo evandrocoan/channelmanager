@@ -52,7 +52,7 @@ try:
     from .channel_utilities import progress_info
     from .channel_utilities import assert_path
 
-except( ImportError, ValueError):
+except( ImportError, ValueError ):
     from settings import CURRENT_DIRECTORY
     from settings import CURRENT_PACKAGE_NAME
 
@@ -66,6 +66,9 @@ except( ImportError, ValueError):
 try:
     import sublime
     import sublime_plugin
+
+    # https://stackoverflow.com/questions/14087598/python-3-importerror-no-module-named-configparser
+    import configparser
 
     # If a dependency fail running, the subsequent dependencies are not installed by Package Control
     # https://github.com/wbond/package_control/issues/1301
@@ -82,10 +85,10 @@ try:
     try:
         from PackagesManager.packagesmanager import cmd
 
-    except:
+    except( ImportError, ValueError ):
         pass
 
-except ImportError:
+except( ImportError, ValueError ):
     sublime = None
     sublime_plugin = None
 
@@ -95,7 +98,9 @@ except ImportError:
     assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools/all' ) )
     assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PackagesManager' ) )
     assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'EstimatedTimeLeft/all' ) )
+    assert_path( os.path.join( CURRENT_DIRECTORY, CURRENT_PACKAGE_NAME, 'all' ) )
 
+    from six.moves import configparser
     from packagesmanager import cmd
     from python_debug_tools import Debugger
     from estimated_time_left import sequence_timer
@@ -126,17 +131,9 @@ def print_python_envinronment():
         index += 1;
 
 
-# https://stackoverflow.com/questions/14087598/python-3-importerror-no-module-named-configparser
-try:
-    import configparser
-
-except:
-    from six.moves import configparser
-
-
 # print_python_envinronment()
 CHANNEL_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, "all", "last_session.channel-manager" )
-FIND_FORKS_PATH      = os.path.join( CURRENT_DIRECTORY, "all", "find_forks" )
+FIND_FORKS_PATH      = os.path.join( CURRENT_DIRECTORY, "find_forks" )
 
 # How many errors are acceptable when the GitHub API request fails
 MAXIMUM_REQUEST_ERRORS = 10
