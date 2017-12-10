@@ -698,7 +698,7 @@ you usually do with the default `Package Control` channel.
                "command": "my_brand_new_channel_generate_channel_file",
                "args": {"command": "all" } },
 
-       { "caption": "My Brand New Channel: Select Package to Update Git Tag",
+       { "caption": "My Brand New Channel: Select Packages to Update Git Tag",
                "command": "my_brand_new_channel_generate_channel_file",
                "args": {"command": "git_tag" } },
 
@@ -768,7 +768,7 @@ you usually do with the default `Package Control` channel.
                                        "command": "my_brand_new_channel_generate_channel_file",
                                        "args": {"command": "all" } },
 
-                               { "caption": "Select Package to Update Git Tag",
+                               { "caption": "Select Packages to Update Git Tag",
                                        "command": "my_brand_new_channel_generate_channel_file",
                                        "args": {"command": "git_tag" } },
 
@@ -894,7 +894,7 @@ installed the Development Version of the channel:
    the Stable Version of the channel. You can read more about them at [Package Control, Docs:
    Channels and Repositories](https://packagecontrol.io/docs/channels_and_repositories)
 
-1. **YourChannelName: Select Package to Update Git Tag** Before running this command, you must have
+1. **YourChannelName: Select Packages to Update Git Tag** Before running this command, you must have
    already called `Generate Channel File` to create the channel files, as this commands just load
    those files and create a git tag as performed on the command `Generate Channel File and Tags`,
    however the tag is only created if it does not already exists a tag for the current/latest

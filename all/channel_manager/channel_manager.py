@@ -295,14 +295,17 @@ class GenerateChannelThread(threading.Thread):
                 self.save_log_file( repositories, dependencies )
 
             elif self.command == "git_tag":
-                repositories_list      = []
-                self.repositories_list = repositories_list
+                self.repositories_list = ["Select this fist item to start the updating... (0 items selected)"]
                 self.last_channel_file = last_channel_file
 
                 for package_name in last_channel_file:
-                    repositories_list.append( package_name )
+                    self.repositories_list.append( package_name )
 
-                show_quick_panel( sublime.active_window(), repositories_list, self.on_done )
+                self.exclusion_flag   = " (excluded)"
+                self.last_picked_item = 0
+
+                self.last_excluded_items = 0
+                show_quick_panel( sublime.active_window(), self.repositories_list, self.on_done )
 
             elif self.command == "git_tag_all":
                 index = 0
@@ -328,7 +331,6 @@ class GenerateChannelThread(threading.Thread):
             else:
                 log( 1, "Invalid command: " + str( self.command ) )
 
-
     def save_log_file(self, repositories, dependencies):
         """
             @param repositories  a list of all repositories
@@ -343,28 +345,70 @@ class GenerateChannelThread(threading.Thread):
         print_failed_repositories()
 
         sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+        free_mutex_lock()
 
-        global g_is_already_running
-        g_is_already_running = False
+    def on_done(self, picked_index):
 
-    def on_done(self, picked):
-
-        if picked < 0:
+        if picked_index < 0:
+            free_mutex_lock()
             return
 
-        self.picked = picked
+        if picked_index == 0:
 
-        thread = threading.Thread( target=self.on_done_async )
-        thread.start()
+            if self.get_total_items_selected() < 1:
+                show_quick_panel( sublime.active_window(), self.repositories_list, self.on_done )
+
+            else:
+                thread = threading.Thread( target=self.on_done_async )
+                thread.start()
+
+        else:
+
+            if picked_index <= self.last_picked_item:
+                picked_package = self.repositories_list[picked_index]
+
+                if picked_package.endswith( self.exclusion_flag ):
+                    self.last_excluded_items -= 1
+                    self.repositories_list[picked_index] = picked_package.strip( self.exclusion_flag )
+
+                else:
+                    self.last_excluded_items += 1
+                    self.repositories_list[picked_index] = picked_package + self.exclusion_flag
+
+            else:
+                self.last_picked_item += 1
+
+            self.update_start_item_name()
+            self.repositories_list.insert( 1, self.repositories_list.pop( picked_index ) )
+            show_quick_panel( sublime.active_window(), self.repositories_list, self.on_done )
+
+    def update_start_item_name(self):
+        self.repositories_list[0] = "Start Updating... (%d items selected)" % ( self.get_total_items_selected() )
+
+    def get_total_items_selected(self):
+        return self.last_picked_item - self.last_excluded_items
 
     def on_done_async(self):
-        package_name    = self.repositories_list[self.picked]
-        last_dictionary = get_dictionary_key( self.last_channel_file, package_name, {} )
+        save_items = False
 
-        update_repository( last_dictionary, package_name )
-        repositories, dependencies = split_repositories_and_depencies( self.last_channel_file )
+        for package_index in range( 1, self.get_total_items_selected() + 1 ):
+            package_name = self.repositories_list[package_index]
 
-        self.save_log_file( repositories, dependencies )
+            if package_name.endswith( self.exclusion_flag ):
+                continue
+
+            save_items = True
+            last_dictionary = get_dictionary_key( self.last_channel_file, package_name, {} )
+            update_repository( last_dictionary, package_name )
+
+        if save_items:
+            repositories, dependencies = split_repositories_and_depencies( self.last_channel_file )
+            self.save_log_file( repositories, dependencies )
+
+
+def free_mutex_lock():
+    global g_is_already_running
+    g_is_already_running = False
 
 
 def split_repositories_and_depencies(repositories_dictionary):
