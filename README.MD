@@ -673,7 +673,7 @@ you usually do with the default `Package Control` channel.
            return is_channel_installed()
 
 
-   class MyBrandNewChannelUpdateDefaultPackages( sublime_plugin.ApplicationCommand ):
+   class MyBrandNewChannelExtractDefaultPackages( sublime_plugin.ApplicationCommand ):
 
        def run(self):
            sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
@@ -696,7 +696,7 @@ you usually do with the default `Package Control` channel.
    [
        { "caption": "My Brand New Channel: Generate Channel File",
                "command": "my_brand_new_channel_generate_channel_file",
-               "args": {} },
+               "args": {"command": "all" } },
 
        { "caption": "My Brand New Channel: Select Package to Update Git Tag",
                "command": "my_brand_new_channel_generate_channel_file",
@@ -705,6 +705,20 @@ you usually do with the default `Package Control` channel.
        { "caption": "My Brand New Channel: Update All Packages Git Tag",
                "command": "my_brand_new_channel_generate_channel_file",
                "args": {"command": "git_tag_all" } },
+
+       { "caption": "My Brand New Channel: Run Stable Installation",
+               "command": "my_brand_new_channel_run_installation",
+               "args": {"version": "stable"} },
+
+       { "caption": "My Brand New Channel: Run Development Installation",
+               "command": "my_brand_new_channel_run_installation",
+               "args": {"version": "development"} },
+
+       { "caption": "My Brand New Channel: Run Uninstallation",
+               "command": "my_brand_new_channel_run_uninstallation" },
+
+       { "caption": "My Brand New Channel: Extract Default Package",
+               "command": "my_brand_new_channel_extract_default_packages" },
 
        { "caption": "My Brand New Channel: Run Backstroke Requests",
                "command": "my_brand_new_channel_run", "args": {"run": "-b"} },
@@ -726,18 +740,6 @@ you usually do with the default `Package Control` channel.
 
        { "caption": "My Brand New Channel: Delete All remote Except origin",
                "command": "my_brand_new_channel_run", "args": {"run": "-d"} },
-
-       { "caption": "My Brand New Channel: Extract Default Package",
-               "command": "my_brand_new_channel_update_default_packages" },
-
-       { "caption": "My Brand New Channel: Run Stable Installation",
-               "command": "my_brand_new_channel_run_installation", "args": {"version": "stable"} },
-
-       { "caption": "My Brand New Channel: Run Development Installation",
-               "command": "my_brand_new_channel_run_installation", "args": {"version": "development"} },
-
-       { "caption": "My Brand New Channel: Run Uninstallation",
-               "command": "my_brand_new_channel_run_uninstallation" },
    ]
    ```
 
@@ -764,7 +766,7 @@ you usually do with the default `Package Control` channel.
                            [
                                { "caption": "Generate Channel File",
                                        "command": "my_brand_new_channel_generate_channel_file",
-                                       "args": {} },
+                                       "args": {"command": "all" } },
 
                                { "caption": "Select Package to Update Git Tag",
                                        "command": "my_brand_new_channel_generate_channel_file",
@@ -773,6 +775,20 @@ you usually do with the default `Package Control` channel.
                                { "caption": "Update All Packages Git Tag",
                                        "command": "my_brand_new_channel_generate_channel_file",
                                        "args": {"command": "git_tag_all" } },
+
+                               { "caption": "Run Stable Installation",
+                                       "command": "my_brand_new_channel_run_installation",
+                                       "args": {"version": "stable"} },
+
+                               { "caption": "Run Development Installation",
+                                       "command": "my_brand_new_channel_run_installation",
+                                       "args": {"version": "development"} },
+
+                               { "caption": "Run Uninstallation",
+                                       "command": "my_brand_new_channel_run_uninstallation" },
+
+                               { "caption": "Extract Default Package",
+                                       "command": "my_brand_new_channel_extract_default_packages" },
 
                                { "caption": "Run Backstroke Requests",
                                        "command": "my_brand_new_channel_run", "args": {"run": "-b"} },
@@ -794,20 +810,6 @@ you usually do with the default `Package Control` channel.
 
                                { "caption": "Delete All remote Except origin",
                                        "command": "my_brand_new_channel_run", "args": {"run": "-d"} },
-
-                               { "caption": "Extract Default Package",
-                                       "command": "my_brand_new_channel_update_default_packages" },
-
-                               { "caption": "Run Stable Installation",
-                                       "command": "my_brand_new_channel_run_installation",
-                                       "args": {"version": "stable"} },
-
-                               { "caption": "Run Development Installation",
-                                       "command": "my_brand_new_channel_run_installation",
-                                       "args": {"version": "development"} },
-
-                               { "caption": "Run Uninstallation",
-                                       "command": "my_brand_new_channel_run_uninstallation" },
                            ]
                        }
                    ]
