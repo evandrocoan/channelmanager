@@ -391,7 +391,7 @@ class GenerateChannelThread(threading.Thread):
     def on_done_async(self):
         save_items = False
 
-        for package_index in range( 1, self.get_total_items_selected() + 1 ):
+        for package_index in range( 1, self.last_picked_item + 1 ):
             package_name = self.repositories_list[package_index]
 
             if package_name.endswith( self.exclusion_flag ):
