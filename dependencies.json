@@ -1,9 +1,7 @@
 {
-    "*":
-    {
-        "*":
-        [
-            "PythonDebugTools",
+    "*": {
+        "*": [
+            "PythonDebugTools", 
             "EstimatedTimeLeft"
         ]
     }

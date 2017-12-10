@@ -38,11 +38,10 @@ import threading
 import re
 import shlex
 import subprocess
+import configparser
 
 from collections import OrderedDict
 from distutils.version import LooseVersion
-
-import configparser
 
 
 from .settings import CURRENT_DIRECTORY
@@ -240,11 +239,11 @@ def split_repositories_and_depencies(repositories_dictionary):
 def update_repository(last_repository, package_name):
     log( 1, "Updating repository... %s" % ( str( package_name ) ) )
 
-    command_line_interface = cmd.Cli( None, True )
-    absolute_repo_path     = os.path.join( CHANNEL_ROOT_DIRECTORY, "Packages", package_name )
+    command_line_interface   = cmd.Cli( None, True )
+    absolute_repository_path = os.path.join( CHANNEL_ROOT_DIRECTORY, "Packages", package_name )
 
     git_tag, date_tag, release_date = get_last_tag_fixed(
-            absolute_repo_path, command_line_interface, last_repository, True )
+            absolute_repository_path, command_line_interface, last_repository, True )
 
     release_data = last_repository['releases'][0]
 
@@ -257,7 +256,7 @@ def update_repository(last_repository, package_name):
         release_data['git_tag'] = git_tag
 
         command = "git push origin %s" % git_tag
-        command_line_interface.execute( shlex.split( command ), absolute_repo_path, live_output=True, short_errors=True )
+        command_line_interface.execute( shlex.split( command ), absolute_repository_path, live_output=True, short_errors=True )
 
 
 def print_failed_repositories():
@@ -366,19 +365,19 @@ def get_repositories(all_packages, last_repositories):
     log( 1, "Total repositories to parse: " + str( sections_count ) )
 
     for section, pi in sequence_timer( sections, info_frequency=0 ):
-        repo_path = gitModulesFile.get( section, "path" )
+        repository_path = gitModulesFile.get( section, "path" )
 
         # # For quick testing
         # if index > 3:
         #     break
 
-        if 'Packages' == repo_path[0:8]:
+        if 'Packages' == repository_path[0:8]:
             index   += 1
             upstream = ""
             progress = progress_info( pi )
 
             # log.insert_empty_line( 1 )
-            log( 1, "{:s} Processing {:3d} of {:d} repositories... {:s}".format( progress, index, sections_count, repo_path ) )
+            log( 1, "{:s} Processing {:3d} of {:d} repositories... {:s}".format( progress, index, sections_count, repository_path ) )
             url = gitModulesFile.get( section, "url" )
 
             if gitModulesFile.has_option( section, "upstream" ):
@@ -391,7 +390,7 @@ def get_repositories(all_packages, last_repositories):
 
             release_data    = OrderedDict()
             repository_info = OrderedDict()
-            repository_name = os.path.basename( repo_path )
+            repository_name = os.path.basename( repository_path )
 
             if repository_name in all_packages:
                 repository_info = all_packages[repository_name]
@@ -403,18 +402,21 @@ def get_repositories(all_packages, last_repositories):
             release_data['platforms']    = "*"
             release_data['sublime_text'] = ">=3126"
 
-            last_repository    = get_dictionary_key( last_repositories, repository_name, {} )
-            absolute_repo_path = os.path.join( CHANNEL_ROOT_DIRECTORY, repo_path )
+            last_repository          = get_dictionary_key( last_repositories, repository_name, {} )
+            absolute_repository_path = os.path.join( CHANNEL_ROOT_DIRECTORY, repository_path )
 
             git_tag, date_tag, release_date = get_last_tag_fixed(
-                    absolute_repo_path, command_line_interface, last_repository )
+                    absolute_repository_path, command_line_interface, last_repository )
 
             release_data['date']    = release_date
             release_data['version'] = date_tag
             release_data['git_tag'] = git_tag
 
-            fix_sublime_text_release( release_data, gitModulesFile, section, repository_info, repositories, dependencies, url )
-            tagged_releases = get_old_compatible_versions( release_data, gitModulesFile, section, url, absolute_repo_path, command_line_interface )
+            fix_sublime_text_release( release_data, gitModulesFile, section, repository_info,
+                    repositories, dependencies, url )
+
+            tagged_releases = get_old_compatible_versions( release_data, gitModulesFile, section, url,
+                    absolute_repository_path, command_line_interface )
 
             user_forker = get_user_name( url )
             ensure_author_name( user_forker, upstream, repository_info )
@@ -428,21 +430,21 @@ def get_repositories(all_packages, last_repositories):
     return sort_list_of_dictionary( repositories), sort_list_of_dictionary( dependencies )
 
 
-def get_last_tag_fixed(absolute_repo_path, command_line_interface, last_repository, force_tag_creation=False):
+def get_last_tag_fixed(absolute_repository_path, command_line_interface, last_repository, force_tag_creation=False):
     """
         This is a entry point to do some batch operation on each git submodule. We can temporarily
         insert the code we want to run with `command_line_interface` and remove later.
 
         @param force_tag_creation if True, the tag will be created and also push the created tag to origin.
     """
-    release_date = get_git_date( absolute_repo_path, command_line_interface )
+    release_date = get_git_date( absolute_repository_path, command_line_interface )
     date_tag     = get_git_version( release_date )
-    git_tag      = get_git_latest_tag( absolute_repo_path, command_line_interface )
+    git_tag      = get_git_latest_tag( absolute_repository_path, command_line_interface )
 
     # # Delete all local tags not present on the remote
     # # https://stackoverflow.com/questions/1841341/remove-local-tags-that-are-no-longer
     # command = shlex.split( 'git fetch --prune origin "+refs/tags/*:refs/tags/*"' )
-    # output  = command_line_interface.execute( command, absolute_repo_path, short_errors=True )
+    # output  = command_line_interface.execute( command, absolute_repository_path, short_errors=True )
     # log( 1, "output: " + str( output ) )
 
     if force_tag_creation:
@@ -454,13 +456,13 @@ def get_last_tag_fixed(absolute_repo_path, command_line_interface, last_reposito
 
             if "master" == git_tag:
 
-                if create_git_tag( "1.0.0", absolute_repo_path, command_line_interface ):
+                if create_git_tag( "1.0.0", absolute_repository_path, command_line_interface ):
                     git_tag = "1.0.0"
 
             # if it is to update
             if True: # LooseVersion( date_tag ) > LooseVersion( last_date_tag ):
                 next_git_tag, is_incremented, unprefixed_tag = increment_patch_version( git_tag, force_tag_creation )
-                current_tags = get_current_cummit_tags( absolute_repo_path, command_line_interface )
+                current_tags = get_current_cummit_tags( absolute_repository_path, command_line_interface )
 
                 if len( current_tags ) > 0:
                     tags_list = current_tags.split( "\n" )
@@ -473,34 +475,34 @@ def get_last_tag_fixed(absolute_repo_path, command_line_interface, last_reposito
                     # platforms as Linux and Windows. Then we create a unified tag which is based
                     # on the current master branch.
                     if next_git_tag != unprefixed_tag or len( tags_list ) > 1:
-                        delete_tags_list( tags_list, absolute_repo_path, command_line_interface )
+                        delete_tags_list( tags_list, absolute_repository_path, command_line_interface )
 
                         # We will skip the current tag and create the next available
-                        if create_git_tag( unprefixed_tag, absolute_repo_path, command_line_interface ):
+                        if create_git_tag( unprefixed_tag, absolute_repository_path, command_line_interface ):
                             git_tag = unprefixed_tag
 
                 else:
 
                     if next_git_tag != unprefixed_tag:
 
-                        if create_git_tag( unprefixed_tag, absolute_repo_path, command_line_interface ):
+                        if create_git_tag( unprefixed_tag, absolute_repository_path, command_line_interface ):
                             git_tag = unprefixed_tag
 
                     else:
 
                         if is_incremented:
 
-                            if create_git_tag( next_git_tag, absolute_repo_path, command_line_interface ):
+                            if create_git_tag( next_git_tag, absolute_repository_path, command_line_interface ):
                                 git_tag = next_git_tag
 
                         else:
-                            log( 1, "Error: The tag `%s` could not be incremented for the package: %s" % ( next_git_tag, absolute_repo_path ) )
-                            g_failed_repositories.append( ("", absolute_repo_path) )
+                            log( 1, "Error: The tag `%s` could not be incremented for the package: %s" % ( next_git_tag, absolute_repository_path ) )
+                            g_failed_repositories.append( ("", absolute_repository_path) )
 
     return git_tag, date_tag, release_date
 
 
-def delete_tags_list(tags_list, absolute_repo_path, command_line_interface):
+def delete_tags_list(tags_list, absolute_repository_path, command_line_interface):
     tags_count   = len( tags_list )
     remote_index = 0
 
@@ -509,26 +511,26 @@ def delete_tags_list(tags_list, absolute_repo_path, command_line_interface):
         remote_index += 1
 
         log( 1, "Cleaning tag {:3d} of {:d} ({:s}): {:<20s} {:s}".format(
-                remote_index, tags_count, progress, tag, os.path.basename( absolute_repo_path ) ) )
+                remote_index, tags_count, progress, tag, os.path.basename( absolute_repository_path ) ) )
 
         command_line_interface.execute(
             shlex.split( "git tag -d %s" % ( tag ) ),
-            absolute_repo_path,
+            absolute_repository_path,
             live_output=True,
             short_errors=True
         )
 
         command_line_interface.execute(
             shlex.split( "git push origin :refs/tags/%s" % ( tag ) ),
-            absolute_repo_path,
+            absolute_repository_path,
             live_output=True,
             short_errors=True
         )
 
 
-def get_current_cummit_tags(absolute_repo_path, command_line_interface):
+def get_current_cummit_tags(absolute_repository_path, command_line_interface):
     command = shlex.split( "git tag -l --points-at HEAD" )
-    output = command_line_interface.execute( command, absolute_repo_path, short_errors=True )
+    output = command_line_interface.execute( command, absolute_repository_path, short_errors=True )
 
     return str( output )
 
@@ -572,6 +574,8 @@ def increment_patch_version(git_tag, force_tag_creation=False):
 
 def fix_sublime_text_release(release_data, gitModulesFile, section, repository_info, repositories, dependencies, url):
     """
+        Add the repository_info to the `packages` or `dependencies` list.
+
         If it has the dependency option, then it:
             1. It is a module dependency only
             2. It is a module dependency and has other dependencies
@@ -603,39 +607,66 @@ def fix_sublime_text_release(release_data, gitModulesFile, section, repository_i
             try:
                 load_order = int( dependency_list[0] )
 
-                repository_info['issues']     = url + "/issues"
-                repository_info['load_order'] = load_order
-
-                release_data['url']  = supposed_url
-                release_data['base'] = url
-                release_data['tags'] = True
-
-                del dependency_list[0]
-                dependencies.append( repository_info )
-
-                if len( dependency_list ) > 0:
-                    release_data['dependencies'] = dependency_list
+                add_to_dependencies_list(load_order, dependency_list, dependencies, release_data,
+                        repository_info, url, supposed_url, gitModulesFile, section)
 
             except ValueError:
                 release_data['dependencies'] = dependency_list
-                set_release_url( repositories, release_data, repository_info, supposed_url )
+
+                add_to_repositories_list( repositories, release_data, repository_info, supposed_url )
+                create_dependencies_json( dependency_list, gitModulesFile, section )
 
         else:
-            set_release_url( repositories, release_data, repository_info, supposed_url )
+            add_to_repositories_list( repositories, release_data, repository_info, supposed_url )
 
     else:
-        set_release_url( repositories, release_data, repository_info, supposed_url )
+        add_to_repositories_list( repositories, release_data, repository_info, supposed_url )
 
     if not is_compatible_version( release_data['sublime_text'], minimum_acceptable_version ):
         release_data['sublime_text'] = ">=" +  str( minimum_acceptable_version )
 
 
-def set_release_url(repositories, release_data, repository_info, supposed_url):
+def add_to_dependencies_list(load_order, dependency_list, dependencies, release_data, repository_info, url, supposed_url, gitModulesFile, section):
+    """
+        Add the `repository_info` to the `dependencies` list.
+    """
+    repository_info['issues']     = url + "/issues"
+    repository_info['load_order'] = load_order
+
+    release_data['url']  = supposed_url
+    release_data['base'] = url
+    release_data['tags'] = True
+
+    del dependency_list[0]
+    dependencies.append( repository_info )
+
+    if len( dependency_list ) > 0:
+        release_data['dependencies'] = dependency_list
+        create_dependencies_json( dependency_list, gitModulesFile, section )
+
+
+def add_to_repositories_list(repositories, release_data, repository_info, supposed_url):
+    """
+        Add the `repository_info` to the `repositories` list.
+    """
     release_data['url'] = supposed_url
     repositories.append( repository_info )
 
 
-def get_old_compatible_versions(default_release_data, gitModulesFile, section, url, absolute_repo_path, command_line_interface):
+def create_dependencies_json(dependency_list, gitModulesFile, section):
+    repository_path        = gitModulesFile.get( section, "path" )
+    dependencies_json_path = os.path.join( CHANNEL_ROOT_DIRECTORY, repository_path, "dependencies.json" )
+
+    dependencies_json = {}
+    platforms_versions_dependencies = [("*", "*", dependency_list)]
+
+    for platform, sublime_version, dependency_list in platforms_versions_dependencies:
+        dependencies_json[platform] = {sublime_version: dependency_list}
+
+    write_data_file( dependencies_json_path, dependencies_json )
+
+
+def get_old_compatible_versions(default_release_data, gitModulesFile, section, url, absolute_repository_path, command_line_interface):
     """
         Check for the existence of the `tags` section on the `gitModulesFile` iterator and add the
         correct for the listed olde compatible versions.
@@ -651,9 +682,9 @@ def get_old_compatible_versions(default_release_data, gitModulesFile, section, u
         Notepad++, they must install the one from the tag `3143`, and not the one from the master
         branch, which has the latest fixes for build development build 3147.
 
-        @param others                   @see the function fix_sublime_text_release()
-        @param absolute_repo_path       absolute path the the repository to retrieve the tag data
-        @param command_line_interface   a command line object to run the git command
+        @param others                      @see the function fix_sublime_text_release()
+        @param absolute_repository_path    absolute path the the repository to retrieve the tag data
+        @param command_line_interface      a command line object to run the git command
 
         @return a list of dictionary releases created, otherwise a empty list if not tags exists
     """
@@ -667,7 +698,7 @@ def get_old_compatible_versions(default_release_data, gitModulesFile, section, u
             tag_interger = int( tag )
 
             release_data = OrderedDict()
-            tag_date     = get_git_tag_date(absolute_repo_path, command_line_interface, tag)
+            tag_date     = get_git_tag_date(absolute_repository_path, command_line_interface, tag)
 
             release_data['platforms']    = "*"
             release_data['sublime_text'] = "<=%s" % tag
@@ -823,38 +854,38 @@ def fix_semantic_version(tag):
     return tag, tag
 
 
-def get_git_date(absolute_repo_path, command_line_interface):
+def get_git_date(absolute_repository_path, command_line_interface):
     """
         Get timestamp of the last commit in git repository
         https://gist.github.com/bitrut/1494315
     """
     # command = shlex.split( "git log -1 --date=iso" )
     command = shlex.split( "git log -1 --pretty=format:%ci" )
-    output  = command_line_interface.execute( command, absolute_repo_path, short_errors=True )
+    output  = command_line_interface.execute( command, absolute_repository_path, short_errors=True )
 
     if output is False:
-        g_failed_repositories.append( (command, absolute_repo_path) )
+        g_failed_repositories.append( (command, absolute_repository_path) )
         return "2017-04-13 16:44:14"
 
     return output[0:19]
 
 
-def get_git_tag_date(absolute_repo_path, command_line_interface, tag):
+def get_git_tag_date(absolute_repository_path, command_line_interface, tag):
     """
         Get timestamp of the specified tag in git repository
         https://gist.github.com/bitrut/1494315
     """
     # command = shlex.split( "git log -1 --date=iso" )
     command = shlex.split( "git log -1 --pretty=format:%ci {}".format( tag ) )
-    output  = command_line_interface.execute( command, absolute_repo_path, short_errors=True )
+    output  = command_line_interface.execute( command, absolute_repository_path, short_errors=True )
 
     if output is False:
-        g_failed_repositories.append( (command, absolute_repo_path) )
+        g_failed_repositories.append( (command, absolute_repository_path) )
 
     return output[0:19]
 
 
-def get_git_latest_tag(absolute_repo_path, command_line_interface):
+def get_git_latest_tag(absolute_repository_path, command_line_interface):
     """
         Get timestamp of the last commit in git repository
         https://gist.github.com/bitrut/1494315
@@ -871,15 +902,15 @@ def get_git_latest_tag(absolute_repo_path, command_line_interface):
     # command = shlex.split( "git log -1 --date=iso" )
     command = shlex.split( "git tag --sort=-creatordate --sort=version:refname" )
 
-    git_tags  = command_line_interface.execute( command, absolute_repo_path, short_errors=True )
+    git_tags  = command_line_interface.execute( command, absolute_repository_path, short_errors=True )
     clean_tag = "master"
 
     if git_tags is False \
             or "warning:" in git_tags \
             or len( git_tags ) < 3:
 
-        log( 1, "Error: Failed getting git tag for the package `%s`, results: %s" % ( absolute_repo_path, git_tags ) )
-        g_failed_repositories.append( (command, absolute_repo_path) )
+        log( 1, "Error: Failed getting git tag for the package `%s`, results: %s" % ( absolute_repository_path, git_tags ) )
+        g_failed_repositories.append( (command, absolute_repository_path) )
 
         return clean_tag
 
@@ -895,17 +926,17 @@ def get_git_latest_tag(absolute_repo_path, command_line_interface):
     return clean_tag
 
 
-def create_git_tag(new_tag_name, absolute_repo_path, command_line_interface):
+def create_git_tag(new_tag_name, absolute_repository_path, command_line_interface):
     command = shlex.split( "git tag %s" % new_tag_name )
-    output = command_line_interface.execute( command, absolute_repo_path, short_errors=True )
+    output = command_line_interface.execute( command, absolute_repository_path, short_errors=True )
 
     if output is False:
-        log( 1, "Error: Failed creating git tag `%s` for the package `%s`, results: %s" % ( new_tag_name, absolute_repo_path, output ) )
+        log( 1, "Error: Failed creating git tag `%s` for the package `%s`, results: %s" % ( new_tag_name, absolute_repository_path, output ) )
 
-        g_failed_repositories.append( (command, absolute_repo_path) )
+        g_failed_repositories.append( (command, absolute_repository_path) )
         return False
 
-    log( 1, "Creating git tag `%s` for the package `%s`, results: %s" % ( new_tag_name, absolute_repo_path, output ) )
+    log( 1, "Creating git tag `%s` for the package `%s`, results: %s" % ( new_tag_name, absolute_repository_path, output ) )
     return True
 
 
