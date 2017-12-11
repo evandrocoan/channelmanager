@@ -61,17 +61,10 @@ def assert_path(module):
 # Allow using this file on the website where the sublime module is unavailable
 try:
     import sublime
+    from python_debug_tools import Debugger
 
-    # If a dependency fail running, the subsequent dependencies are not installed by Package Control
-    # https://github.com/wbond/package_control/issues/1301
-    try:
-        from python_debug_tools import Debugger
-
-        # Debugger settings: 0 - disabled, 127 - enabled
-        log = Debugger( 127, os.path.basename( __file__ ) )
-
-    except Exception as error:
-        print( "Could not import the required dependencies! " + str( error ) )
+    # Debugger settings: 0 - disabled, 127 - enabled
+    log = Debugger( 127, os.path.basename( __file__ ) )
 
 except ImportError:
     sublime = None
@@ -282,20 +275,5 @@ def convert_to_unix_path(relative_path):
         relative_path = relative_path[1:]
 
     return relative_path
-
-
-def progress_info(progress):
-
-    return "{:>05.2f}%, {:s} of {:s}".format(
-            progress.progress * 100, format_time( progress.elapsed_time ), format_time( progress.time_remaining() ) )
-
-
-def format_time(seconds):
-
-    hours   = int(seconds // 3600)
-    minutes = int((seconds % 3600) // 60)
-    seconds = int(seconds % 60)
-
-    return "%02d:%02d:%02d" % ( hours, minutes, seconds )
 
 

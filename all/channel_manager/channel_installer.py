@@ -62,7 +62,6 @@ from .channel_utilities import remove_item_if_exists
 from .channel_utilities import convert_to_unix_path
 from .channel_utilities import _delete_read_only_file
 from .channel_utilities import wrap_text
-from .channel_utilities import progress_info
 
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
@@ -85,22 +84,18 @@ except ImportError:
 g_is_installation_complete     = True
 PACKAGES_COUNT_TO_IGNORE_AHEAD = 8
 
-# If a dependency fail running, the subsequent dependencies are not installed by Package Control
-# https://github.com/wbond/package_control/issues/1301
-try:
-    from python_debug_tools import Debugger
-    from estimated_time_left import sequence_timer
 
-    # Debugger settings: 0 - disabled, 127 - enabled
-    log = Debugger( 127, os.path.basename( __file__ ) )
+from python_debug_tools import Debugger
+from estimated_time_left import sequence_timer
+from estimated_time_left import progress_info
 
-    # log( 2, "..." )
-    # log( 2, "..." )
-    # log( 2, "Debugging" )
-    # log( 2, "CURRENT_DIRECTORY_:     " + CURRENT_DIRECTORY )
+# Debugger settings: 0 - disabled, 127 - enabled
+log = Debugger( 127, os.path.basename( __file__ ) )
 
-except Exception as error:
-    print( "Could not import the required dependencies! " + str( error ) )
+# log( 2, "..." )
+# log( 2, "..." )
+# log( 2, "Debugging" )
+# log( 2, "CURRENT_DIRECTORY_:     " + CURRENT_DIRECTORY )
 
 
 def main(channel_settings):

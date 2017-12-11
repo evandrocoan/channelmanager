@@ -43,22 +43,15 @@ from .settings import CURRENT_PACKAGE_NAME
 UPGRADE_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, "all", "last_sublime_upgrade.channel-manager" )
 
 
-# If a dependency fail running, the subsequent dependencies are not installed by Package Control
-# https://github.com/wbond/package_control/issues/1301
-try:
-    from python_debug_tools import Debugger
+from python_debug_tools import Debugger
 
-    # Debugger settings: 0 - disabled, 127 - enabled
-    log = Debugger( 127, os.path.basename( __file__ ) )
+# Debugger settings: 0 - disabled, 127 - enabled
+log = Debugger( 127, os.path.basename( __file__ ) )
 
-    # log( 2, "..." )
-    # log( 2, "..." )
-    # log( 2, "Debugging" )
-    # log( 2, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
-
-except Exception as error:
-    Debugger = None
-    print( "Could not import the required dependencies! " + str( error ) )
+# log( 2, "..." )
+# log( 2, "..." )
+# log( 2, "Debugging" )
+# log( 2, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 
 
 def main(default_packages_files=[], is_forced=False):

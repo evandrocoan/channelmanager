@@ -70,15 +70,8 @@ try:
     # https://stackoverflow.com/questions/14087598/python-3-importerror-no-module-named-configparser
     import configparser
 
-    # If a dependency fail running, the subsequent dependencies are not installed by Package Control
-    # https://github.com/wbond/package_control/issues/1301
-    try:
-        from python_debug_tools import Debugger
-        from estimated_time_left import sequence_timer
-
-    except Exception as error:
-        Debugger = None
-        print( "Could not import the required dependencies! " + str( error ) )
+    from python_debug_tools import Debugger
+    from estimated_time_left import sequence_timer
 
     # When there is an ImportError, means that Package Control is installed instead of PackagesManager.
     # Which means we cannot do nothing as this is only compatible with PackagesManager.

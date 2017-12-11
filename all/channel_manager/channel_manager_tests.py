@@ -34,17 +34,10 @@ import unittest
 from .channel_manager import fix_semantic_version
 from .channel_manager import increment_patch_version
 
+from python_debug_tools import Debugger
 
-# If a dependency fail running, the subsequent dependencies are not installed by Package Control
-# https://github.com/wbond/package_control/issues/1301
-try:
-    from python_debug_tools import Debugger
-
-    # Debugger settings: 0 - disabled, 127 - enabled
-    log = Debugger( 127, os.path.basename( __file__ ) )
-
-except Exception as error:
-    print( "Could not import the required dependencies! " + str( error ) )
+# Debugger settings: 0 - disabled, 127 - enabled
+log = Debugger( 127, os.path.basename( __file__ ) )
 
 
 def plugin_loaded():

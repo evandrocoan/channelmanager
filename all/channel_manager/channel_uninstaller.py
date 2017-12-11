@@ -84,22 +84,17 @@ except ImportError:
 PACKAGES_COUNT_TO_IGNORE_AHEAD = 8
 
 
-# If a dependency fail running, the subsequent dependencies are not installed by Package Control
-# https://github.com/wbond/package_control/issues/1301
-try:
-    from python_debug_tools import Debugger
-    from estimated_time_left import sequence_timer
+from python_debug_tools import Debugger
+from estimated_time_left import sequence_timer
+from estimated_time_left import progress_info
 
-    # Debugger settings: 0 - disabled, 127 - enabled
-    log = Debugger( 127, os.path.basename( __file__ ) )
+# Debugger settings: 0 - disabled, 127 - enabled
+log = Debugger( 127, os.path.basename( __file__ ) )
 
-    # log( 2, "..." )
-    # log( 2, "..." )
-    # log( 2, "Debugging" )
-    # log( 2, "CURRENT_DIRECTORY_: " + CURRENT_DIRECTORY )
-
-except Exception as error:
-    print( "Could not import the required dependencies! " + str( error ) )
+# log( 2, "..." )
+# log( 2, "..." )
+# log( 2, "Debugging" )
+# log( 2, "CURRENT_DIRECTORY_: " + CURRENT_DIRECTORY )
 
 
 def main(channel_settings):

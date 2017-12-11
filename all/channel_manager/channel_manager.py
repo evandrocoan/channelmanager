@@ -49,7 +49,6 @@ from .settings import CURRENT_PACKAGE_NAME
 
 g_is_already_running = False
 
-from .channel_utilities import progress_info
 from .channel_utilities import write_data_file
 from .channel_utilities import string_convert_list
 from .channel_utilities import load_data_file
@@ -71,25 +70,25 @@ except ImportError:
     pass
 
 
-# If a dependency fail running, the subsequent dependencies are not installed by Package Control
-# https://github.com/wbond/package_control/issues/1301
-try:
-    from python_debug_tools import Debugger
-    from estimated_time_left import sequence_timer
+# How to reload a Sublime Text dependency?
+# https://github.com/randy3k/AutomaticPackageReloader/issues/12
+sublime_plugin.reload_plugin( "estimated_time_left" )
 
-    # Debugger settings: 0 - disabled, 127 - enabled
-    log = Debugger( 127, os.path.basename( __file__ ) )
+from python_debug_tools import Debugger
+from estimated_time_left import sequence_timer
+from estimated_time_left import progress_info
 
-    #log.log_to_file( "Debug.txt" )
-    #log.clear_log_file()
 
-    # log( 2, "..." )
-    # log( 2, "..." )
-    # log( 2, "Debugging" )
-    # log( 2, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
+# Debugger settings: 0 - disabled, 127 - enabled
+log = Debugger( 127, os.path.basename( __file__ ) )
 
-except Exception as error:
-    print( "Could not import the required dependencies! " + str( error ) )
+#log.log_to_file( "Debug.txt" )
+#log.clear_log_file()
+
+# log( 2, "..." )
+# log( 2, "..." )
+# log( 2, "Debugging" )
+# log( 2, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 
 
 class Repository():
