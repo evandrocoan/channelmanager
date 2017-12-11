@@ -91,154 +91,6 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 # log( 2, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
 
 
-class Repository():
-    """
-        Holds the information required by a Package Control Package or Dependency.
-    """
-    def __init__(self, gitModulesFile, section):
-        # the main repository url as `github.com/user/repo`
-        self.url = gitModulesFile.get( section, "url" )
-
-        # the section name on the `.gitmodules` file for the current repository information
-        self.section = section
-
-        # the current `.gitmodules` configparser interator
-        self.gitModulesFile = gitModulesFile
-
-        if gitModulesFile.has_option( section, "upstream" ):
-            self.upstream = gitModulesFile.get( section, "upstream" )
-
-        else:
-            self.upstream = ""
-
-            log.insert_empty_line( 1 )
-            log.insert_empty_line( 1 )
-            log( 1, "Error: The section `%s` does not has the option: %s" % ( section, "upstream" ) )
-
-        # the dictionary with the current release_data and repository information
-        self.info         = OrderedDict()
-        self.release_data = OrderedDict()
-
-        # relative path the the repository
-        self.path = os.path.normpath( gitModulesFile.get( section, "path" ) )
-        self.name = os.path.basename( self.path )
-
-        # absolute path the the repository
-        self.absolute_path = os.path.join( CHANNEL_ROOT_DIRECTORY, self.path )
-
-        # the dictionary with the current  information
-        self._setDependenciesList()
-
-    def _setDependenciesList(self):
-        self.load_order          = None
-        self.isPackageDependency = False
-
-        if self.gitModulesFile.has_option( self.section, "dependency" ):
-            self.dependency_list = string_convert_list( self.gitModulesFile.get( self.section, "dependency" ) )
-
-            if len( self.dependency_list ) > 0:
-
-                try:
-                    self.load_order = int( self.dependency_list[0] )
-
-                    self.isPackageDependency = True
-                    del self.dependency_list[0]
-
-                except ValueError:
-                    pass
-
-        else:
-            self.dependency_list = []
-
-    def getDependenciesCount(self):
-        return len( self.dependency_list )
-
-    def getDependenciesList(self):
-        return self.dependency_list
-
-    def getSupposedUrl(self):
-        return get_download_url( self.url, self.release_data['git_tag'] )
-
-    def setVersioningTag(self, last_channel_file, command_line_interface):
-        last_dictionary = get_dictionary_key( last_channel_file, self.name, {} )
-        git_tag, date_tag, release_date = get_last_tag_fixed( self.absolute_path, last_dictionary, command_line_interface )
-
-        self.release_data['date']    = release_date
-        self.release_data['version'] = date_tag
-        self.release_data['git_tag'] = git_tag
-
-    def ensureAuthorName(self, user_forker):
-
-        if 'authors' not in self.info:
-
-            if len( self.upstream ) > 20:
-                original_author      = get_user_name( self.upstream )
-                self.info['authors'] = [ original_author ]
-
-            else:
-                # If there is not upstream set, then it is your own package (user_forker)
-                self.info['authors'] = [user_forker]
-
-        if user_forker not in self.info['authors']:
-            self.info['authors'].append( "Forked by " + user_forker )
-
-    def getOldCompatibleVersions(self, command_line_interface):
-        """
-            Check for the existence of the `tags` section on the `gitModulesFile` iterator and add the
-            correct for the listed old compatible versions.
-
-            The old compatible versions are git tags as `3143` which is the last Sublime Text version
-            where the submodule was compatible with. For example, on Sublime Text development build
-            3147, the package `Notepad++ Color Scheme` stopped working completely:
-                1. https://github.com/SublimeTextIssues/Core/issues/1983)
-
-            However the fix for build 3147 also broke completely the package for Sublime Text stable
-            build 3143. Hence, we must to create a tag named 3143 which targets the last commit which is
-            working for build 3143, then when some user using the stable build 3143 installs the
-            Notepad++, they must install the one from the tag `3143`, and not the one from the master
-            branch, which has the latest fixes for build development build 3147.
-
-            @return a list of dictionary releases created, otherwise a empty list if not tags exists
-        """
-        greatest_tag    = get_version_number( self.release_data['sublime_text'] )
-        tagged_releases = []
-
-        if self.gitModulesFile.has_option( self.section, "tags" ):
-            tags_list = string_convert_list( self.gitModulesFile.get( self.section, "tags" ) )
-
-            for tag in tags_list:
-                tag_interger = int( tag )
-
-                release_data = OrderedDict()
-                tag_date     = get_git_tag_date( self.absolute_path, command_line_interface, tag )
-
-                release_data['platforms']    = "*"
-                release_data['sublime_text'] = "<=%s" % tag
-
-                if greatest_tag < tag_interger:
-                    greatest_tag = tag_interger
-                    self.release_data['sublime_text'] = ">" + tag
-
-                release_data['url']     = get_download_url( self.url, tag )
-                release_data['date']    = tag_date
-                release_data['version'] = get_git_tag_version( tag_date, tag )
-
-                tagged_releases.append( release_data )
-
-        return tagged_releases
-
-    def createDependenciesJson(self):
-        dependencies_json_path = os.path.join( CHANNEL_ROOT_DIRECTORY, self.path, "dependencies.json" )
-
-        dependencies_json = {}
-        platforms_versions_dependencies = [("*", "*", self.dependency_list)]
-
-        for platform, sublime_version, dependency_list in platforms_versions_dependencies:
-            dependencies_json[platform] = {sublime_version: dependency_list}
-
-        write_data_file( dependencies_json_path, dependencies_json )
-
-
 def main(channel_settings, command="all"):
     log( 2, "Entering on main(2) %s" % ( str( command ) ) )
 
@@ -1045,4 +897,152 @@ def print_some_repositories(all_packages):
 
         log( 1, "" )
         log( 1, "package: %-20s" %  str( package ) + json.dumps( all_packages[package], indent=4 ) )
+
+
+class Repository():
+    """
+        Holds the information required by a Package Control Package or Dependency.
+    """
+    def __init__(self, gitModulesFile, section):
+        # the main repository url as `github.com/user/repo`
+        self.url = gitModulesFile.get( section, "url" )
+
+        # the section name on the `.gitmodules` file for the current repository information
+        self.section = section
+
+        # the current `.gitmodules` configparser interator
+        self.gitModulesFile = gitModulesFile
+
+        if gitModulesFile.has_option( section, "upstream" ):
+            self.upstream = gitModulesFile.get( section, "upstream" )
+
+        else:
+            self.upstream = ""
+
+            log.insert_empty_line( 1 )
+            log.insert_empty_line( 1 )
+            log( 1, "Error: The section `%s` does not has the option: %s" % ( section, "upstream" ) )
+
+        # the dictionary with the current release_data and repository information
+        self.info         = OrderedDict()
+        self.release_data = OrderedDict()
+
+        # relative path the the repository
+        self.path = os.path.normpath( gitModulesFile.get( section, "path" ) )
+        self.name = os.path.basename( self.path )
+
+        # absolute path the the repository
+        self.absolute_path = os.path.join( CHANNEL_ROOT_DIRECTORY, self.path )
+
+        # the dictionary with the current  information
+        self._setDependenciesList()
+
+    def _setDependenciesList(self):
+        self.load_order          = None
+        self.isPackageDependency = False
+
+        if self.gitModulesFile.has_option( self.section, "dependency" ):
+            self.dependency_list = string_convert_list( self.gitModulesFile.get( self.section, "dependency" ) )
+
+            if len( self.dependency_list ) > 0:
+
+                try:
+                    self.load_order = int( self.dependency_list[0] )
+
+                    self.isPackageDependency = True
+                    del self.dependency_list[0]
+
+                except ValueError:
+                    pass
+
+        else:
+            self.dependency_list = []
+
+    def getDependenciesCount(self):
+        return len( self.dependency_list )
+
+    def getDependenciesList(self):
+        return self.dependency_list
+
+    def getSupposedUrl(self):
+        return get_download_url( self.url, self.release_data['git_tag'] )
+
+    def setVersioningTag(self, last_channel_file, command_line_interface):
+        last_dictionary = get_dictionary_key( last_channel_file, self.name, {} )
+        git_tag, date_tag, release_date = get_last_tag_fixed( self.absolute_path, last_dictionary, command_line_interface )
+
+        self.release_data['date']    = release_date
+        self.release_data['version'] = date_tag
+        self.release_data['git_tag'] = git_tag
+
+    def ensureAuthorName(self, user_forker):
+
+        if 'authors' not in self.info:
+
+            if len( self.upstream ) > 20:
+                original_author      = get_user_name( self.upstream )
+                self.info['authors'] = [ original_author ]
+
+            else:
+                # If there is not upstream set, then it is your own package (user_forker)
+                self.info['authors'] = [user_forker]
+
+        if user_forker not in self.info['authors']:
+            self.info['authors'].append( "Forked by " + user_forker )
+
+    def getOldCompatibleVersions(self, command_line_interface):
+        """
+            Check for the existence of the `tags` section on the `gitModulesFile` iterator and add the
+            correct for the listed old compatible versions.
+
+            The old compatible versions are git tags as `3143` which is the last Sublime Text version
+            where the submodule was compatible with. For example, on Sublime Text development build
+            3147, the package `Notepad++ Color Scheme` stopped working completely:
+                1. https://github.com/SublimeTextIssues/Core/issues/1983)
+
+            However the fix for build 3147 also broke completely the package for Sublime Text stable
+            build 3143. Hence, we must to create a tag named 3143 which targets the last commit which is
+            working for build 3143, then when some user using the stable build 3143 installs the
+            Notepad++, they must install the one from the tag `3143`, and not the one from the master
+            branch, which has the latest fixes for build development build 3147.
+
+            @return a list of dictionary releases created, otherwise a empty list if not tags exists
+        """
+        greatest_tag    = get_version_number( self.release_data['sublime_text'] )
+        tagged_releases = []
+
+        if self.gitModulesFile.has_option( self.section, "tags" ):
+            tags_list = string_convert_list( self.gitModulesFile.get( self.section, "tags" ) )
+
+            for tag in tags_list:
+                tag_interger = int( tag )
+
+                release_data = OrderedDict()
+                tag_date     = get_git_tag_date( self.absolute_path, command_line_interface, tag )
+
+                release_data['platforms']    = "*"
+                release_data['sublime_text'] = "<=%s" % tag
+
+                if greatest_tag < tag_interger:
+                    greatest_tag = tag_interger
+                    self.release_data['sublime_text'] = ">" + tag
+
+                release_data['url']     = get_download_url( self.url, tag )
+                release_data['date']    = tag_date
+                release_data['version'] = get_git_tag_version( tag_date, tag )
+
+                tagged_releases.append( release_data )
+
+        return tagged_releases
+
+    def createDependenciesJson(self):
+        dependencies_json_path = os.path.join( CHANNEL_ROOT_DIRECTORY, self.path, "dependencies.json" )
+
+        dependencies_json = {}
+        platforms_versions_dependencies = [("*", "*", self.dependency_list)]
+
+        for platform, sublime_version, dependency_list in platforms_versions_dependencies:
+            dependencies_json[platform] = {sublime_version: dependency_list}
+
+        write_data_file( dependencies_json_path, dependencies_json )
 
