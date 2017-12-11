@@ -630,7 +630,6 @@ you usually do with the default `Package Control` channel.
    class MyBrandNewChannelRunUninstallation( sublime_plugin.ApplicationCommand ):
 
        def run(self):
-           sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
            channel_uninstaller.main( g_channel_settings )
 
 
@@ -646,7 +645,6 @@ you usually do with the default `Package Control` channel.
            add_channel()
            g_channel_settings['INSTALLATION_TYPE'] = version
 
-           sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
            channel_installer.main( g_channel_settings )
 
        def is_enabled(self):

@@ -828,6 +828,9 @@ def ask_user_for_which_packages_to_install(packages_names):
     while not can_continue[0]:
         time.sleep(1)
 
+    # Show up the console, so the user can follow the process.
+    sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+
     for package_name in selected_packages_to_not_install:
         target_index = packages_names.index( package_name )
 
