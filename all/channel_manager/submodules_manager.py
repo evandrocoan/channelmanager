@@ -49,7 +49,6 @@ try:
     from .settings import CURRENT_PACKAGE_NAME
 
     from .channel_utilities import get_main_directory
-    from .channel_utilities import progress_info
     from .channel_utilities import assert_path
 
 except( ImportError, ValueError ):
@@ -57,7 +56,6 @@ except( ImportError, ValueError ):
     from settings import CURRENT_PACKAGE_NAME
 
     from channel_utilities import get_main_directory
-    from channel_utilities import progress_info
     from channel_utilities import assert_path
 
 
@@ -72,6 +70,7 @@ try:
 
     from python_debug_tools import Debugger
     from estimated_time_left import sequence_timer
+    from estimated_time_left import progress_info
 
     # When there is an ImportError, means that Package Control is installed instead of PackagesManager.
     # Which means we cannot do nothing as this is only compatible with PackagesManager.
