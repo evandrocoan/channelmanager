@@ -312,13 +312,12 @@ class GenerateChannelThread(threading.Thread):
 
                 for package_name, pi in sequence_timer( last_channel_file, info_frequency=0 ):
                     index += 1
-                    progress = progress_info( pi )
 
                     # # For quick testing
                     # if index > 5:
                     #     break
 
-                    log.insert_empty_line( 1 )
+                    progress = progress_info( pi )
                     log( 1, "{:s} Processing {:3d} of {:d} repositories... {:s}".format( progress, index, repositories_count, package_name ) )
 
                     last_dictionary = get_dictionary_key( last_channel_file, package_name, {} )
@@ -389,9 +388,13 @@ class GenerateChannelThread(threading.Thread):
 
     def on_done_async(self):
         save_items = False
+        log.insert_empty_line( 1 )
 
-        for package_index in range( 1, self.last_picked_item + 1 ):
+        for package_index, pi in sequence_timer( range( 1, self.last_picked_item + 1 ), info_frequency=0 ):
             package_name = self.repositories_list[package_index]
+
+            progress = progress_info( pi )
+            log( 1, "{:s} Processing {:3d} of {:d} repositories... {:s}".format( progress, package_index, self.last_picked_item, package_name ) )
 
             if package_name.endswith( self.exclusion_flag ):
                 continue
@@ -643,6 +646,7 @@ def get_last_tag_fixed(absolute_path, last_dictionary, command_line_interface, f
                         # We will skip the current tag and create the next available
                         if create_git_tag( absolute_path, unprefixed_tag, command_line_interface ):
                             git_tag = unprefixed_tag
+                            log.insert_empty_line( 1 )
 
                 else:
 
