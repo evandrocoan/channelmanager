@@ -860,7 +860,7 @@ def check_uninstalled_packages(maximum_attempts=10):
 
     else:
         sublime.error_message( wrap_text( """\
-                The %s uninstallation could not be successfully completed.
+                The %s uninstallation could NOT be successfully completed.
 
                 Check you Sublime Text Console for more information.
 
