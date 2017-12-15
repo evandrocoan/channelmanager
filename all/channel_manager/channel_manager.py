@@ -919,10 +919,6 @@ class Repository():
         else:
             self.upstream = ""
 
-            log.insert_empty_line( 1 )
-            log.insert_empty_line( 1 )
-            log( 1, "Error: The section `%s` does not has the option: %s" % ( section, "upstream" ) )
-
         # the dictionary with the current release_data and repository information
         self.info         = OrderedDict()
         self.release_data = OrderedDict()
