@@ -108,7 +108,6 @@ def unpack_settings(channel_settings):
     global CHANNEL_ROOT_DIRECTORY
     global CHANNEL_FILE_PATH
     global CHANNEL_REPOSITORY_FILE
-    global CHANNEL_SETTINGS_PATH
 
     CHANNEL_REPOSITORY_URL = channel_settings['CHANNEL_REPOSITORY_URL']
     DEFAULT_CHANNEL_URL    = channel_settings['DEFAULT_CHANNEL_URL']
@@ -117,7 +116,6 @@ def unpack_settings(channel_settings):
     CHANNEL_FILE_PATH       = channel_settings['CHANNEL_FILE_PATH']
     CHANNEL_REPOSITORY_FILE = channel_settings['CHANNEL_REPOSITORY_FILE']
 
-    CHANNEL_SETTINGS_PATH = channel_settings['CHANNEL_SETTINGS_PATH']
     # log( 1, "channel_settings: " + dictionary_to_string_by_line( channel_settings ) )
 
 
@@ -191,7 +189,6 @@ class GenerateChannelThread(threading.Thread):
         create_channel_file( repositories, dependencies )
         create_repository_file( repositories, dependencies )
 
-        create_ignored_packages()
         print_failed_repositories()
 
         sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
@@ -312,16 +309,6 @@ def print_failed_repositories():
 
     for command, repository in g_failed_repositories:
         log( 1, "Command: %s (%s)" % ( command, repository ) )
-
-
-def create_ignored_packages():
-    channelSettings = {}
-    userSettings    = sublime.load_settings("Preferences.sublime-settings")
-
-    user_ignored_packages                 = userSettings.get("ignored_packages", [])
-    channelSettings['packages_to_ignore'] = user_ignored_packages
-
-    write_data_file( CHANNEL_SETTINGS_PATH, channelSettings )
 
 
 def is_allowed_to_run():

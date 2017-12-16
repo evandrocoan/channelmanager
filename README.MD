@@ -261,24 +261,29 @@ can in also be installed at once, including all its packages. That means, if you
 like with 1000 packages, you can call the channel installer, and those 1000 packages are going to be
 installed in your Sublime Text.
 
-The installer provides two installation alternatives. The Development Version and the Stable
-Version. By installing the Stable Version, all the packages in your channel are going to be
-installed, except the one listed in the `settings.json` file. Then, for example, you can have as
-much as 1000 packages in your channel, but list 960 of them by their names at the `settings.json`.
+The installer provides two installation alternatives,
+the Development Version and the Stable Version.
+By installing the Stable Version,
+all the packages in your channel are going to be installed,
+except the one listed in the `PACKAGES_TO_IGNORE_ON_DEVELOPMENT` setting.
+Then, for example,
+you can have as much as 1000 packages in your channel,
+but list 960 of them by their names at the `PACKAGES_TO_IGNORE_ON_DEVELOPMENT` setting.
 Hence only 40 packages are going to be installed when the channel installer run.
 
-However, this is only true if the user is installing the Stable Version of the channel. The
-Development Version will clone by `git` all the 1000 packages and then add the 960 packages listed
-on the `settings.json` file to the user `ignored_packages` settings. Currently the `settings.json`
-file is generated based on your `ignored_packages` settings, i.e., it copies all the packages you
-have set on your `ignored_packages` settings and add them to the `settings.json`.
+However,
+this is only true if the user is installing the Stable Version of the channel.
+The Development Version will clone by `git` all the 1000 packages and then add the 960 packages
+listed on the `PACKAGES_TO_IGNORE_ON_DEVELOPMENT` file to the user `ignored_packages` settings.
 
 This was designed like that because the original goal of this is to be just a small channel for a
-few packages you always install, or are developing. However, if you wish to scale up build very
-large, channels you can change easily change this behavior by including the `ignored_packages`
-manually or from another source other than the user settings `ignored_packages`, or just deciding
-not to use the channel installer to install the channel packages and just pick they one by one, as
-you usually do with the default `Package Control` channel.
+few packages you always install,
+or are developing.
+However,
+if you wish to scale up building very large channels,
+you can just decide not to use the channel installer to install the channel packages and just pick
+they one by one,
+as you usually do with the default `Package Control` channel.
 
 1. Install Sublime Text portable version, you can download it at:
    [https://www.sublimetext.com/3](https://www.sublimetext.com/3)
@@ -534,10 +539,6 @@ you usually do with the default `Package Control` channel.
        g_channel_settings['CHANNEL_REPOSITORY_URL']  = clean_urljoin( CHANNEL_RAW_URL, "repository.json" )
        g_channel_settings['CHANNEL_REPOSITORY_FILE'] = os.path.join( CURRENT_DIRECTORY, "repository.json" )
 
-       # A direct URL/Path to the `settings.json` to use when installing the stable/development version
-       g_channel_settings['CHANNEL_SETTINGS_URL']  = clean_urljoin( CHANNEL_RAW_URL, "settings.json" )
-       g_channel_settings['CHANNEL_SETTINGS_PATH'] = os.path.join( CURRENT_DIRECTORY, "settings.json" )
-
        # The default user preferences file
        g_channel_settings['USER_SETTINGS_FILE'] = "Preferences.sublime-settings"
 
@@ -578,6 +579,14 @@ you usually do with the default `Package Control` channel.
        [
            "My First Package to not Install",
            "My Second Package to not Install",
+       ]
+
+       # Packages which must not be installed on the stable version and must be disabled by default on
+       # the development version.
+       g_channel_settings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT'] = \
+       [
+           "My First Package to ignore",
+           "My Second Package to ignore",
        ]
 
        # The files of the `Default.sublime-package` you are installing
@@ -883,14 +892,11 @@ ___
 It provides the following commands on command palette. Note these commands only works if you
 installed the Development Version of the channel:
 
-1. **YourChannelName: Generate Channel File** Creates the files `channel.json`, `repositories.json`
-   and `settings.json`. The file `channel.json` and `repositories.json` are the same file as the
-   Package Control's [channel_v3.json](https://packagecontrol.io/channel_v3.json) file.
-
-   The file `settings.json` is used to save additional settings for the channel. Currently it only
-   list the default ignored packages which are set when you use the Development Version, instead of
-   the Stable Version of the channel. You can read more about them at [Package Control, Docs:
-   Channels and Repositories](https://packagecontrol.io/docs/channels_and_repositories)
+1. **YourChannelName: Generate Channel File** Creates the files `channel.json`, `repositories.json`.
+   The file `channel.json` and `repositories.json` are the same file as the Package Control's
+   [channel_v3.json](https://packagecontrol.io/channel_v3.json) file. You can read more about them
+   at [Package Control, Docs: Channels and
+   Repositories](https://packagecontrol.io/docs/channels_and_repositories)
 
 1. **YourChannelName: Select Packages to Update Git Tag** Before running this command, you must have
    already called `Generate Channel File` to create the channel files, as this commands just load

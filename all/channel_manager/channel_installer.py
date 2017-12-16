@@ -118,8 +118,6 @@ def unpack_settings(channel_settings):
     global TEMPORARY_FOLDER_TO_USE
 
     global CHANNEL_ROOT_URL
-    global CHANNEL_SETTINGS_URL
-    global CHANNEL_SETTINGS_PATH
     global CHANNEL_PACKAGE_NAME
 
     global CHANNEL_ROOT_DIRECTORY
@@ -132,14 +130,13 @@ def unpack_settings(channel_settings):
     global PACKAGES_TO_INSTALL_LAST
 
     global PACKAGES_TO_NOT_INSTALL_STABLE
+    global PACKAGES_TO_IGNORE_ON_DEVELOPMENT
     global PACKAGES_TO_NOT_INSTALL_DEVELOPMENT
 
     IS_DEVELOPMENT_INSTALL        = True if channel_settings['INSTALLATION_TYPE'] == "development" else False
     CHANNEL_INSTALLATION_SETTINGS = channel_settings['CHANNEL_INSTALLATION_SETTINGS']
 
     CHANNEL_ROOT_URL      = channel_settings['CHANNEL_ROOT_URL']
-    CHANNEL_SETTINGS_URL  = channel_settings['CHANNEL_SETTINGS_URL']
-    CHANNEL_SETTINGS_PATH = channel_settings['CHANNEL_SETTINGS_PATH']
     CHANNEL_PACKAGE_NAME  = channel_settings['CHANNEL_PACKAGE_NAME']
 
     USER_SETTINGS_FILE      = channel_settings['USER_SETTINGS_FILE']
@@ -151,6 +148,7 @@ def unpack_settings(channel_settings):
 
     PACKAGES_TO_NOT_INSTALL_STABLE      = channel_settings['PACKAGES_TO_NOT_INSTALL_STABLE']
     PACKAGES_TO_NOT_INSTALL_DEVELOPMENT = channel_settings['PACKAGES_TO_NOT_INSTALL_DEVELOPMENT']
+    PACKAGES_TO_IGNORE_ON_DEVELOPMENT   = channel_settings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT']
 
     FORBIDDEN_PACKAGES        = channel_settings['FORBIDDEN_PACKAGES']
     PACKAGES_TO_INSTALL_FIRST = channel_settings['PACKAGES_TO_INSTALL_FIRST']
@@ -245,8 +243,15 @@ def load_installation_settings_file():
     g_package_control_name = "Package Control.sublime-settings"
     g_packagesmanager_name = "PackagesManager.sublime-settings"
 
+    global g_userSettings
     global g_channelSettings
+    global g_default_ignored_packages
+
+    g_userSettings    = sublime.load_settings( USER_SETTINGS_FILE )
     g_channelSettings = load_data_file( CHANNEL_INSTALLATION_SETTINGS )
+
+    # `g_default_ignored_packages` contains the original user's ignored packages.
+    g_default_ignored_packages = g_userSettings.get( 'ignored_packages', [] )
 
     global g_packages_to_uninstall
     global g_files_to_uninstall
@@ -260,26 +265,27 @@ def load_installation_settings_file():
     g_folders_to_uninstall    = get_dictionary_key( g_channelSettings, 'folders_to_uninstall', [] )
     g_next_packages_to_ignore = get_dictionary_key( g_channelSettings, 'next_packages_to_ignore', [] )
 
+    unignore_installed_packages()
+
+    log( 2, "load_installation_settings_file, PACKAGES_TO_IGNORE_ON_DEVELOPMENT: " + str( PACKAGES_TO_IGNORE_ON_DEVELOPMENT ) )
+    log( 2, "load_installation_settings_file, g_default_ignored_packages:        " + str( g_default_ignored_packages ) )
+
 
 def install_modules(command_line_interface, git_executable_path):
     log( 2, "install_modules_, git_executable_path: " + str( git_executable_path ) )
 
     if IS_DEVELOPMENT_INSTALL:
         clone_sublime_text_channel( command_line_interface, git_executable_path )
-        download_not_packages_submodules( command_line_interface, git_executable_path )
+        packages_to_install = download_not_packages_submodules( command_line_interface, git_executable_path )
 
-        load_ignored_packages()
-
-        packages_to_install = get_development_packages()
         log( 2, "install_modules, packages_to_install: " + str( packages_to_install ) )
 
         install_development_packages( packages_to_install, git_executable_path, command_line_interface )
 
     else:
-        load_ignored_packages()
-        git_modules_file = download_text_file( get_git_modules_url() )
-
+        git_modules_file    = download_text_file( get_git_modules_url() )
         packages_to_install = get_stable_packages( git_modules_file )
+
         log( 2, "install_modules, packages_to_install: " + str( packages_to_install ) )
 
         install_stable_packages( packages_to_install )
@@ -428,7 +434,7 @@ def get_stable_packages(git_modules_file):
     # Do not try to install this own package and the Package Control, as they are currently running
     currently_running = [ "Package Control", "ChannelManager", CHANNEL_PACKAGE_NAME ]
 
-    packages_tonot_install = unique_list_join( PACKAGES_TO_NOT_INSTALL_STABLE, installed_packages, g_packages_to_ignore, currently_running )
+    packages_tonot_install = unique_list_join( PACKAGES_TO_NOT_INSTALL_STABLE, installed_packages, PACKAGES_TO_IGNORE_ON_DEVELOPMENT, currently_running )
     log( 2, "get_stable_packages, packages_tonot_install: " + str( packages_tonot_install ) )
 
     for section in gitModulesFile.sections():
@@ -471,32 +477,6 @@ def get_stable_packages(git_modules_file):
     # ]
 
     return packages
-
-
-def load_ignored_packages():
-    global g_userSettings
-    global g_channelSettings
-
-    g_userSettings = sublime.load_settings( USER_SETTINGS_FILE )
-
-    if IS_DEVELOPMENT_INSTALL:
-        g_channelSettings = load_data_file( CHANNEL_SETTINGS_PATH )
-
-    else:
-        channel_settings_file = download_text_file( CHANNEL_SETTINGS_URL )
-        g_channelSettings     = json.loads( channel_settings_file )
-
-    global g_default_ignored_packages
-    global g_packages_to_ignore
-
-    # `g_default_ignored_packages` contains the original user's ignored packages.
-    g_default_ignored_packages = g_userSettings.get( 'ignored_packages', [] )
-    g_packages_to_ignore       = get_dictionary_key( g_channelSettings, 'packages_to_ignore', [] )
-
-    log( 2, "load_ignored_packages, g_packages_to_ignore:       " + str( g_packages_to_ignore ) )
-    log( 2, "load_ignored_packages, g_default_ignored_packages: " + str( g_default_ignored_packages ) )
-
-    unignore_installed_packages()
 
 
 def unignore_installed_packages():
@@ -717,6 +697,8 @@ def download_not_packages_submodules(command_line_interface, git_executable_path
                 # Progressively saves the installation data, in case the user closes Sublime Text
                 save_default_settings()
 
+    return get_development_packages()
+
 
 def install_development_packages(packages_to_install, git_executable_path, command_line_interface):
     set_default_settings( packages_to_install )
@@ -830,7 +812,7 @@ def set_default_settings(packages_to_install):
 
 def set_development_ignored_packages(packages_to_install):
 
-    for package_name in g_packages_to_ignore:
+    for package_name in PACKAGES_TO_IGNORE_ON_DEVELOPMENT:
 
         # Only ignore the packages which are being installed
         if package_name in packages_to_install and package_name not in g_default_ignored_packages:
