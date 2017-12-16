@@ -445,13 +445,6 @@ def get_stable_packages(git_modules_file):
             package_name = os.path.basename( path )
 
             if package_name not in packages_tonot_install:
-
-                if IS_DEVELOPMENT_INSTALL:
-                    submodule_absolute_path = os.path.join( CHANNEL_ROOT_DIRECTORY, path )
-
-                    if not os.path.isdir( submodule_absolute_path ):
-                        continue
-
                 packages.append( ( package_name, is_dependency( gitModulesFile, section ) ) )
 
     # return \
