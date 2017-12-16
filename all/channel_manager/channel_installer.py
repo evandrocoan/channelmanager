@@ -299,7 +299,7 @@ def install_stable_packages(packages_to_install):
         When trying to install several package at once, then here I am installing them one by one.
     """
     log( 2, "install_stable_packages, PACKAGES_TO_NOT_INSTALL_STABLE: " + str( PACKAGES_TO_NOT_INSTALL_STABLE ) )
-    packages_to_install_names = set_default_settings( packages_to_install )
+    set_default_settings( packages_to_install )
 
     # Package Control: Advanced Install Package
     # https://github.com/wbond/package_control/issues/1191
@@ -313,7 +313,7 @@ def install_stable_packages(packages_to_install):
     current_index      = 0
     git_packages_count = len( packages_to_install )
 
-    for package_info, pi in sequence_timer( packages_to_install, info_frequency=0 ):
+    for package_name, pi in sequence_timer( packages_to_install, info_frequency=0 ):
         current_index += 1
         progress = progress_info( pi )
 
@@ -321,14 +321,13 @@ def install_stable_packages(packages_to_install):
         # if current_index > 3:
         #     break
 
-        package_name, is_dependency = package_info
         log.insert_empty_line( 1 )
         log.insert_empty_line( 1 )
 
-        log( 1, "%s Installing %d of %d: %s (%s)" % ( progress, current_index, git_packages_count, str( package_name ), str( is_dependency ) ) )
-        ignore_next_packages( package_disabler, package_name, packages_to_install_names )
+        log( 1, "%s Installing %d of %d: %s" % ( progress, current_index, git_packages_count, str( package_name ) ) )
+        ignore_next_packages( package_disabler, package_name, packages_to_install )
 
-        if package_manager.install_package( package_name, is_dependency ) is False:
+        if package_manager.install_package( package_name, False ) is False:
             g_failed_repositories.append( package_name )
 
         add_package_to_installation_list( package_name )
@@ -444,8 +443,10 @@ def get_stable_packages(git_modules_file):
         if 'Packages' == path[0:8]:
             package_name = os.path.basename( path )
 
-            if package_name not in packages_tonot_install:
-                packages.append( ( package_name, is_dependency( gitModulesFile, section ) ) )
+            if package_name not in packages_tonot_install \
+                    and not is_dependency( gitModulesFile, section ):
+
+                packages.append( package_name )
 
     # return \
     # [
@@ -812,11 +813,9 @@ def set_default_settings(packages_to_install):
         to install them.
     """
     set_first_and_last_packages_to_install( packages_to_install )
-    packages_names = [ package_name[0] for package_name in packages_to_install ]
+    ask_user_for_which_packages_to_install( packages_to_install )
 
-    ask_user_for_which_packages_to_install( packages_names, packages_to_install )
-
-    if "PackagesManager" in packages_names:
+    if "PackagesManager" in packages_to_install:
         sync_package_control_and_manager()
 
     else:
@@ -826,9 +825,7 @@ def set_default_settings(packages_to_install):
     # The development version does not need to ignore all installed packages before starting the
     # installation process as it is not affected by the Sublime Text bug.
     if IS_DEVELOPMENT_INSTALL:
-        set_development_ignored_packages( packages_names )
-
-    return packages_names
+        set_development_ignored_packages( packages_to_install )
 
 
 def set_development_ignored_packages(packages_to_install):
@@ -1092,7 +1089,7 @@ def ensure_installed_packages_name(package_control_settings):
         del package_control_settings['remove_orphaned_backup']
 
 
-def ask_user_for_which_packages_to_install(packages_names, packages_to_install):
+def ask_user_for_which_packages_to_install(packages_to_install):
     can_continue  = [False]
     active_window = sublime.active_window()
 
@@ -1106,7 +1103,7 @@ def ask_user_for_which_packages_to_install(packages_names, packages_to_install):
         [ "Continue the Installation Process...", "Select this when you are finished selections packages." ]
     ]
 
-    for package_name in packages_names:
+    for package_name in packages_to_install:
 
         if package_name in FORBIDDEN_PACKAGES:
             packages_informations.append( [ package_name, "You must install it or cancel the installation." ] )
@@ -1166,9 +1163,7 @@ def ask_user_for_which_packages_to_install(packages_names, packages_to_install):
     sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
 
     for package_name in selected_packages_to_not_install:
-        target_index = packages_names.index( package_name )
-
-        del packages_names[target_index]
+        target_index = packages_to_install.index( package_name )
         del packages_to_install[target_index]
 
 

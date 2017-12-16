@@ -833,7 +833,6 @@ def ask_user_for_which_packages_to_install(packages_names):
 
     for package_name in selected_packages_to_not_install:
         target_index = packages_names.index( package_name )
-
         del packages_names[target_index]
 
 
