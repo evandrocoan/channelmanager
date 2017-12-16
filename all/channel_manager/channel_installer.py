@@ -479,53 +479,6 @@ def get_stable_packages(git_modules_file):
     return packages
 
 
-def unignore_installed_packages():
-    """
-        When the installation was interrupted, there will be ignored packages which are pending to
-        uningored.
-    """
-    packages_to_unignore = []
-
-    for package_name in g_next_packages_to_ignore:
-
-        if package_name in g_packages_to_uninstall:
-            packages_to_unignore.append( package_name )
-
-    log( 1, "unignore_installed_packages: " + str( packages_to_unignore ) )
-    unignore_some_packages( packages_to_unignore )
-
-
-def is_dependency(gitModulesFile, section):
-
-    if gitModulesFile.has_option( section, "dependency" ):
-        dependency_list = string_convert_list( gitModulesFile.get( section, "dependency" ) )
-
-        if len( dependency_list ) > 0:
-
-            try:
-                int( dependency_list[0] )
-                return True
-
-            except ValueError:
-                return False
-
-    return False
-
-
-def get_git_modules_url():
-    return CHANNEL_ROOT_URL.replace("//github.com/", "//raw.githubusercontent.com/") + "/master/.gitmodules"
-
-
-def download_text_file( git_modules_url ):
-    settings = {}
-    downloaded_contents = None
-
-    with downloader( git_modules_url, settings ) as manager:
-        downloaded_contents = manager.fetch( git_modules_url, 'Error downloading git_modules_url: ' + git_modules_url )
-
-    return downloaded_contents.decode('utf-8')
-
-
 def clone_sublime_text_channel(command_line_interface, git_executable_path):
     """
         Clone the main repository as `https://github.com/evandrocoan/SublimeTextStudio` and install
@@ -1046,6 +999,53 @@ def sync_package_control_and_manager():
 
     packagesmanager = os.path.join( USER_FOLDER_PATH, g_packagesmanager_name )
     write_data_file( packagesmanager, g_package_control_settings )
+
+
+def unignore_installed_packages():
+    """
+        When the installation was interrupted, there will be ignored packages which are pending to
+        uningored.
+    """
+    packages_to_unignore = []
+
+    for package_name in g_next_packages_to_ignore:
+
+        if package_name in g_packages_to_uninstall:
+            packages_to_unignore.append( package_name )
+
+    log( 1, "unignore_installed_packages: " + str( packages_to_unignore ) )
+    unignore_some_packages( packages_to_unignore )
+
+
+def is_dependency(gitModulesFile, section):
+
+    if gitModulesFile.has_option( section, "dependency" ):
+        dependency_list = string_convert_list( gitModulesFile.get( section, "dependency" ) )
+
+        if len( dependency_list ) > 0:
+
+            try:
+                int( dependency_list[0] )
+                return True
+
+            except ValueError:
+                return False
+
+    return False
+
+
+def get_git_modules_url():
+    return CHANNEL_ROOT_URL.replace("//github.com/", "//raw.githubusercontent.com/") + "/master/.gitmodules"
+
+
+def download_text_file( git_modules_url ):
+    settings = {}
+    downloaded_contents = None
+
+    with downloader( git_modules_url, settings ) as manager:
+        downloaded_contents = manager.fetch( git_modules_url, 'Error downloading git_modules_url: ' + git_modules_url )
+
+    return downloaded_contents.decode('utf-8')
 
 
 def ensure_installed_packages_name(package_control_settings):
