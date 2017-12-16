@@ -74,6 +74,7 @@ try:
     from package_control.package_disabler import PackageDisabler
 
     from package_control.thread_progress import ThreadProgress
+    from package_control.commands.satisfy_dependencies_command import SatisfyDependenciesThread
     from package_control.commands.advanced_install_package_command import AdvancedInstallPackageThread
 
 except ImportError:
@@ -281,6 +282,7 @@ def install_modules(command_line_interface, git_executable_path):
         log( 2, "install_modules, packages_to_install: " + str( packages_to_install ) )
 
         install_development_packages( packages_to_install, git_executable_path, command_line_interface )
+        satisfy_dependencies()
 
     else:
         git_modules_file    = download_text_file( get_git_modules_url() )
@@ -999,6 +1001,14 @@ def sync_package_control_and_manager():
 
     packagesmanager = os.path.join( USER_FOLDER_PATH, g_packagesmanager_name )
     write_data_file( packagesmanager, g_package_control_settings )
+
+
+def satisfy_dependencies():
+    manager = PackageManager()
+    thread  = SatisfyDependenciesThread(manager)
+
+    thread.start()
+    thread.join()
 
 
 def unignore_installed_packages():
