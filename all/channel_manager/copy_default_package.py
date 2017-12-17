@@ -55,15 +55,13 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 
 
 def main(default_packages_files=[], is_forced=False):
+    main_git_path = os.path.join( CURRENT_DIRECTORY, ".git" )
 
-    if Debugger:
-        log( 2, "Entering on main(0)" )
-        main_git_path = os.path.join( CURRENT_DIRECTORY, ".git" )
-
-        # Not attempt to run when we are running from inside a `.sublime-package`: FileNotFoundError:
-        # '..\\Installed Packages\\ChannelManager.sublime-package\\last_sublime_upgrade.channel-manager'
-        if is_forced or os.path.exists( main_git_path ) and is_sublime_text_upgraded():
-            CopyFilesThread( default_packages_files ).start()
+    # Not attempt to run when we are running from inside a `.sublime-package`: FileNotFoundError:
+    # '..\\Installed Packages\\ChannelManager.sublime-package\\last_sublime_upgrade.channel-manager'
+    if is_forced or os.path.exists( main_git_path ) and is_sublime_text_upgraded():
+        log( 1, "Entering on CopyFilesThread(1)" )
+        CopyFilesThread( default_packages_files ).start()
 
 
 class CopyFilesThread(threading.Thread):
