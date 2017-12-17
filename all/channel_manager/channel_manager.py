@@ -55,6 +55,7 @@ from .channel_utilities import load_data_file
 from .channel_utilities import print_data_file
 from .channel_utilities import get_dictionary_key
 from .channel_utilities import dictionary_to_string_by_line
+from .channel_utilities import remove_only_if_exists
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
 # or vice-versa. Which means we cannot do nothing as this is only compatible with PackagesManager.
@@ -611,38 +612,7 @@ def fix_sublime_text_release(repository, repositories, dependencies):
     if not is_compatible_version( repository.release_data['sublime_text'], minimum_acceptable_version ):
         repository.release_data['sublime_text'] = ">=" +  str( minimum_acceptable_version )
 
-    if repository.isPackageDependency:
-        add_to_dependencies_list( repository, dependencies )
-
-    else:
-        add_to_repositories_list( repository, repositories )
-
-    if repository.getDependenciesCount() > 0:
-            repository.release_data['dependencies'] = repository.dependency_list
-            repository.createDependenciesJson()
-
-
-def add_to_dependencies_list(repository, dependencies):
-    """
-        Add the `repository` to the `dependencies` list.
-    """
-    repository.info['issues']     = repository.url + "/issues"
-    repository.info['load_order'] = repository.load_order
-
-    repository.release_data['url']  = repository.getSupposedUrl()
-    repository.release_data['base'] = repository.url
-    repository.release_data['tags'] = True
-
-    repository.createSublimeDependencyFile()
-    dependencies.append( repository.info )
-
-
-def add_to_repositories_list(repository, repositories):
-    """
-        Add the `repository` to the `repositories` list.
-    """
-    repository.release_data['url'] = repository.getSupposedUrl()
-    repositories.append( repository.info )
+    repository.configureDependenciesFiles( repositories, dependencies )
 
 
 def get_version_number(sublime_version_text):
@@ -1027,9 +997,37 @@ class Repository():
 
         return tagged_releases
 
-    def createDependenciesJson(self):
-        dependencies_json_path = os.path.join( CHANNEL_ROOT_DIRECTORY, self.path, "dependencies.json" )
+    def configureDependenciesFiles(self, repositories, dependencies):
+        dependencies_json_path  = os.path.join( CHANNEL_ROOT_DIRECTORY, self.path, "dependencies.json" )
+        sublime_dependency_path = os.path.join( CHANNEL_ROOT_DIRECTORY, self.path, ".sublime-dependency" )
 
+        if self.isPackageDependency:
+            self._addToDependenciesList( dependencies )
+            self._createSublimeDependencyFile( sublime_dependency_path )
+
+        else:
+            self._addToRepositoriesList( repositories )
+            # self._deleteSublimeDependencyFile( sublime_dependency_path )
+
+        if self.getDependenciesCount() > 0:
+            self.release_data['dependencies'] = self.dependency_list
+            self._createDependenciesJson( dependencies_json_path )
+
+        # else:
+        #     self._deleteDependenciesJson( dependencies_json_path )
+
+    def _deleteSublimeDependencyFile(self, sublime_dependency_path):
+        remove_only_if_exists( sublime_dependency_path )
+
+    def _createSublimeDependencyFile(self, sublime_dependency_path):
+
+        with open( sublime_dependency_path, "w", newline='\n' ) as text_file:
+            text_file.write( "%d\n" % self.load_order )
+
+    def _deleteDependenciesJson(self, dependencies_json_path):
+        remove_only_if_exists( dependencies_json_path )
+
+    def _createDependenciesJson(self, dependencies_json_path):
         dependencies_json = {}
         platforms_versions_dependencies = [("*", "*", self.dependency_list)]
 
@@ -1038,9 +1036,23 @@ class Repository():
 
         write_data_file( dependencies_json_path, dependencies_json )
 
-    def createSublimeDependencyFile(self):
-        sublime_dependency_path = os.path.join( CHANNEL_ROOT_DIRECTORY, self.path, ".sublime-dependency" )
+    def _addToDependenciesList(self, dependencies):
+        """
+            Add the `repository` to the `dependencies` list.
+        """
+        self.info['issues']     = self.url + "/issues"
+        self.info['load_order'] = self.load_order
 
-        with open( sublime_dependency_path, "w", newline='\n' ) as text_file:
-            text_file.write( "%d\n" % self.load_order )
+        self.release_data['url']  = self.getSupposedUrl()
+        self.release_data['base'] = self.url
+        self.release_data['tags'] = True
+
+        dependencies.append( self.info )
+
+    def _addToRepositoriesList(self, repositories):
+        """
+            Add the `repository` to the `repositories` list.
+        """
+        self.release_data['url'] = self.getSupposedUrl()
+        repositories.append( self.info )
 
