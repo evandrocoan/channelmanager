@@ -163,6 +163,9 @@ class GenerateChannelThread(threading.Thread):
                 for package_name, pi in sequence_timer( last_channel_file, info_frequency=0 ):
                     index += 1
 
+                    if not g_is_already_running:
+                        raise ImportError( "Stopping the process as this Python module was reloaded!" )
+
                     # # For quick testing
                     # if index > 5:
                     #     break
@@ -397,6 +400,9 @@ def get_repositories(all_packages, last_channel_file):
 
     for section, pi in sequence_timer( sections, info_frequency=0 ):
         repository = Repository( gitModulesFile, section )
+
+        if not g_is_already_running:
+            raise ImportError( "Stopping the process as this Python module was reloaded!" )
 
         # # For quick testing
         # if index > 3:

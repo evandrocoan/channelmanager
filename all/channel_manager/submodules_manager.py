@@ -389,6 +389,9 @@ class RunBackstrokeThread(threading.Thread):
             request_index += 1
             progress       = progress_info( pi )
 
+            if not g_is_already_running:
+                raise ImportError( "Stopping the process as this Python module was reloaded!" )
+
             # Walk until the last processed index, skipping everything else
             if start_index > 0:
                 start_index -= 1
