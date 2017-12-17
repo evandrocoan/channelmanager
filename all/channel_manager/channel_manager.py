@@ -631,6 +631,7 @@ def add_to_dependencies_list(repository, dependencies):
     repository.release_data['base'] = repository.url
     repository.release_data['tags'] = True
 
+    repository.createSublimeDependencyFile()
     dependencies.append( repository.info )
 
 
@@ -1034,4 +1035,10 @@ class Repository():
             dependencies_json[platform] = {sublime_version: dependency_list}
 
         write_data_file( dependencies_json_path, dependencies_json )
+
+    def createSublimeDependencyFile(self):
+        sublime_dependency_path = os.path.join( CHANNEL_ROOT_DIRECTORY, self.path, ".sublime-dependency" )
+
+        with open( sublime_dependency_path, "w", newline='\n' ) as text_file:
+            text_file.write( "%d\n" % self.load_order )
 
