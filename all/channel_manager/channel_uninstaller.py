@@ -171,7 +171,7 @@ class StartUninstallChannelThread(threading.Thread):
             uninstaller_thread.start()
 
             global set_progress
-            set_progress = CurrentUpdateProgress( 'Uninstalling Sublime Text %s Packages...' % CHANNEL_PACKAGE_NAME )
+            set_progress = CurrentUpdateProgress( 'Uninstalling Sublime Text %s packages...' % CHANNEL_PACKAGE_NAME )
             ThreadProgress( uninstaller_thread, set_progress, 'The %s was successfully installed.' % CHANNEL_PACKAGE_NAME )
 
             uninstaller_thread.join()

@@ -186,7 +186,7 @@ class StartInstallChannelThread(threading.Thread):
             global set_progress
             installer_thread.start()
 
-            set_progress = CurrentUpdateProgress( 'Installing the %s Packages...' % installation_type )
+            set_progress = CurrentUpdateProgress( 'Installing the %s packages...' % installation_type )
             ThreadProgress( installer_thread, set_progress, 'The %s was successfully installed.' % installation_type )
 
             installer_thread.join()
