@@ -77,6 +77,7 @@ sublime_plugin.reload_plugin( "estimated_time_left" )
 from python_debug_tools import Debugger
 from estimated_time_left import sequence_timer
 from estimated_time_left import progress_info
+from estimated_time_left import CurrentUpdateProgress
 
 
 # Debugger settings: 0 - disabled, 127 - enabled
@@ -92,13 +93,14 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 
 
 def main(channel_settings, command="all"):
+    global set_progress
     log( 2, "Entering on main(2) %s" % ( str( command ) ) )
 
     channel_thread = GenerateChannelThread( channel_settings, command )
     channel_thread.start()
 
-    ThreadProgress( channel_thread, "Generating Channel and Repositories files",
-            "Channel and repositories files successfully created." )
+    set_progress = CurrentUpdateProgress( "Generating Channel and Repositories files" )
+    ThreadProgress( channel_thread, set_progress, "Channel and repositories files successfully created." )
 
 
 def unpack_settings(channel_settings):
@@ -170,7 +172,7 @@ class GenerateChannelThread(threading.Thread):
                     # if index > 5:
                     #     break
 
-                    progress = progress_info( pi )
+                    progress = progress_info( pi, set_progress )
                     log( 1, "{:s} Processing {:3d} of {:d} repositories... {:s}".format( progress, index, repositories_count, package_name ) )
 
                     last_dictionary = get_dictionary_key( last_channel_file, package_name, {} )
@@ -245,7 +247,7 @@ class GenerateChannelThread(threading.Thread):
         for package_index, pi in sequence_timer( range( 1, self.last_picked_item + 1 ), info_frequency=0 ):
             package_name = self.repositories_list[package_index]
 
-            progress = progress_info( pi )
+            progress = progress_info( pi, set_progress )
             log( 1, "{:s} Processing {:3d} of {:d} repositories... {:s}".format( progress, package_index, self.last_picked_item, package_name ) )
 
             if package_name.endswith( self.exclusion_flag ):
@@ -411,7 +413,7 @@ def get_repositories(all_packages, last_channel_file):
         if 'Packages' == repository.path[0:8]:
             index += 1
 
-            progress = progress_info( pi )
+            progress = progress_info( pi, set_progress )
             log( 1, "{:s} Processing {:3d} of {:d} repositories... {:s}".format( progress, index, sections_count, repository.path ) )
 
             if repository.name in all_packages:
@@ -519,9 +521,9 @@ def delete_tags_list(absolute_path, tags_list, command_line_interface):
     remote_index = 0
 
     for tag, pi in sequence_timer( tags_list, info_frequency=0 ):
-        progress      = progress_info( pi )
         remote_index += 1
 
+        progress = progress_info( pi )
         log( 1, "Cleaning tag {:3d} of {:d} ({:s}): {:<20s} {:s}".format(
                 remote_index, tags_count, progress, tag, os.path.basename( absolute_path ) ) )
 

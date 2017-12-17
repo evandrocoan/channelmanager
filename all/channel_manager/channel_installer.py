@@ -89,6 +89,7 @@ PACKAGES_COUNT_TO_IGNORE_AHEAD = 8
 from python_debug_tools import Debugger
 from estimated_time_left import sequence_timer
 from estimated_time_left import progress_info
+from estimated_time_left import CurrentUpdateProgress
 
 # Debugger settings: 0 - disabled, 127 - enabled
 log = Debugger( 127, os.path.basename( __file__ ) )
@@ -182,9 +183,11 @@ class StartInstallChannelThread(threading.Thread):
             installer_thread  = InstallChannelFilesThread()
             installation_type = self.channel_settings['INSTALLATION_TYPE']
 
+            global set_progress
             installer_thread.start()
-            ThreadProgress( installer_thread, 'Installing the %s Packages...' % installation_type,
-                    'The %s was successfully installed.' % installation_type )
+
+            set_progress = CurrentUpdateProgress( 'Installing the %s Packages...' % installation_type )
+            ThreadProgress( installer_thread, set_progress, 'The %s was successfully installed.' % installation_type )
 
             installer_thread.join()
             save_default_settings(1)
@@ -323,7 +326,7 @@ def install_stable_packages(packages_to_install):
 
     for package_name, pi in sequence_timer( packages_to_install, info_frequency=0 ):
         current_index += 1
-        progress = progress_info( pi )
+        progress = progress_info( pi, set_progress )
 
         # # For quick testing
         # if current_index > 3:
@@ -665,7 +668,7 @@ def install_development_packages(packages_to_install, git_executable_path, comma
     for package_info, pi in sequence_timer( packages_to_install, info_frequency=0 ):
         current_index += 1
 
-        progress = progress_info( pi )
+        progress = progress_info( pi, set_progress )
         package_name, url, path = package_info
 
         # # For quick testing

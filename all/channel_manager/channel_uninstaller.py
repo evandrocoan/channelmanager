@@ -87,6 +87,7 @@ PACKAGES_COUNT_TO_IGNORE_AHEAD = 8
 from python_debug_tools import Debugger
 from estimated_time_left import sequence_timer
 from estimated_time_left import progress_info
+from estimated_time_left import CurrentUpdateProgress
 
 # Debugger settings: 0 - disabled, 127 - enabled
 log = Debugger( 127, os.path.basename( __file__ ) )
@@ -169,8 +170,9 @@ class StartUninstallChannelThread(threading.Thread):
             uninstaller_thread = UninstallChannelFilesThread()
             uninstaller_thread.start()
 
-            ThreadProgress( uninstaller_thread, 'Uninstalling Sublime Text %s Packages...' % CHANNEL_PACKAGE_NAME,
-                    'The %s was successfully installed.' % CHANNEL_PACKAGE_NAME )
+            global set_progress
+            set_progress = CurrentUpdateProgress( 'Uninstalling Sublime Text %s Packages...' % CHANNEL_PACKAGE_NAME )
+            ThreadProgress( uninstaller_thread, set_progress, 'The %s was successfully installed.' % CHANNEL_PACKAGE_NAME )
 
             uninstaller_thread.join()
 
@@ -303,7 +305,7 @@ def uninstall_packages():
 
     for package_name, pi in sequence_timer( packages_to_uninstall, info_frequency=0 ):
         current_index += 1
-        progress = progress_info( pi )
+        progress       = progress_info( pi, set_progress )
 
         silence_error_message_box(61.0)
         is_dependency = is_package_dependency( package_name, dependencies, all_packages )
