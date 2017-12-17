@@ -173,6 +173,27 @@ def remove_item_if_exists(list_to_remove, item):
         list_to_remove.remove( item )
 
 
+def safe_remove(path):
+
+    try:
+        os.remove( path )
+
+    except Exception as error:
+        log( 1, "Failed to remove `%s`. Error is: %s" % ( path, error) )
+
+        try:
+            delete_read_only_file(path)
+
+        except Exception as error:
+            log( 1, "Failed to remove `%s`. Error is: %s" % ( path, error) )
+
+
+def remove_only_if_exists(file_path):
+
+    if os.path.exists( file_path ):
+        safe_remove( file_path )
+
+
 def delete_read_only_file(path):
     _delete_read_only_file( None, path, None )
 
@@ -275,5 +296,6 @@ def convert_to_unix_path(relative_path):
         relative_path = relative_path[1:]
 
     return relative_path
+
 
 

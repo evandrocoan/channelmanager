@@ -55,6 +55,8 @@ from .channel_utilities import remove_if_exists
 from .channel_utilities import delete_read_only_file
 from .channel_utilities import _delete_read_only_file
 from .channel_utilities import wrap_text
+from .channel_utilities import safe_remove
+from .channel_utilities import remove_only_if_exists
 
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
@@ -545,12 +547,6 @@ def remove_0_packagesmanager_loader():
     remove_only_if_exists( _packagesmanager_loader_path_new )
 
 
-def remove_only_if_exists(file_path):
-
-    if os.path.exists( file_path ):
-        safe_remove( file_path )
-
-
 def add_packages_to_ignored_list(packages_list):
     """
         Something, somewhere is setting the ignored_packages list to `["Vintage"]`. Then ensure we
@@ -709,21 +705,6 @@ def add_git_folder_by_file(file_relative_path, git_folders):
 
         if git_folder_relative not in git_folders:
             git_folders.append( git_folder_relative )
-
-
-def safe_remove(path):
-
-    try:
-        os.remove( path )
-
-    except Exception as error:
-        log( 1, "Failed to remove `%s`. Error is: %s" % ( path, error) )
-
-        try:
-            delete_read_only_file(path)
-
-        except Exception as error:
-            log( 1, "Failed to remove `%s`. Error is: %s" % ( path, error) )
 
 
 def delete_channel_settings_file(maximum_attempts=3):
