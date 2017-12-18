@@ -63,6 +63,8 @@ from .channel_utilities import convert_to_unix_path
 from .channel_utilities import _delete_read_only_file
 from .channel_utilities import wrap_text
 from .channel_utilities import load_repository_file
+from .channel_utilities import InstallationCancelled
+from .channel_utilities import NoPackagesAvailable
 
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
@@ -78,7 +80,14 @@ try:
     from package_control.commands.advanced_install_package_command import AdvancedInstallPackageThread
 
 except ImportError:
-    pass
+    from PackagesManager.packagesmanager import cmd
+
+    from PackagesManager.packagesmanager.package_manager import PackageManager
+    from PackagesManager.packagesmanager.package_disabler import PackageDisabler
+
+    from PackagesManager.packagesmanager.thread_progress import ThreadProgress
+    from PackagesManager.packagesmanager.commands.satisfy_dependencies_command import SatisfyDependenciesThread
+    from PackagesManager.packagesmanager.commands.advanced_install_package_command import AdvancedInstallPackageThread
 
 
 # How many packages to ignore and unignore in batch to fix the ignored packages bug error
@@ -94,6 +103,9 @@ from estimated_time_left import CurrentUpdateProgress
 # Debugger settings: 0 - disabled, 127 - enabled
 log = Debugger( 127, os.path.basename( __file__ ) )
 
+def _upgrade_debug():
+    return 1 & ( not IS_UPGRADE_INSTALLATION )
+
 # log( 2, "..." )
 # log( 2, "..." )
 # log( 2, "Debugging" )
@@ -108,13 +120,15 @@ def main(channel_settings):
         Also the current `Package Control` cache must be cleaned, ensuring it is downloading and
         using the Channel repositories/channel list.
     """
-    log( 2, "Entering on %s main(0)" % CURRENT_PACKAGE_NAME )
+    # log( 2, "Entering on %s main(0)" % CURRENT_PACKAGE_NAME )
 
-    installer_thread = StartInstallChannelThread(channel_settings)
+    installer_thread = StartInstallChannelThread( channel_settings )
     installer_thread.start()
 
 
 def unpack_settings(channel_settings):
+    installation_type = channel_settings['INSTALLATION_TYPE']
+
     global USER_SETTINGS_FILE
     global DEFAULT_PACKAGES_FILES
     global TEMPORARY_FOLDER_TO_USE
@@ -123,7 +137,7 @@ def unpack_settings(channel_settings):
     global CHANNEL_PACKAGE_NAME
 
     global CHANNEL_ROOT_DIRECTORY
-    global IS_DEVELOPMENT_INSTALL
+    global IS_DEVELOPMENT_INSTALLATION
     global CHANNEL_INSTALLATION_SETTINGS
     global USER_FOLDER_PATH
 
@@ -132,11 +146,15 @@ def unpack_settings(channel_settings):
     global PACKAGES_TO_INSTALL_FIRST
     global PACKAGES_TO_INSTALL_LAST
 
+    global IS_UPGRADE_INSTALLATION
+    global INSTALLATION_TYPE_NAME
     global PACKAGES_TO_NOT_INSTALL_STABLE
     global PACKAGES_TO_IGNORE_ON_DEVELOPMENT
     global PACKAGES_TO_NOT_INSTALL_DEVELOPMENT
 
-    IS_DEVELOPMENT_INSTALL        = True if channel_settings['INSTALLATION_TYPE'] == "development" else False
+    IS_UPGRADE_INSTALLATION       = True if channel_settings['INSTALLATION_TYPE'] == "upgrade"       else False
+    IS_DEVELOPMENT_INSTALLATION   = True if channel_settings['INSTALLATION_TYPE'] == "development"   else False
+    INSTALLATION_TYPE_NAME        = "Upgrade" if IS_UPGRADE_INSTALLATION else "Installation"
     CHANNEL_INSTALLATION_SETTINGS = channel_settings['CHANNEL_INSTALLATION_SETTINGS']
 
     CHANNEL_ROOT_URL      = channel_settings['CHANNEL_ROOT_URL']
@@ -192,7 +210,12 @@ class StartInstallChannelThread(threading.Thread):
             ThreadProgress( installer_thread, set_progress, 'The %s was successfully installed.' % installation_type )
 
             installer_thread.join()
-            save_default_settings(1)
+
+            # The installation is not complete when the user cancelled the installation process or
+            # there are no packages available for an upgrade.
+            if not g_is_installation_complete:
+                # Complete the installation process
+                save_default_settings()
 
             # Wait PackagesManager to load the found dependencies, before announcing it to the user
             sublime.set_timeout_async( check_installed_packages, 2000 )
@@ -202,9 +225,10 @@ class StartInstallChannelThread(threading.Thread):
 
 
 def print_failed_repositories():
-    sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
 
     if len( g_failed_repositories ) > 0:
+        sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+
         log.insert_empty_line( 1 )
         log.insert_empty_line( 1 )
         log( 1, "The following repositories failed their commands..." )
@@ -230,16 +254,23 @@ class InstallChannelFilesThread(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
-        log( 2, "Entering on run(1)" )
+        log( _upgrade_debug(), "Entering on run(1)" )
+
         load_installation_settings_file()
-
         command_line_interface = cmd.Cli( None, True )
-        git_executable_path    = command_line_interface.find_binary( "git.exe" if os.name == 'nt' else "git" )
 
-        log( 2, "run, git_executable_path: " + str( git_executable_path ) )
+        git_executable_path = command_line_interface.find_binary( "git.exe" if os.name == 'nt' else "git" )
+        log( _upgrade_debug(), "run, git_executable_path: " + str( git_executable_path ) )
 
-        install_modules( command_line_interface, git_executable_path)
-        uninstall_package_control()
+        try:
+            install_modules( command_line_interface, git_executable_path )
+
+        except ( InstallationCancelled, NoPackagesAvailable ):
+            global g_is_installation_complete
+            g_is_installation_complete = True
+
+        if not IS_UPGRADE_INSTALLATION:
+            uninstall_package_control()
 
 
 def load_installation_settings_file():
@@ -275,14 +306,14 @@ def load_installation_settings_file():
 
     unignore_installed_packages()
 
-    log( 2, "load_installation_settings_file, PACKAGES_TO_IGNORE_ON_DEVELOPMENT: " + str( PACKAGES_TO_IGNORE_ON_DEVELOPMENT ) )
-    log( 2, "load_installation_settings_file, g_default_ignored_packages:        " + str( g_default_ignored_packages ) )
+    log( _upgrade_debug(), "load_installation_settings_file, PACKAGES_TO_IGNORE_ON_DEVELOPMENT: " + str( PACKAGES_TO_IGNORE_ON_DEVELOPMENT ) )
+    log( _upgrade_debug(), "load_installation_settings_file, g_default_ignored_packages:        " + str( g_default_ignored_packages ) )
 
 
 def install_modules(command_line_interface, git_executable_path):
-    log( 2, "install_modules_, git_executable_path: " + str( git_executable_path ) )
+    log( _upgrade_debug(), "install_modules_, git_executable_path: " + str( git_executable_path ) )
 
-    if IS_DEVELOPMENT_INSTALL:
+    if IS_DEVELOPMENT_INSTALLATION:
         packages_to_install = download_not_packages_submodules( command_line_interface, git_executable_path )
         log( 2, "install_modules, packages_to_install: " + str( packages_to_install ) )
 
@@ -290,8 +321,8 @@ def install_modules(command_line_interface, git_executable_path):
         satisfy_dependencies()
 
     else:
-        packages_to_install = get_stable_packages()
-        log( 2, "install_modules, packages_to_install: " + str( packages_to_install ) )
+        packages_to_install = get_stable_packages( IS_UPGRADE_INSTALLATION )
+        log( _upgrade_debug(), "install_modules, packages_to_install: " + str( packages_to_install ) )
 
         install_stable_packages( packages_to_install )
         accumulative_unignore_user_packages( flush_everything=True )
@@ -411,48 +442,60 @@ def unignore_some_packages(packages_list):
     """
         Flush just a few items each time
     """
+    is_there_unignored_packages = False
 
     for package_name in packages_list:
 
         if package_name in g_default_ignored_packages:
+            is_there_unignored_packages = True
+
             log( 1, "Unignoring the package: %s" % package_name )
             g_default_ignored_packages.remove( package_name )
 
-    g_userSettings.set( "ignored_packages", g_default_ignored_packages )
-    sublime.save_settings( USER_SETTINGS_FILE )
+    if is_there_unignored_packages:
+        g_userSettings.set( "ignored_packages", g_default_ignored_packages )
+        sublime.save_settings( USER_SETTINGS_FILE )
 
 
-def get_stable_packages():
+def get_stable_packages(is_upgrade):
     """
         python ConfigParser: read configuration from string
         https://stackoverflow.com/questions/27744058/python-configparser-read-configuration-from-string
     """
-    index    = 0
-    packages = []
+    current_index     = 0
+    filtered_packages = []
 
-    installed_packages = get_installed_packages( exclusion_list=[CHANNEL_PACKAGE_NAME] )
-    log( 2, "get_stable_packages, installed_packages: " + str( installed_packages ) )
+    installed_packages = get_installed_packages( list_default_packages=True, exclusion_list=[CHANNEL_PACKAGE_NAME] )
+    log( _upgrade_debug(), "get_stable_packages, installed_packages: " + str( installed_packages ) )
 
     # Do not try to install this own package and the Package Control, as they are currently running
     currently_running = [ "Package Control", CURRENT_PACKAGE_NAME, CHANNEL_PACKAGE_NAME ]
 
-    packages_tonot_install = unique_list_join( PACKAGES_TO_NOT_INSTALL_STABLE, installed_packages, PACKAGES_TO_IGNORE_ON_DEVELOPMENT, currently_running )
+    packages_tonot_install = unique_list_join \
+    (
+        PACKAGES_TO_NOT_INSTALL_STABLE,
+        installed_packages,
+        PACKAGES_TO_IGNORE_ON_DEVELOPMENT,
+        currently_running,
+        g_packages_not_installed if is_upgrade else [],
+        g_packages_to_uninstall,
+    )
 
     repositories_loaded = load_repository_file( CHANNEL_REPOSITORY_FILE, False )
-    log( 2, "get_stable_packages, packages_tonot_install: " + str( packages_tonot_install ) )
+    log( _upgrade_debug(), "get_stable_packages, packages_tonot_install: " + str( packages_tonot_install ) )
 
     for package_name in repositories_loaded:
         # # For quick testing
-        # index += 1
-        # if index > 7:
+        # current_index += 1
+        # if current_index > 7:
         #     break
 
         if package_name not in packages_tonot_install \
                 and not is_dependency( package_name, repositories_loaded ):
 
-            packages.append( package_name )
+            filtered_packages.append( package_name )
 
-        if package_name in installed_packages:
+        if not is_upgrade and package_name in installed_packages:
             g_packages_not_installed.append( package_name )
 
     # return \
@@ -477,7 +520,13 @@ def get_stable_packages():
     #     ('Better CoffeeScript', False),
     # ]
 
-    return packages
+    if len( filtered_packages ) < 1:
+        raise NoPackagesAvailable( "There are 0 packages available to install!" )
+
+    if is_upgrade:
+        log( 1, "New packages packages to install found... " + str( filtered_packages ) )
+
+    return filtered_packages
 
 
 def clone_sublime_text_channel(command_line_interface, git_executable_path):
@@ -612,7 +661,7 @@ def download_not_packages_submodules(command_line_interface, git_executable_path
     gitFilePath    = os.path.join( CHANNEL_ROOT_DIRECTORY, '.gitmodules' )
     gitModulesFile = configparser.RawConfigParser()
 
-    index = 0
+    current_index = 0
     gitModulesFile.read( gitFilePath )
 
     for section in gitModulesFile.sections():
@@ -620,8 +669,8 @@ def download_not_packages_submodules(command_line_interface, git_executable_path
         path = gitModulesFile.get( section, "path" )
 
         # # For quick testing
-        # index += 1
-        # if index > 3:
+        # current_index += 1
+        # if current_index > 3:
         #     break
 
         if 'Packages' != path[0:8]:
@@ -690,7 +739,7 @@ def get_development_packages():
     gitFilePath    = os.path.join( CHANNEL_ROOT_DIRECTORY, '.gitmodules' )
     gitModulesFile = configparser.RawConfigParser()
 
-    index = 0
+    current_index = 0
     installed_packages = get_installed_packages()
 
     # Do not try to install `Package Control` as they are currently running, and must be uninstalled
@@ -705,8 +754,8 @@ def get_development_packages():
 
     for section in gitModulesFile.sections():
         # # For quick testing
-        # index += 1
-        # if index > 3:
+        # current_index += 1
+        # if current_index > 3:
         #     break
 
         url  = gitModulesFile.get( section, "url" )
@@ -761,7 +810,7 @@ def set_default_settings(packages_to_install):
 
     # The development version does not need to ignore all installed packages before starting the
     # installation process as it is not affected by the Sublime Text bug.
-    if IS_DEVELOPMENT_INSTALL:
+    if IS_DEVELOPMENT_INSTALLATION:
         set_development_ignored_packages( packages_to_install )
 
 
@@ -812,7 +861,7 @@ def set_first_packages_to_install(packages_to_install):
             packages_to_install.insert( 0, first_packages[package_name] )
 
 
-def save_default_settings(is_installation_completed=0):
+def save_default_settings():
     """
         When uninstalling this channel we can only remove our packages, keeping the user's original
         ignored packages intact.
@@ -831,7 +880,7 @@ def save_default_settings(is_installation_completed=0):
     g_channelSettings['packages_not_installed']  = g_packages_not_installed
 
     g_channelSettings = sort_dictionary( g_channelSettings )
-    log( 1 & is_installation_completed, "save_default_settings, g_channelSettings: " + json.dumps( g_channelSettings, indent=4 ) )
+    # log( 1, "save_default_settings, g_channelSettings: " + json.dumps( g_channelSettings, indent=4 ) )
 
     write_data_file( CHANNEL_INSTALLATION_SETTINGS, g_channelSettings )
 
@@ -851,7 +900,7 @@ def add_package_to_installation_list(package_name):
         settings files.
     """
 
-    if g_package_control_settings and not IS_DEVELOPMENT_INSTALL:
+    if g_package_control_settings and not IS_DEVELOPMENT_INSTALLATION:
         installed_packages = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
         add_item_if_not_exists( installed_packages, package_name )
 
@@ -874,7 +923,7 @@ def uninstall_package_control():
     if "PackagesManager" in g_packages_to_uninstall:
         # Sublime Text is waiting the current thread to finish before loading the just installed
         # PackagesManager, therefore run a new thread delayed which finishes the job
-        sublime.set_timeout_async( complete_package_control_uninstalltion, 2000 )
+        sublime.set_timeout_async( complete_package_control_uninstallation, 2000 )
 
     else:
         log.insert_empty_line( 1 )
@@ -885,10 +934,10 @@ def uninstall_package_control():
         g_is_installation_complete = True
 
 
-def complete_package_control_uninstalltion(maximum_attempts=3):
+def complete_package_control_uninstallation(maximum_attempts=3):
     log.insert_empty_line( 1 )
     log.insert_empty_line( 1 )
-    log(1, "Finishing Package Control Uninstallation... maximum_attempts: " + str( maximum_attempts ) )
+    log( 1, "Finishing Package Control Uninstallation... maximum_attempts: " + str( maximum_attempts ) )
 
     # Import the recent installed PackagesManager
     try:
@@ -901,7 +950,7 @@ def complete_package_control_uninstalltion(maximum_attempts=3):
         if maximum_attempts > 0:
             maximum_attempts -= 1
 
-            sublime.set_timeout_async( lambda: complete_package_control_uninstalltion( maximum_attempts ), 2000 )
+            sublime.set_timeout_async( lambda: complete_package_control_uninstallation( maximum_attempts ), 2000 )
             return
 
         else:
@@ -1018,7 +1067,7 @@ def unignore_installed_packages():
         if package_name in g_packages_to_uninstall:
             packages_to_unignore.append( package_name )
 
-    log( 1, "unignore_installed_packages: " + str( packages_to_unignore ) )
+    log( _upgrade_debug(), "unignore_installed_packages: " + str( packages_to_unignore ) )
     unignore_some_packages( packages_to_unignore )
 
 
@@ -1060,14 +1109,14 @@ def ask_user_for_which_packages_to_install(packages_to_install):
     selected_packages_to_not_install = []
     packages_informations            = \
     [
-        [ "Cancel the Installation Process", "Select this to cancel the installation process." ],
+        [ "Cancel the Installation Process", "Select this to cancel the %s process." % INSTALLATION_TYPE_NAME ],
         [ "Continue the Installation Process...", "Select this when you are finished selections packages." ]
     ]
 
     for package_name in packages_to_install:
 
         if package_name in FORBIDDEN_PACKAGES:
-            packages_informations.append( [ package_name, "You must install it or cancel the installation." ] )
+            packages_informations.append( [ package_name, "You must install it or cancel the %s." % INSTALLATION_TYPE_NAME ] )
 
         else:
             packages_informations.append( [ package_name, install_message ] )
@@ -1075,15 +1124,15 @@ def ask_user_for_which_packages_to_install(packages_to_install):
     def on_done(item_index):
 
         if item_index < 1:
-            global g_is_already_running
-            g_is_already_running = False
+            global g_is_installation_complete
+            g_is_installation_complete = False
 
-            log.insert_empty_line( 1 )
-            raise RuntimeError( "The user closed the installer's packages pick up list." )
+            can_continue[0] = True
+            return
 
         if item_index == 1:
             log.insert_empty_line( 1 )
-            log( 1, "Continuing the installation after the packages pick up..." )
+            log( 1, "Continuing the %s after the packages pick up..." % INSTALLATION_TYPE_NAME )
 
             can_continue[0] = True
             return
@@ -1107,7 +1156,7 @@ def ask_user_for_which_packages_to_install(packages_to_install):
 
         else:
             log( 1, "The package %s must be installed. " % package_name +
-                    "If you do not want to install this package, cancel the installation process." )
+                    "If you do not want to install this package, cancel the %s process." % INSTALLATION_TYPE_NAME )
 
         show_quick_panel( item_index )
 
@@ -1122,6 +1171,10 @@ def ask_user_for_which_packages_to_install(packages_to_install):
 
     # Show up the console, so the user can follow the process.
     sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+
+    if g_is_installation_complete:
+        log.insert_empty_line( 1 )
+        raise InstallationCancelled( "The user closed the installer's packages pick up list." )
 
     for package_name in selected_packages_to_not_install:
         g_packages_not_installed.append( package_name )
@@ -1139,18 +1192,21 @@ def check_installed_packages(maximum_attempts=10):
         differ, attempt to install they again for some times. If not successful, stop trying and
         warn the user.
     """
-    log( 1, "Finishing installation... maximum_attempts: " + str( maximum_attempts ) )
+    log( _upgrade_debug(), "Finishing installation... maximum_attempts: " + str( maximum_attempts ) )
     maximum_attempts -= 1
 
     if g_is_installation_complete:
-        sublime.message_dialog( wrap_text( """\
-                The %s installation was successfully completed.
 
-                You need to restart Sublime Text to load the installed packages and finish
-                installing their missing dependencies.
+        if not IS_UPGRADE_INSTALLATION:
 
-                Check you Sublime Text Console for more information.
-                """ % CHANNEL_PACKAGE_NAME ) )
+            sublime.message_dialog( wrap_text( """\
+                    The %s %s was successfully completed.
+
+                    You need to restart Sublime Text to load the installed packages and finish
+                    installing their missing dependencies.
+
+                    Check you Sublime Text Console for more information.
+                    """ % ( CHANNEL_PACKAGE_NAME, INSTALLATION_TYPE_NAME ) ) )
 
         print_failed_repositories()
         return
@@ -1160,13 +1216,13 @@ def check_installed_packages(maximum_attempts=10):
 
     else:
         sublime.error_message( wrap_text( """\
-                The %s installation could not be successfully completed.
+                The %s %s could not be successfully completed.
 
                 Check you Sublime Text Console for more information.
 
                 If you want help fixing the problem, please, save your Sublime Text Console output
                 so later others can see what happened try to fix it.
-                """ % CHANNEL_PACKAGE_NAME ) )
+                """ % ( CHANNEL_PACKAGE_NAME, INSTALLATION_TYPE_NAME ) ) )
 
         print_failed_repositories()
 

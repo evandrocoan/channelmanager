@@ -67,7 +67,13 @@ try:
         from package_control.package_manager import PackageManager
 
     except ImportError:
-        PackageManager = None
+
+        try:
+            from PackagesManager.packagesmanager.download_manager import downloader
+            from PackagesManager.packagesmanager.package_manager import PackageManager
+
+        except ImportError:
+            PackageManager = None
 
     from python_debug_tools import Debugger
 
@@ -357,4 +363,14 @@ def convert_to_unix_path(relative_path):
     return relative_path
 
 
+class NoPackagesAvailable(Exception):
+
+    def __init__(self, message=""):
+        super().__init__( message )
+
+
+class InstallationCancelled(Exception):
+
+    def __init__(self, message=""):
+        super().__init__( message )
 
