@@ -295,12 +295,11 @@ def uninstall_packages():
     if g_is_package_control_installed:
         _dependencies = package_manager.list_dependencies()
         dependencies  = set( _dependencies )
-        all_packages  = set( package_manager.list_packages() + _dependencies + ['Default']
-                + package_manager.list_default_packages() + get_installed_packages( "PackagesManager.sublime-settings" ) )
+        all_packages  = set( _dependencies + ['Default'] + get_installed_packages(list_default_packages=True) )
 
     else:
-        all_packages = set( package_manager.list_packages( list_everything=True ) + get_installed_packages( "PackagesManager.sublime-settings" ) )
         dependencies = set( package_manager.list_dependencies() )
+        all_packages = set( package_manager.list_packages( list_everything=True ) )
 
     ask_user_for_which_packages_to_install( packages_to_uninstall )
     uninstall_default_package( packages_to_uninstall )

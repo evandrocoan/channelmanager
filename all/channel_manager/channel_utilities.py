@@ -61,6 +61,14 @@ def assert_path(module):
 # Allow using this file on the website where the sublime module is unavailable
 try:
     import sublime
+
+    try:
+        from package_control.download_manager import downloader
+        from package_control.package_manager import PackageManager
+
+    except ImportError:
+        PackageManager = None
+
     from python_debug_tools import Debugger
 
     # Debugger settings: 0 - disabled, 127 - enabled
@@ -145,11 +153,17 @@ def load_repository_file(channel_repository_file, load_dependencies=True):
     return last_packages_dictionary
 
 
-def get_installed_packages(setting_name):
+def get_installed_packages(list_default_packages=False):
 
-    if sublime:
-        package_control_settings = sublime.load_settings( setting_name )
-        return package_control_settings.get( "installed_packages", [] )
+    if PackageManager:
+        packages        = []
+        package_manager = PackageManager()
+
+        if list_default_packages:
+            packages.extend( package_manager.list_default_packages() )
+
+        packages.extend( package_manager.list_packages() )
+        return packages
 
     else:
         raise ImportError( "You can only use the Sublime Text API inside Sublime Text." )

@@ -69,7 +69,6 @@ from .channel_utilities import load_repository_file
 # or vice-versa. Which means we cannot do nothing as this is only compatible with PackagesManager.
 try:
     from package_control import cmd
-    from package_control.download_manager import downloader
 
     from package_control.package_manager import PackageManager
     from package_control.package_disabler import PackageDisabler
@@ -429,7 +428,7 @@ def get_stable_packages():
     index    = 0
     packages = []
 
-    installed_packages = get_installed_packages( "Package Control.sublime-settings" )
+    installed_packages = get_installed_packages()
     log( 2, "get_stable_packages, installed_packages: " + str( installed_packages ) )
 
     # Do not try to install this own package and the Package Control, as they are currently running
@@ -687,7 +686,7 @@ def get_development_packages():
     gitModulesFile = configparser.RawConfigParser()
 
     index = 0
-    installed_packages = get_installed_packages( "Package Control.sublime-settings" )
+    installed_packages = get_installed_packages()
 
     # Do not try to install `Package Control` as they are currently running, and must be uninstalled
     # on the end, if `PackagesManager` was installed.
