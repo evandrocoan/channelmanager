@@ -114,7 +114,7 @@ def main(channel_settings):
         Also the current `Package Control` cache must be cleaned, ensuring it is downloading and
         using the Channel repositories/channel list.
     """
-    log( 2, "Entering on %s main(0)" % CURRENT_PACKAGE_NAME )
+    log( _downgrade_debug(), "Entering on %s main(0)" % CURRENT_PACKAGE_NAME )
 
     installer_thread = StartUninstallChannelThread( channel_settings )
     installer_thread.start()
@@ -220,7 +220,7 @@ class UninstallChannelFilesThread(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
-        log( 2, "Entering on %s run(1)" % self.__class__.__name__ )
+        log( _downgrade_debug(), "Entering on %s run(1)" % self.__class__.__name__ )
         global g_is_installation_complete
         global _uningored_packages_to_flush
 
@@ -232,7 +232,7 @@ class UninstallChannelFilesThread(threading.Thread):
         try:
             packages_to_uninstall = get_packages_to_uninstall( IS_DOWNGRADE_INSTALLATION )
 
-            log( 2, "Packages to %s: " % INSTALLATION_TYPE_NAME + str( packages_to_uninstall ) )
+            log( _downgrade_debug(), "Packages to %s: " % INSTALLATION_TYPE_NAME + str( packages_to_uninstall ) )
             uninstall_packages( packages_to_uninstall )
 
             if not IS_DOWNGRADE_INSTALLATION:
@@ -244,10 +244,11 @@ class UninstallChannelFilesThread(threading.Thread):
 
             attempt_to_uninstall_packagesmanager( packages_to_uninstall )
 
-        except ( InstallationCancelled, NoPackagesAvailable ):
-            g_is_installation_complete &= 2
+            if not IS_DOWNGRADE_INSTALLATION:
+                restore_the_remove_orphaned_setting()
 
-        restore_the_remove_orphaned_setting()
+        except ( InstallationCancelled, NoPackagesAvailable ):
+            g_is_installation_complete = 3
 
 
 def attempt_to_uninstall_packagesmanager(packages_to_uninstall):
