@@ -145,6 +145,16 @@ def load_repository_file(channel_repository_file, load_dependencies=True):
     return last_packages_dictionary
 
 
+def get_installed_packages(setting_name):
+
+    if sublime:
+        package_control_settings = sublime.load_settings( setting_name )
+        return package_control_settings.get( "installed_packages", [] )
+
+    else:
+        raise ImportError( "You can only use the Sublime Text API inside Sublime Text." )
+
+
 def get_git_modules_url(channel_root_url):
     return channel_root_url.replace( "//github.com/", "//raw.githubusercontent.com/" ) + "/master/.gitmodules"
 
@@ -257,16 +267,6 @@ def get_immediate_subdirectories(a_dir):
 
 def wrap_text(text):
     return re.sub( r"(?<!\n)\n(?!\n)", " ", textwrap.dedent( text ).strip( " " ) )
-
-
-def get_installed_packages(setting_name):
-
-    if sublime:
-        package_control_settings = sublime.load_settings( setting_name )
-        return package_control_settings.get( "installed_packages", [] )
-
-    else:
-        raise ImportError( "You can only use the Sublime Text API inside Sublime Text." )
 
 
 def unique_list_join(*lists):
