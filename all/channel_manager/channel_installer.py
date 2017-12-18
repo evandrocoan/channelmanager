@@ -62,6 +62,7 @@ from .channel_utilities import remove_item_if_exists
 from .channel_utilities import convert_to_unix_path
 from .channel_utilities import _delete_read_only_file
 from .channel_utilities import wrap_text
+from .channel_utilities import load_repository_file
 
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
@@ -127,6 +128,7 @@ def unpack_settings(channel_settings):
     global CHANNEL_INSTALLATION_SETTINGS
     global USER_FOLDER_PATH
 
+    global CHANNEL_REPOSITORY_FILE
     global FORBIDDEN_PACKAGES
     global PACKAGES_TO_INSTALL_FIRST
     global PACKAGES_TO_INSTALL_LAST
@@ -144,6 +146,7 @@ def unpack_settings(channel_settings):
     USER_SETTINGS_FILE      = channel_settings['USER_SETTINGS_FILE']
     DEFAULT_PACKAGES_FILES  = channel_settings['DEFAULT_PACKAGES_FILES']
     TEMPORARY_FOLDER_TO_USE = channel_settings['TEMPORARY_FOLDER_TO_USE']
+    CHANNEL_REPOSITORY_FILE = channel_settings['CHANNEL_REPOSITORY_FILE']
 
     CHANNEL_ROOT_DIRECTORY  = channel_settings['CHANNEL_ROOT_DIRECTORY']
     USER_FOLDER_PATH        = channel_settings['USER_FOLDER_PATH']
@@ -279,18 +282,14 @@ def install_modules(command_line_interface, git_executable_path):
     log( 2, "install_modules_, git_executable_path: " + str( git_executable_path ) )
 
     if IS_DEVELOPMENT_INSTALL:
-        clone_sublime_text_channel( command_line_interface, git_executable_path )
         packages_to_install = download_not_packages_submodules( command_line_interface, git_executable_path )
-
         log( 2, "install_modules, packages_to_install: " + str( packages_to_install ) )
 
         install_development_packages( packages_to_install, git_executable_path, command_line_interface )
         satisfy_dependencies()
 
     else:
-        git_modules_file    = download_text_file( get_git_modules_url() )
-        packages_to_install = get_stable_packages( git_modules_file )
-
+        packages_to_install = get_stable_packages()
         log( 2, "install_modules, packages_to_install: " + str( packages_to_install ) )
 
         install_stable_packages( packages_to_install )
@@ -422,7 +421,7 @@ def unignore_some_packages(packages_list):
     sublime.save_settings( USER_SETTINGS_FILE )
 
 
-def get_stable_packages(git_modules_file):
+def get_stable_packages():
     """
         python ConfigParser: read configuration from string
         https://stackoverflow.com/questions/27744058/python-configparser-read-configuration-from-string
@@ -430,34 +429,27 @@ def get_stable_packages(git_modules_file):
     index    = 0
     packages = []
 
-    gitModulesFile     = configparser.RawConfigParser()
     installed_packages = get_installed_packages( "Package Control.sublime-settings" )
-
     log( 2, "get_stable_packages, installed_packages: " + str( installed_packages ) )
-    gitModulesFile.readfp( io.StringIO( git_modules_file ) )
 
     # Do not try to install this own package and the Package Control, as they are currently running
     currently_running = [ "Package Control", "ChannelManager", CHANNEL_PACKAGE_NAME ]
 
     packages_tonot_install = unique_list_join( PACKAGES_TO_NOT_INSTALL_STABLE, installed_packages, PACKAGES_TO_IGNORE_ON_DEVELOPMENT, currently_running )
+
+    repositories_loaded = load_repository_file( CHANNEL_REPOSITORY_FILE, False )
     log( 2, "get_stable_packages, packages_tonot_install: " + str( packages_tonot_install ) )
 
-    for section in gitModulesFile.sections():
+    for package_name in repositories_loaded:
         # # For quick testing
         # index += 1
         # if index > 7:
         #     break
 
-        path = gitModulesFile.get( section, "path" )
-        log( 2, "get_stable_packages, path: " + path )
+        if package_name not in packages_tonot_install \
+                and not is_dependency( package_name, repositories_loaded ):
 
-        if 'Packages' == path[0:8]:
-            package_name = os.path.basename( path )
-
-            if package_name not in packages_tonot_install \
-                    and not is_dependency( gitModulesFile, section ):
-
-                packages.append( package_name )
+            packages.append( package_name )
 
     # return \
     # [
@@ -611,6 +603,7 @@ def download_main_repository(command_line_interface, git_executable_path, channe
 
 def download_not_packages_submodules(command_line_interface, git_executable_path):
     log( 1, "download_not_packages_submodules" )
+    clone_sublime_text_channel( command_line_interface, git_executable_path )
 
     gitFilePath    = os.path.join( CHANNEL_ROOT_DIRECTORY, '.gitmodules' )
     gitModulesFile = configparser.RawConfigParser()
@@ -1030,35 +1023,9 @@ def unignore_installed_packages():
     unignore_some_packages( packages_to_unignore )
 
 
-def is_dependency(gitModulesFile, section):
-
-    if gitModulesFile.has_option( section, "dependency" ):
-        dependency_list = string_convert_list( gitModulesFile.get( section, "dependency" ) )
-
-        if len( dependency_list ) > 0:
-
-            try:
-                int( dependency_list[0] )
-                return True
-
-            except ValueError:
-                return False
-
-    return False
-
-
-def get_git_modules_url():
-    return CHANNEL_ROOT_URL.replace("//github.com/", "//raw.githubusercontent.com/") + "/master/.gitmodules"
-
-
-def download_text_file( git_modules_url ):
-    settings = {}
-    downloaded_contents = None
-
-    with downloader( git_modules_url, settings ) as manager:
-        downloaded_contents = manager.fetch( git_modules_url, 'Error downloading git_modules_url: ' + git_modules_url )
-
-    return downloaded_contents.decode('utf-8')
+def is_dependency(package_name, repositories_dictionary):
+    package_dicitonary = repositories_dictionary[package_name]
+    return "load_order" in package_dicitonary
 
 
 def ensure_installed_packages_name(package_control_settings):

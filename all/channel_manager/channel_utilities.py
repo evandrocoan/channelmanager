@@ -114,9 +114,49 @@ def load_data_file(file_path, wait_on_error=True):
             raise ValueError( "file_path: %s, error: %s" % ( file_path, error ) )
 
     else:
-        log( 1, "Error on load_data_file(1), the file '%s' does not exists!" % file_path )
+        if sublime:
+            packages_start = file_path.find( "Packages" )
+            packages_relative_path = file_path[packages_start:].replace( ".sublime-package", "" ).replace( "\\", "/" )
+
+            log( 1, "load_data_file, packages_relative_path: " + str( packages_relative_path ) )
+            resource_bytes = sublime.load_binary_resource( packages_relative_path )
+
+            return json.loads( resource_bytes.decode('utf-8') )
+
+        else:
+            log( 1, "Error on load_data_file(1), the file '%s' does not exists!" % file_path )
 
     return channel_dictionary
+
+
+def load_repository_file(channel_repository_file, load_dependencies=True):
+    repositories_dictionary = load_data_file( channel_repository_file )
+
+    packages_list = get_dictionary_key( repositories_dictionary, 'packages', {} )
+    last_packages_dictionary = {}
+
+    if load_dependencies:
+        dependencies_list = get_dictionary_key( repositories_dictionary, 'dependencies', {} )
+        packages_list.extend( dependencies_list )
+
+    for package in packages_list:
+        last_packages_dictionary[package['name']] = package
+
+    return last_packages_dictionary
+
+
+def get_git_modules_url(channel_root_url):
+    return channel_root_url.replace( "//github.com/", "//raw.githubusercontent.com/" ) + "/master/.gitmodules"
+
+
+def download_text_file( git_modules_url ):
+    settings = {}
+    downloaded_contents = None
+
+    with downloader( git_modules_url, settings ) as manager:
+        downloaded_contents = manager.fetch( git_modules_url, 'Error downloading git_modules_url: ' + git_modules_url )
+
+    return downloaded_contents.decode('utf-8')
 
 
 def string_convert_list( comma_separated_list ):

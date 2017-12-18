@@ -56,6 +56,7 @@ from .channel_utilities import print_data_file
 from .channel_utilities import get_dictionary_key
 from .channel_utilities import dictionary_to_string_by_line
 from .channel_utilities import remove_only_if_exists
+from .channel_utilities import load_repository_file
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
 # or vice-versa. Which means we cannot do nothing as this is only compatible with PackagesManager.
@@ -139,11 +140,11 @@ class GenerateChannelThread(threading.Thread):
             g_failed_repositories = []
 
             all_packages      = load_deafault_channel()
-            last_channel_file = load_last_channel_file()
+            last_channel_file = load_repository_file( CHANNEL_REPOSITORY_FILE )
 
             # print_some_repositories( all_packages )
             if self.command == "all":
-                repositories, dependencies = get_repositories( all_packages, last_channel_file )
+                repositories, dependencies = create_repositories_list( all_packages, last_channel_file )
                 self.save_log_file( repositories, dependencies )
 
             elif self.command == "git_tag":
@@ -342,21 +343,6 @@ def load_deafault_channel():
     return all_packages
 
 
-def load_last_channel_file():
-    repositories_dictionary  = load_data_file( CHANNEL_REPOSITORY_FILE )
-
-    packages_list     = get_dictionary_key( repositories_dictionary, 'packages', {} )
-    dependencies_list = get_dictionary_key( repositories_dictionary, 'dependencies', {} )
-
-    last_packages_dictionary = {}
-    packages_list.extend( dependencies_list )
-
-    for package in packages_list:
-        last_packages_dictionary[package['name']] = package
-
-    return last_packages_dictionary
-
-
 def create_repository_file(repositories, dependencies):
     repository_file = OrderedDict()
     repository_file['schema_version'] = "3.0.0"
@@ -385,7 +371,7 @@ def create_channel_file(repositories, dependencies):
     write_data_file( CHANNEL_FILE_PATH, channel_dictionary )
 
 
-def get_repositories(all_packages, last_channel_file):
+def create_repositories_list(all_packages, last_channel_file):
     gitFilePath    = os.path.join( CHANNEL_ROOT_DIRECTORY, '.gitmodules' )
     gitModulesFile = configparser.RawConfigParser()
 
