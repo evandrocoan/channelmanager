@@ -123,13 +123,18 @@ def load_data_file(file_path, wait_on_error=True):
 
     else:
         if sublime:
-            packages_start = file_path.find( "Packages" )
-            packages_relative_path = file_path[packages_start:].replace( "\\", "/" )
 
-            log( 1, "load_data_file, packages_relative_path: " + str( packages_relative_path ) )
-            resource_bytes = sublime.load_binary_resource( packages_relative_path )
+            try:
+                packages_start = file_path.find( "Packages" )
+                packages_relative_path = file_path[packages_start:].replace( "\\", "/" )
 
-            return json.loads( resource_bytes.decode('utf-8') )
+                log( 1, "load_data_file, packages_relative_path: " + str( packages_relative_path ) )
+                resource_bytes = sublime.load_binary_resource( packages_relative_path )
+
+                return json.loads( resource_bytes.decode('utf-8') )
+
+            except IOError as error:
+                log( 1, "Error on load_data_file(1), the file '%s' does not exists! %s" % ( file_path, error ) )
 
         else:
             log( 1, "Error on load_data_file(1), the file '%s' does not exists!" % file_path )
@@ -153,7 +158,7 @@ def load_repository_file(channel_repository_file, load_dependencies=True):
     return last_packages_dictionary
 
 
-def get_installed_packages(list_default_packages=False):
+def get_installed_packages(list_default_packages=False, exclusion_list=[]):
 
     if PackageManager:
         packages        = []
@@ -163,7 +168,7 @@ def get_installed_packages(list_default_packages=False):
             packages.extend( package_manager.list_default_packages() )
 
         packages.extend( package_manager.list_packages() )
-        return packages
+        return list( set( packages ) - set( exclusion_list ) )
 
     else:
         raise ImportError( "You can only use the Sublime Text API inside Sublime Text." )

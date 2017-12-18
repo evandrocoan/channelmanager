@@ -264,12 +264,14 @@ def load_installation_settings_file():
     global g_folders_to_uninstall
     global g_packages_to_unignore
     global g_next_packages_to_ignore
+    global g_packages_not_installed
 
     g_packages_to_uninstall   = get_dictionary_key( g_channelSettings, 'packages_to_uninstall', [] )
     g_packages_to_unignore    = get_dictionary_key( g_channelSettings, 'packages_to_unignore', [] )
     g_files_to_uninstall      = get_dictionary_key( g_channelSettings, 'files_to_uninstall', [] )
     g_folders_to_uninstall    = get_dictionary_key( g_channelSettings, 'folders_to_uninstall', [] )
     g_next_packages_to_ignore = get_dictionary_key( g_channelSettings, 'next_packages_to_ignore', [] )
+    g_packages_not_installed  = get_dictionary_key( g_channelSettings, 'packages_not_installed', [] )
 
     unignore_installed_packages()
 
@@ -428,11 +430,11 @@ def get_stable_packages():
     index    = 0
     packages = []
 
-    installed_packages = get_installed_packages()
+    installed_packages = get_installed_packages( exclusion_list=[CHANNEL_PACKAGE_NAME] )
     log( 2, "get_stable_packages, installed_packages: " + str( installed_packages ) )
 
     # Do not try to install this own package and the Package Control, as they are currently running
-    currently_running = [ "Package Control", "ChannelManager", CHANNEL_PACKAGE_NAME ]
+    currently_running = [ "Package Control", CURRENT_PACKAGE_NAME, CHANNEL_PACKAGE_NAME ]
 
     packages_tonot_install = unique_list_join( PACKAGES_TO_NOT_INSTALL_STABLE, installed_packages, PACKAGES_TO_IGNORE_ON_DEVELOPMENT, currently_running )
 
@@ -449,6 +451,9 @@ def get_stable_packages():
                 and not is_dependency( package_name, repositories_loaded ):
 
             packages.append( package_name )
+
+        if package_name in installed_packages:
+            g_packages_not_installed.append( package_name )
 
     # return \
     # [
@@ -817,18 +822,13 @@ def save_default_settings(is_installation_completed=0):
     if 'Default' in g_packages_to_uninstall:
         g_channelSettings['default_packages_files'] = DEFAULT_PACKAGES_FILES
 
-    # `packages_to_uninstall` and `packages_to_unignore` are to uninstall and unignore they when
-    # uninstalling the channel
+    # `packages_to_uninstall` and `packages_to_unignore` are to uninstall and unignore they when uninstalling the channel
     g_channelSettings['packages_to_uninstall']   = g_packages_to_uninstall
     g_channelSettings['packages_to_unignore']    = g_packages_to_unignore
     g_channelSettings['files_to_uninstall']      = g_files_to_uninstall
     g_channelSettings['folders_to_uninstall']    = g_folders_to_uninstall
-
-    if 1 & is_installation_completed:
-        g_channelSettings['next_packages_to_ignore'] = g_next_packages_to_ignore
-
-    else:
-        g_channelSettings['next_packages_to_ignore'] = []
+    g_channelSettings['next_packages_to_ignore'] = g_next_packages_to_ignore
+    g_channelSettings['packages_not_installed']  = g_packages_not_installed
 
     g_channelSettings = sort_dictionary( g_channelSettings )
     log( 1 & is_installation_completed, "save_default_settings, g_channelSettings: " + json.dumps( g_channelSettings, indent=4 ) )
@@ -1124,6 +1124,8 @@ def ask_user_for_which_packages_to_install(packages_to_install):
     sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
 
     for package_name in selected_packages_to_not_install:
+        g_packages_not_installed.append( package_name )
+
         target_index = packages_to_install.index( package_name )
         del packages_to_install[target_index]
 
