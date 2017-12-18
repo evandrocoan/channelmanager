@@ -116,7 +116,7 @@ def load_data_file(file_path, wait_on_error=True):
     else:
         if sublime:
             packages_start = file_path.find( "Packages" )
-            packages_relative_path = file_path[packages_start:].replace( ".sublime-package", "" ).replace( "\\", "/" )
+            packages_relative_path = file_path[packages_start:].replace( "\\", "/" )
 
             log( 1, "load_data_file, packages_relative_path: " + str( packages_relative_path ) )
             resource_bytes = sublime.load_binary_resource( packages_relative_path )
