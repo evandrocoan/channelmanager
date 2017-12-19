@@ -28,6 +28,7 @@
 #
 
 import sublime
+import configparser
 
 import os
 import sys
@@ -35,12 +36,10 @@ import zipfile
 import threading
 import contextlib
 
-import configparser
-
 from .settings import CURRENT_DIRECTORY
 from .settings import CURRENT_PACKAGE_NAME
 
-UPGRADE_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, "all", "last_sublime_upgrade.channel-manager" )
+from .channel_utilities import is_sublime_text_upgraded
 
 
 from python_debug_tools import Debugger
@@ -55,11 +54,15 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 
 
 def main(default_package_files=[], is_forced=False):
+
+    # We can only run this when we are using the development version of the channel. And when there
+    # is a `.git` folder, we are running the `Development Version` of the channel.
     main_git_path = os.path.join( CURRENT_DIRECTORY, ".git" )
 
-    # Not attempt to run when we are running from inside a `.sublime-package`: FileNotFoundError:
-    # '..\\Installed Packages\\ChannelManager.sublime-package\\last_sublime_upgrade.channel-manager'
-    if is_forced or os.path.exists( main_git_path ) and is_sublime_text_upgraded():
+    # Not attempt to run when we are running from inside a `.sublime-package` because this is only
+    # available for the `Development Version` as there is not need to unpack the `Default Package`
+    # on the `Stable Version` of the channel.
+    if is_forced or os.path.exists( main_git_path ) and is_sublime_text_upgraded( "copy_default_package" ):
         log( 1, "Entering on CopyFilesThread(1)" )
         CopyFilesThread( default_package_files ).start()
 
@@ -147,46 +150,6 @@ def extract_package(package_path, destine_folder):
             return
 
         log( 1, "The file '%s' was successfully extracted." % package_path )
-
-
-def is_sublime_text_upgraded():
-    """
-        @return True   when it is the fist time this function is called or there is a sublime text
-                       upgrade, False otherwise.
-    """
-
-    current_version = int( sublime.version() )
-
-    last_section = open_last_session_data( UPGRADE_SESSION_FILE )
-    last_version = int( last_section.getint( 'last_sublime_text_version', 'integer_value' ) )
-
-    last_section.set( 'last_sublime_text_version', 'integer_value', str( current_version ) )
-    save_session_data( last_section, UPGRADE_SESSION_FILE )
-
-    if last_version < current_version:
-        return True
-
-    else:
-        return False
-
-
-def open_last_session_data(session_file):
-    last_section = configparser.ConfigParser( allow_no_value=True )
-
-    if os.path.exists( session_file ):
-        last_section.read( session_file )
-
-    else:
-        last_section.add_section( 'last_sublime_text_version' )
-        last_section.set( 'last_sublime_text_version', 'integer_value', '0' )
-
-    return last_section
-
-
-def save_session_data(last_section, session_file):
-
-    with open( session_file, 'wt' ) as configfile:
-        last_section.write( configfile )
 
 
 if __name__ == "__main__":

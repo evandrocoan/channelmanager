@@ -36,6 +36,8 @@ import re
 import time
 import textwrap
 
+from distutils.version import LooseVersion
+
 
 # Relative imports in Python 3
 # https://stackoverflow.com/questions/16981921/relative-imports-in-python-3
@@ -47,6 +49,9 @@ except( ImportError, ValueError):
     from settings import CURRENT_DIRECTORY
     from settings import CURRENT_PACKAGE_NAME
 
+
+UPGRADE_SESSION_FILE      = os.path.join( CURRENT_DIRECTORY, "all", "last_sublime_upgrade.channel-manager" )
+LAST_SUBLIME_TEXT_SECTION = "last_sublime_text_version"
 
 # print_python_envinronment()
 def assert_path(module):
@@ -361,6 +366,56 @@ def convert_to_unix_path(relative_path):
         relative_path = relative_path[1:]
 
     return relative_path
+
+
+def is_sublime_text_upgraded(caller_indentifier):
+    """
+        @return True   when it is the fist time this function is called or there is a sublime text
+                       upgrade, False otherwise.
+    """
+    last_version    = 0
+    current_version = int( sublime.version() )
+
+    last_section = _open_last_session_data( UPGRADE_SESSION_FILE )
+    has_section  = last_section.has_section( LAST_SUBLIME_TEXT_SECTION )
+
+    if has_section:
+
+        if last_section.has_option( LAST_SUBLIME_TEXT_SECTION, caller_indentifier ):
+            last_version = int( last_section.getint( LAST_SUBLIME_TEXT_SECTION, caller_indentifier ) )
+
+    else:
+        last_section.add_section( LAST_SUBLIME_TEXT_SECTION )
+
+    last_section.set( LAST_SUBLIME_TEXT_SECTION, caller_indentifier, str( current_version ) )
+    save_session_data( last_section, UPGRADE_SESSION_FILE )
+
+    return last_version < current_version
+
+
+def _open_last_session_data(session_file):
+    last_section = configparser.ConfigParser( allow_no_value=True )
+
+    if os.path.exists( session_file ):
+        last_section.read( session_file )
+
+    return last_section
+
+
+def save_session_data(last_section, session_file):
+
+    with open( session_file, 'wt' ) as configfile:
+        last_section.write( configfile )
+
+
+def is_channel_upgraded(channel_settings):
+    channelSettings     = load_data_file( channel_settings['CHANNEL_REPOSITORY_FILE'] )
+    userChannelSettings = load_data_file( channel_settings['CHANNEL_INSTALLATION_SETTINGS'] )
+
+    current_version      = get_dictionary_key( channelSettings, 'current_version', '0.0.0' )
+    user_current_version = get_dictionary_key( userChannelSettings, 'current_version', '0.0.0' )
+
+    return LooseVersion( current_version ) > LooseVersion( user_current_version )
 
 
 class NoPackagesAvailable(Exception):

@@ -65,6 +65,7 @@ from .channel_utilities import wrap_text
 from .channel_utilities import load_repository_file
 from .channel_utilities import InstallationCancelled
 from .channel_utilities import NoPackagesAvailable
+from .channel_utilities import is_channel_upgraded
 
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
@@ -112,7 +113,7 @@ def _upgrade_debug():
 # log( 2, "CURRENT_DIRECTORY_:     " + CURRENT_DIRECTORY )
 
 
-def main(channel_settings):
+def main(channel_settings, is_forced=False):
     """
         Before calling this installer, the `Package Control` user settings file, must have the
         Channel file set before the default channel key `channels`.
@@ -120,10 +121,18 @@ def main(channel_settings):
         Also the current `Package Control` cache must be cleaned, ensuring it is downloading and
         using the Channel repositories/channel list.
     """
-    # log( 2, "Entering on %s main(0)" % CURRENT_PACKAGE_NAME )
+    # We can only run this when we are using the stable version of the channel. And when there is
+    # not a `.git` folder, we are running the `Development Version` of the channel.
+    main_git_path = os.path.join( CURRENT_DIRECTORY, ".git" )
 
-    installer_thread = StartInstallChannelThread( channel_settings )
-    installer_thread.start()
+    # Not attempt to run when we are running from outside a `.sublime-package` as the upgrader is
+    # only available for the `Stable Version` of the channel. The `Development Version` must use
+    # git itself to install or remove packages.
+    if is_forced or not os.path.exists( main_git_path ) and is_channel_upgraded( channel_settings ):
+        log( 1, "Entering on %s main(0)" % CURRENT_PACKAGE_NAME )
+
+        installer_thread = StartInstallChannelThread( channel_settings )
+        installer_thread.start()
 
 
 class StartInstallChannelThread(threading.Thread):
@@ -354,12 +363,12 @@ def get_stable_packages(is_upgrade):
 
     packages_tonot_install = unique_list_join \
     (
-        g_channel_settings['PACKAGES_TO_NOT_INSTALL_STABLE'],
-        installed_packages,
-        g_channel_settings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT'],
         currently_running,
-        g_packages_not_installed if is_upgrade else [],
+        installed_packages,
         g_packages_to_uninstall,
+        g_packages_not_installed if is_upgrade else [],
+        g_channel_settings['PACKAGES_TO_NOT_INSTALL_STABLE'],
+        g_channel_settings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT'],
     )
 
     repositories_loaded = load_repository_file( g_channel_settings['CHANNEL_REPOSITORY_FILE'], False )
@@ -1185,6 +1194,8 @@ def load_installation_settings_file():
 
     unignore_installed_packages()
 
-    log( _upgrade_debug(), "load_installation_settings_file, g_channel_settings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT']: " + str( g_channel_settings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT'] ) )
+    log( _upgrade_debug(), "load_installation_settings_file, PACKAGES_TO_IGNORE_ON_DEVELOPMENT: "
+            + str( g_channel_settings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT'] ) )
+
     log( _upgrade_debug(), "load_installation_settings_file, g_default_ignored_packages:        " + str( g_default_ignored_packages ) )
 

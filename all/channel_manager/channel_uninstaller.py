@@ -105,7 +105,7 @@ def _downgrade_debug():
 # log( 2, "CURRENT_DIRECTORY_: " + CURRENT_DIRECTORY )
 
 
-def main(channel_settings):
+def main(channel_settings, is_forced=False):
     """
         Before calling this installer, the `Package Control` user settings file, must have the
         Channel file set before the default channel key `channels`.
@@ -113,10 +113,18 @@ def main(channel_settings):
         Also the current `Package Control` cache must be cleaned, ensuring it is downloading and
         using the Channel repositories/channel list.
     """
-    log( _downgrade_debug(), "Entering on %s main(0)" % CURRENT_PACKAGE_NAME )
+    # We can only run this when we are using the stable version of the channel. And when there is
+    # not a `.git` folder, we are running the `Development Version` of the channel.
+    main_git_path = os.path.join( CURRENT_DIRECTORY, ".git" )
 
-    installer_thread = StartUninstallChannelThread( channel_settings )
-    installer_thread.start()
+    # Not attempt to run when we are running from outside a `.sublime-package` as the upgrader is
+    # only available for the `Stable Version` of the channel. The `Development Version` must use
+    # git itself to install or remove packages.
+    if is_forced or not os.path.exists( main_git_path ) and is_channel_upgraded( channel_settings ):
+        log( 1, "Entering on %s main(0)" % CURRENT_PACKAGE_NAME )
+
+        installer_thread = StartUninstallChannelThread( channel_settings )
+        installer_thread.start()
 
 
 class StartUninstallChannelThread(threading.Thread):
