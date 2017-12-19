@@ -127,54 +127,16 @@ def main(channel_settings):
 
 
 def unpack_settings(channel_settings):
-    installation_type = channel_settings['INSTALLATION_TYPE']
-
-    global USER_SETTINGS_FILE
-    global DEFAULT_PACKAGES_FILES
-    global TEMPORARY_FOLDER_TO_USE
-
-    global CHANNEL_ROOT_URL
-    global CHANNEL_PACKAGE_NAME
-
-    global CHANNEL_ROOT_DIRECTORY
-    global IS_DEVELOPMENT_INSTALLATION
-    global CHANNEL_INSTALLATION_SETTINGS
-    global USER_FOLDER_PATH
-
-    global CHANNEL_REPOSITORY_FILE
-    global FORBIDDEN_PACKAGES
-    global PACKAGES_TO_INSTALL_FIRST
-    global PACKAGES_TO_INSTALL_LAST
+    global g_channel_settings
+    g_channel_settings = channel_settings
 
     global IS_UPGRADE_INSTALLATION
     global INSTALLATION_TYPE_NAME
-    global PACKAGES_TO_NOT_INSTALL_STABLE
-    global PACKAGES_TO_IGNORE_ON_DEVELOPMENT
-    global PACKAGES_TO_NOT_INSTALL_DEVELOPMENT
+    global IS_DEVELOPMENT_INSTALLATION
 
-    IS_UPGRADE_INSTALLATION       = True if channel_settings['INSTALLATION_TYPE'] == "upgrade"       else False
-    IS_DEVELOPMENT_INSTALLATION   = True if channel_settings['INSTALLATION_TYPE'] == "development"   else False
+    IS_UPGRADE_INSTALLATION       = True if g_channel_settings['INSTALLATION_TYPE'] == "upgrade"       else False
+    IS_DEVELOPMENT_INSTALLATION   = True if g_channel_settings['INSTALLATION_TYPE'] == "development"   else False
     INSTALLATION_TYPE_NAME        = "Upgrade" if IS_UPGRADE_INSTALLATION else "Installation"
-    CHANNEL_INSTALLATION_SETTINGS = channel_settings['CHANNEL_INSTALLATION_SETTINGS']
-
-    CHANNEL_ROOT_URL      = channel_settings['CHANNEL_ROOT_URL']
-    CHANNEL_PACKAGE_NAME  = channel_settings['CHANNEL_PACKAGE_NAME']
-
-    USER_SETTINGS_FILE      = channel_settings['USER_SETTINGS_FILE']
-    DEFAULT_PACKAGES_FILES  = channel_settings['DEFAULT_PACKAGES_FILES']
-    TEMPORARY_FOLDER_TO_USE = channel_settings['TEMPORARY_FOLDER_TO_USE']
-    CHANNEL_REPOSITORY_FILE = channel_settings['CHANNEL_REPOSITORY_FILE']
-
-    CHANNEL_ROOT_DIRECTORY  = channel_settings['CHANNEL_ROOT_DIRECTORY']
-    USER_FOLDER_PATH        = channel_settings['USER_FOLDER_PATH']
-
-    PACKAGES_TO_NOT_INSTALL_STABLE      = channel_settings['PACKAGES_TO_NOT_INSTALL_STABLE']
-    PACKAGES_TO_NOT_INSTALL_DEVELOPMENT = channel_settings['PACKAGES_TO_NOT_INSTALL_DEVELOPMENT']
-    PACKAGES_TO_IGNORE_ON_DEVELOPMENT   = channel_settings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT']
-
-    FORBIDDEN_PACKAGES        = channel_settings['FORBIDDEN_PACKAGES']
-    PACKAGES_TO_INSTALL_FIRST = channel_settings['PACKAGES_TO_INSTALL_FIRST']
-    PACKAGES_TO_INSTALL_LAST  = channel_settings['PACKAGES_TO_INSTALL_LAST']
 
 
 class StartInstallChannelThread(threading.Thread):
@@ -284,8 +246,8 @@ def load_installation_settings_file():
     global g_channelSettings
     global g_default_ignored_packages
 
-    g_userSettings    = sublime.load_settings( USER_SETTINGS_FILE )
-    g_channelSettings = load_data_file( CHANNEL_INSTALLATION_SETTINGS )
+    g_userSettings    = sublime.load_settings( g_channel_settings['USER_SETTINGS_FILE'] )
+    g_channelSettings = load_data_file( g_channel_settings['CHANNEL_INSTALLATION_SETTINGS'] )
 
     # `g_default_ignored_packages` contains the original user's ignored packages.
     g_default_ignored_packages = g_userSettings.get( 'ignored_packages', [] )
@@ -306,7 +268,7 @@ def load_installation_settings_file():
 
     unignore_installed_packages()
 
-    log( _upgrade_debug(), "load_installation_settings_file, PACKAGES_TO_IGNORE_ON_DEVELOPMENT: " + str( PACKAGES_TO_IGNORE_ON_DEVELOPMENT ) )
+    log( _upgrade_debug(), "load_installation_settings_file, g_channel_settings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT']: " + str( g_channel_settings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT'] ) )
     log( _upgrade_debug(), "load_installation_settings_file, g_default_ignored_packages:        " + str( g_default_ignored_packages ) )
 
 
@@ -340,7 +302,7 @@ def install_stable_packages(packages_to_install):
 
         When trying to install several package at once, then here I am installing them one by one.
     """
-    log( 2, "install_stable_packages, PACKAGES_TO_NOT_INSTALL_STABLE: " + str( PACKAGES_TO_NOT_INSTALL_STABLE ) )
+    log( 2, "install_stable_packages, g_channel_settings['PACKAGES_TO_NOT_INSTALL_STABLE']: " + str( g_channel_settings['PACKAGES_TO_NOT_INSTALL_STABLE'] ) )
     set_default_settings( packages_to_install )
 
     # Package Control: Advanced Install Package
@@ -454,7 +416,7 @@ def unignore_some_packages(packages_list):
 
     if is_there_unignored_packages:
         g_userSettings.set( "ignored_packages", g_default_ignored_packages )
-        sublime.save_settings( USER_SETTINGS_FILE )
+        sublime.save_settings( g_channel_settings['USER_SETTINGS_FILE'] )
 
 
 def get_stable_packages(is_upgrade):
@@ -465,23 +427,23 @@ def get_stable_packages(is_upgrade):
     current_index     = 0
     filtered_packages = []
 
-    installed_packages = get_installed_packages( list_default_packages=True, exclusion_list=[CHANNEL_PACKAGE_NAME] )
+    installed_packages = get_installed_packages( list_default_packages=True, exclusion_list=[g_channel_settings['CHANNEL_PACKAGE_NAME']] )
     log( _upgrade_debug(), "get_stable_packages, installed_packages: " + str( installed_packages ) )
 
     # Do not try to install this own package and the Package Control, as they are currently running
-    currently_running = [ "Package Control", CURRENT_PACKAGE_NAME, CHANNEL_PACKAGE_NAME ]
+    currently_running = [ "Package Control", CURRENT_PACKAGE_NAME, g_channel_settings['CHANNEL_PACKAGE_NAME'] ]
 
     packages_tonot_install = unique_list_join \
     (
-        PACKAGES_TO_NOT_INSTALL_STABLE,
+        g_channel_settings['PACKAGES_TO_NOT_INSTALL_STABLE'],
         installed_packages,
-        PACKAGES_TO_IGNORE_ON_DEVELOPMENT,
+        g_channel_settings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT'],
         currently_running,
         g_packages_not_installed if is_upgrade else [],
         g_packages_to_uninstall,
     )
 
-    repositories_loaded = load_repository_file( CHANNEL_REPOSITORY_FILE, False )
+    repositories_loaded = load_repository_file( g_channel_settings['CHANNEL_REPOSITORY_FILE'], False )
     log( _upgrade_debug(), "get_stable_packages, packages_tonot_install: " + str( packages_tonot_install ) )
 
     for package_name in repositories_loaded:
@@ -534,7 +496,7 @@ def clone_sublime_text_channel(command_line_interface, git_executable_path):
         Clone the main repository as `https://github.com/evandrocoan/SublimeTextStudio` and install
         it on the Sublime Text Data folder.
     """
-    main_git_folder = os.path.join( CHANNEL_ROOT_DIRECTORY, ".git" )
+    main_git_folder = os.path.join( g_channel_settings['CHANNEL_ROOT_DIRECTORY'], ".git" )
 
     if os.path.exists( main_git_folder ):
         log.insert_empty_line( 1 )
@@ -544,10 +506,10 @@ def clone_sublime_text_channel(command_line_interface, git_executable_path):
         log.insert_empty_line( 1 )
 
     else:
-        channel_temporary_folder = os.path.join( CHANNEL_ROOT_DIRECTORY, TEMPORARY_FOLDER_TO_USE )
+        channel_temporary_folder = os.path.join( g_channel_settings['CHANNEL_ROOT_DIRECTORY'], g_channel_settings['TEMPORARY_FOLDER_TO_USE'] )
         download_main_repository( command_line_interface, git_executable_path, channel_temporary_folder )
 
-        copy_overrides( channel_temporary_folder, CHANNEL_ROOT_DIRECTORY )
+        copy_overrides( channel_temporary_folder, g_channel_settings['CHANNEL_ROOT_DIRECTORY'] )
         shutil.rmtree( channel_temporary_folder, onerror=_delete_read_only_file )
 
         # Progressively saves the installation data, in case the user closes Sublime Text
@@ -612,7 +574,7 @@ def add_path_if_not_exists(list_to_add, path):
 
 
 def convert_absolute_path_to_relative(file_path):
-    relative_path = os.path.commonprefix( [ CHANNEL_ROOT_DIRECTORY, file_path ] )
+    relative_path = os.path.commonprefix( [ g_channel_settings['CHANNEL_ROOT_DIRECTORY'], file_path ] )
     relative_path = os.path.normpath( file_path.replace( relative_path, "" ) )
 
     return convert_to_unix_path(relative_path)
@@ -640,13 +602,13 @@ def download_main_repository(command_line_interface, git_executable_path, channe
     log( 1, "download_main_repository..." )
     log.insert_empty_line( 1 )
     log.insert_empty_line( 1 )
-    log( 1, "Installing: %s" % ( str( CHANNEL_ROOT_URL ) ) )
+    log( 1, "Installing: %s" % ( str( g_channel_settings['CHANNEL_ROOT_URL'] ) ) )
 
     if os.path.isdir( channel_temporary_folder ):
         shutil.rmtree( channel_temporary_folder )
 
-    command = shlex.split( '"%s" clone "%s" "%s"' % ( git_executable_path, CHANNEL_ROOT_URL, TEMPORARY_FOLDER_TO_USE ) )
-    output  = str( command_line_interface.execute( command, cwd=CHANNEL_ROOT_DIRECTORY ) )
+    command = shlex.split( '"%s" clone "%s" "%s"' % ( git_executable_path, g_channel_settings['CHANNEL_ROOT_URL'], g_channel_settings['TEMPORARY_FOLDER_TO_USE'] ) )
+    output  = str( command_line_interface.execute( command, cwd=g_channel_settings['CHANNEL_ROOT_DIRECTORY'] ) )
 
     log( 1, "download_main_repository, output: " + str( output ) )
     channel_temporary_packages_folder = os.path.join( channel_temporary_folder, "Packages" )
@@ -658,7 +620,7 @@ def download_not_packages_submodules(command_line_interface, git_executable_path
     log( 1, "download_not_packages_submodules" )
     clone_sublime_text_channel( command_line_interface, git_executable_path )
 
-    gitFilePath    = os.path.join( CHANNEL_ROOT_DIRECTORY, '.gitmodules' )
+    gitFilePath    = os.path.join( g_channel_settings['CHANNEL_ROOT_DIRECTORY'], '.gitmodules' )
     gitModulesFile = configparser.RawConfigParser()
 
     current_index = 0
@@ -675,7 +637,7 @@ def download_not_packages_submodules(command_line_interface, git_executable_path
 
         if 'Packages' != path[0:8]:
             package_name            = os.path.basename( path )
-            submodule_absolute_path = os.path.join( CHANNEL_ROOT_DIRECTORY, path )
+            submodule_absolute_path = os.path.join( g_channel_settings['CHANNEL_ROOT_DIRECTORY'], path )
 
             # How to check to see if a folder contains files using python 3
             # https://stackoverflow.com/questions/25675352/how-to-check-to-see-if-a-folder-contains-files-using-python-3
@@ -693,7 +655,7 @@ def download_not_packages_submodules(command_line_interface, git_executable_path
                 log( 1, "Installing: %s" % ( str( url ) ) )
 
                 command = shlex.split( '"%s" clone "%s" "%s"' % ( git_executable_path, url, path ) )
-                output  = str( command_line_interface.execute( command, cwd=CHANNEL_ROOT_DIRECTORY ) )
+                output  = str( command_line_interface.execute( command, cwd=g_channel_settings['CHANNEL_ROOT_DIRECTORY'] ) )
 
                 add_folders_and_files_for_removal( submodule_absolute_path, path )
                 log( 1, "download_not_packages_submodules, output: " + str( output ) )
@@ -706,7 +668,7 @@ def download_not_packages_submodules(command_line_interface, git_executable_path
 
 def install_development_packages(packages_to_install, git_executable_path, command_line_interface):
     set_default_settings( packages_to_install )
-    log( 2, "install_submodules_packages, PACKAGES_TO_NOT_INSTALL_DEVELOPMENT: " + str( PACKAGES_TO_NOT_INSTALL_DEVELOPMENT ) )
+    log( 2, "install_submodules_packages, g_channel_settings['PACKAGES_TO_NOT_INSTALL_DEVELOPMENT']: " + str( g_channel_settings['PACKAGES_TO_NOT_INSTALL_DEVELOPMENT'] ) )
 
     current_index      = 0
     git_packages_count = len( packages_to_install )
@@ -726,17 +688,17 @@ def install_development_packages(packages_to_install, git_executable_path, comma
         log( 1, "%s Installing %d of %d: %s" % ( progress, current_index, git_packages_count, str( package_name ) ) )
 
         command = shlex.split( '"%s" clone --recursive "%s" "%s"' % ( git_executable_path, url, path) )
-        output  = str( command_line_interface.execute( command, cwd=CHANNEL_ROOT_DIRECTORY ) )
+        output  = str( command_line_interface.execute( command, cwd=g_channel_settings['CHANNEL_ROOT_DIRECTORY'] ) )
 
         command = shlex.split( '"%s" checkout master' % ( git_executable_path ) )
-        output += "\n" + str( command_line_interface.execute( command, cwd=os.path.join( CHANNEL_ROOT_DIRECTORY, path ) ) )
+        output += "\n" + str( command_line_interface.execute( command, cwd=os.path.join( g_channel_settings['CHANNEL_ROOT_DIRECTORY'], path ) ) )
 
         log( 1, "install_development_packages, output: " + str( output ) )
         add_package_to_installation_list( package_name )
 
 
 def get_development_packages():
-    gitFilePath    = os.path.join( CHANNEL_ROOT_DIRECTORY, '.gitmodules' )
+    gitFilePath    = os.path.join( g_channel_settings['CHANNEL_ROOT_DIRECTORY'], '.gitmodules' )
     gitModulesFile = configparser.RawConfigParser()
 
     current_index = 0
@@ -746,7 +708,7 @@ def get_development_packages():
     # on the end, if `PackagesManager` was installed.
     currently_running = [ "Package Control" ]
 
-    packages_tonot_install = unique_list_join( PACKAGES_TO_NOT_INSTALL_DEVELOPMENT, installed_packages, currently_running )
+    packages_tonot_install = unique_list_join( g_channel_settings['PACKAGES_TO_NOT_INSTALL_DEVELOPMENT'], installed_packages, currently_running )
     log( 2, "get_development_packages, packages_tonot_install: " + str( packages_tonot_install ) )
 
     packages = []
@@ -765,7 +727,7 @@ def get_development_packages():
 
         if 'Packages' == path[0:8]:
             package_name            = os.path.basename( path )
-            submodule_absolute_path = os.path.join( CHANNEL_ROOT_DIRECTORY, path )
+            submodule_absolute_path = os.path.join( g_channel_settings['CHANNEL_ROOT_DIRECTORY'], path )
 
             if not os.path.isdir( submodule_absolute_path ) \
                     and package_name not in packages_tonot_install :
@@ -816,7 +778,7 @@ def set_default_settings(packages_to_install):
 
 def set_development_ignored_packages(packages_to_install):
 
-    for package_name in PACKAGES_TO_IGNORE_ON_DEVELOPMENT:
+    for package_name in g_channel_settings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT']:
 
         # Only ignore the packages which are being installed
         if package_name in packages_to_install and package_name not in g_default_ignored_packages:
@@ -828,7 +790,7 @@ def set_development_ignored_packages(packages_to_install):
 
 def set_first_and_last_packages_to_install(packages_to_install):
     """
-        Set the packages to be installed first and last. The `PACKAGES_TO_INSTALL_LAST` has priority
+        Set the packages to be installed first and last. The `g_channel_settings['PACKAGES_TO_INSTALL_LAST']` has priority
         when some package is on both lists.
     """
     set_first_packages_to_install( packages_to_install )
@@ -836,11 +798,11 @@ def set_first_and_last_packages_to_install(packages_to_install):
 
     for package_name in packages_to_install:
 
-        if package_name[0] in PACKAGES_TO_INSTALL_LAST:
+        if package_name[0] in g_channel_settings['PACKAGES_TO_INSTALL_LAST']:
             last_packages[package_name[0]] = package_name
             packages_to_install.remove( package_name )
 
-    for package_name in PACKAGES_TO_INSTALL_LAST:
+    for package_name in g_channel_settings['PACKAGES_TO_INSTALL_LAST']:
 
         if package_name in last_packages:
             packages_to_install.append( last_packages[package_name] )
@@ -851,11 +813,11 @@ def set_first_packages_to_install(packages_to_install):
 
     for package_name in packages_to_install:
 
-        if package_name[0] in PACKAGES_TO_INSTALL_FIRST:
+        if package_name[0] in g_channel_settings['PACKAGES_TO_INSTALL_FIRST']:
             first_packages[package_name[0]] = package_name
             packages_to_install.remove( package_name )
 
-    for package_name in reversed( PACKAGES_TO_INSTALL_FIRST ):
+    for package_name in reversed( g_channel_settings['PACKAGES_TO_INSTALL_FIRST'] ):
 
         if package_name in first_packages:
             packages_to_install.insert( 0, first_packages[package_name] )
@@ -869,7 +831,7 @@ def save_default_settings():
     global g_channelSettings
 
     if 'Default' in g_packages_to_uninstall:
-        g_channelSettings['default_packages_files'] = DEFAULT_PACKAGES_FILES
+        g_channelSettings['default_package_files'] = g_channel_settings['DEFAULT_PACKAGE_FILES']
 
     # `packages_to_uninstall` and `packages_to_unignore` are to uninstall and unignore they when uninstalling the channel
     g_channelSettings['packages_to_uninstall']   = g_packages_to_uninstall
@@ -882,7 +844,7 @@ def save_default_settings():
     g_channelSettings = sort_dictionary( g_channelSettings )
     # log( 1, "save_default_settings, g_channelSettings: " + json.dumps( g_channelSettings, indent=4 ) )
 
-    write_data_file( CHANNEL_INSTALLATION_SETTINGS, g_channelSettings )
+    write_data_file( g_channel_settings['CHANNEL_INSTALLATION_SETTINGS'], g_channelSettings )
 
 
 def sort_dictionary(dictionary):
@@ -904,7 +866,7 @@ def add_package_to_installation_list(package_name):
         installed_packages = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
         add_item_if_not_exists( installed_packages, package_name )
 
-        packagesmanager = os.path.join( USER_FOLDER_PATH, g_packagesmanager_name )
+        packagesmanager = os.path.join( g_channel_settings['USER_FOLDER_PATH'], g_packagesmanager_name )
         write_data_file( packagesmanager, sort_dictionary( g_package_control_settings ) )
 
     add_item_if_not_exists( g_packages_to_uninstall, package_name )
@@ -995,7 +957,7 @@ def add_packages_to_ignored_list(packages_list):
 
     for interval in range( 0, 27 ):
         g_userSettings.set( "ignored_packages", ignored_packages )
-        sublime.save_settings( USER_SETTINGS_FILE )
+        sublime.save_settings( g_channel_settings['USER_SETTINGS_FILE'] )
 
         time.sleep(0.1)
 
@@ -1009,7 +971,7 @@ def delete_package_control_settings():
     global g_is_installation_complete
 
     clean_settings       = {}
-    package_control_file = os.path.join( USER_FOLDER_PATH, g_package_control_name )
+    package_control_file = os.path.join( g_channel_settings['USER_FOLDER_PATH'], g_package_control_name )
 
     clean_settings['bootstrapped']    = False
     clean_settings['remove_orphaned'] = False
@@ -1037,13 +999,13 @@ def sync_package_control_and_manager():
     log( 1, "Calling sync_package_control_and_manager..." )
     global g_package_control_settings
 
-    package_control_file       = os.path.join( USER_FOLDER_PATH, g_package_control_name )
+    package_control_file       = os.path.join( g_channel_settings['USER_FOLDER_PATH'], g_package_control_name )
     g_package_control_settings = load_data_file( package_control_file )
 
     log( 2, "sync_package_control_and_manager, package_control: " + str( g_package_control_settings ) )
     ensure_installed_packages_name( g_package_control_settings )
 
-    packagesmanager = os.path.join( USER_FOLDER_PATH, g_packagesmanager_name )
+    packagesmanager = os.path.join( g_channel_settings['USER_FOLDER_PATH'], g_packagesmanager_name )
     write_data_file( packagesmanager, g_package_control_settings )
 
 
@@ -1087,10 +1049,10 @@ def ensure_installed_packages_name(package_control_settings):
         remove_item_if_exists( installed_packages, "Package Control" )
 
         add_item_if_not_exists( installed_packages, "PackagesManager" )
-        add_item_if_not_exists( installed_packages, CHANNEL_PACKAGE_NAME )
+        add_item_if_not_exists( installed_packages, g_channel_settings['CHANNEL_PACKAGE_NAME'] )
 
     else:
-        package_control_settings['installed_packages'] = [ "PackagesManager", CHANNEL_PACKAGE_NAME ]
+        package_control_settings['installed_packages'] = [ "PackagesManager", g_channel_settings['CHANNEL_PACKAGE_NAME'] ]
 
     # The `remove_orphaned_backup` is used to save the default user value for the overridden key
     # `remove_orphaned` by the `PackagesManager` when configuring
@@ -1115,7 +1077,7 @@ def ask_user_for_which_packages_to_install(packages_to_install):
 
     for package_name in packages_to_install:
 
-        if package_name in FORBIDDEN_PACKAGES:
+        if package_name in g_channel_settings['FORBIDDEN_PACKAGES']:
             packages_informations.append( [ package_name, "You must install it or cancel the %s." % INSTALLATION_TYPE_NAME ] )
 
         else:
@@ -1140,7 +1102,7 @@ def ask_user_for_which_packages_to_install(packages_to_install):
         package_information = packages_informations[item_index]
         package_name        = package_information[0]
 
-        if package_name not in FORBIDDEN_PACKAGES:
+        if package_name not in g_channel_settings['FORBIDDEN_PACKAGES']:
 
             if package_information[1] == install_message:
                 log( 1, "Removing the package: %s" % package_name )
@@ -1206,7 +1168,7 @@ def check_installed_packages(maximum_attempts=10):
                     installing their missing dependencies.
 
                     Check you Sublime Text Console for more information.
-                    """ % ( CHANNEL_PACKAGE_NAME, INSTALLATION_TYPE_NAME ) ) )
+                    """ % ( g_channel_settings['CHANNEL_PACKAGE_NAME'], INSTALLATION_TYPE_NAME ) ) )
 
         print_failed_repositories()
         return
@@ -1222,7 +1184,7 @@ def check_installed_packages(maximum_attempts=10):
 
                 If you want help fixing the problem, please, save your Sublime Text Console output
                 so later others can see what happened try to fix it.
-                """ % ( CHANNEL_PACKAGE_NAME, INSTALLATION_TYPE_NAME ) ) )
+                """ % ( g_channel_settings['CHANNEL_PACKAGE_NAME'], INSTALLATION_TYPE_NAME ) ) )
 
         print_failed_repositories()
 

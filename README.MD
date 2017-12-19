@@ -591,7 +591,7 @@ as you usually do with the default `Package Control` channel.
        ]
 
        # The files of the `Default.sublime-package` you are installing
-       g_channel_settings['DEFAULT_PACKAGES_FILES'] = \
+       g_channel_settings['DEFAULT_PACKAGE_FILES'] = \
        [
            "Tab Context.sublime-menu",
            "Context.sublime-menu",
@@ -685,7 +685,7 @@ as you usually do with the default `Package Control` channel.
 
        def run(self):
            sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
-           copy_default_main( g_channel_settings['DEFAULT_PACKAGES_FILES'], True )
+           copy_default_main( g_channel_settings['DEFAULT_PACKAGE_FILES'], True )
 
        def is_enabled(self):
            return is_channel_installed()

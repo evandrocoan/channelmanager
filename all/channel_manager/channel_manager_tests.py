@@ -40,11 +40,6 @@ from python_debug_tools import Debugger
 log = Debugger( 127, os.path.basename( __file__ ) )
 
 
-def plugin_loaded():
-    # main()
-    pass
-
-
 def main():
     log( 2, "Entering on main(0)" )
     # log.insert_empty_line( 2 )
@@ -93,7 +88,7 @@ class ChannelManagerUnitTests(unittest.TestCase):
         fixed = increment_patch_version( tag, increment )
 
         # log( 1, "increment_patch_version(%s), fixed: %s" % ( tag, fixed ) )
-        self.assertEqual( fixed, goal )
+        self.assertEqual( fixed[0], goal )
 
     def test_fix_semantic_version(self):
         self.fix_semantic_version( "1.0", "1.0.0", "1.0" )
