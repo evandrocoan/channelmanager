@@ -199,22 +199,15 @@ def uninstall_packages(packages_to_uninstall):
     package_disabler = PackageDisabler()
 
     all_packages, dependencies = get_installed_repositories( package_manager )
+    ask_user_for_which_packages_to_install( packages_to_uninstall )
 
     current_index  = 0
     packages_count = len( packages_to_uninstall )
 
-    ask_user_for_which_packages_to_install( packages_to_uninstall )
-    uninstall_default_package( packages_to_uninstall )
-
     for package_name, pi in sequence_timer( packages_to_uninstall, info_frequency=0 ):
         current_index += 1
         progress       = progress_info( pi, set_progress )
-
-        if package_name in PACKAGES_TO_IGNORE_UNINSTALLATION:
-            continue
-
-        silence_error_message_box(61.0)
-        is_dependency = is_package_dependency( package_name, dependencies, all_packages )
+        is_dependency  = is_package_dependency( package_name, dependencies, all_packages )
 
         log.insert_empty_line( 1 )
         log.insert_empty_line( 1 )
@@ -222,6 +215,16 @@ def uninstall_packages(packages_to_uninstall):
         log( 1, "%s %s of %d of %d: %s (%s)" % ( progress, INSTALLATION_TYPE_NAME,
                 current_index, packages_count, str( package_name ), str( is_dependency ) ) )
 
+        if package_name == "Default":
+            uninstall_default_package()
+            continue
+
+        if package_name in PACKAGES_TO_UNINSTAL_LATER:
+            log( 1, "Skipping the %s of `%s`..." % ( INSTALLATION_TYPE_NAME, package_name ) )
+            log( 1, "This package will be handled later." )
+            continue
+
+        silence_error_message_box(61.0)
         ignore_next_packages( package_disabler, package_name, packages_to_uninstall )
 
         package_manager.remove_package( package_name, is_dependency )
@@ -274,25 +277,18 @@ def get_installed_repositories(package_manager):
     return all_packages, dependencies
 
 
-def uninstall_default_package(packages_name):
+def uninstall_default_package():
+    log( 1, "%s of `Default Package` files..." % INSTALLATION_TYPE_NAME )
 
-    if 'Default' in packages_name:
-        log.insert_empty_line( 1 )
-        log.insert_empty_line( 1 )
+    files_installed       = get_dictionary_key( g_channelSettings, 'default_package_files', [] )
+    default_packages_path = os.path.join( g_channel_settings['CHANNEL_ROOT_DIRECTORY'], "Packages", "Default" )
 
-        log( 1, "%s of `Default Package` files..." % INSTALLATION_TYPE_NAME )
-        default_packages_path = os.path.join( g_channel_settings['CHANNEL_ROOT_DIRECTORY'], "Packages", "Default" )
+    for file in files_installed:
+        file_path = os.path.join( default_packages_path, file )
+        remove_only_if_exists( file_path )
 
-        packages_name.remove('Default')
-        files_installed = get_dictionary_key( g_channelSettings, 'default_package_files', [] )
-
-        for file in files_installed:
-
-            file_path = os.path.join( default_packages_path, file )
-            remove_only_if_exists( file_path )
-
-        default_git_folder = os.path.join( default_packages_path, ".git" )
-        remove_git_folder( default_git_folder, default_packages_path )
+    default_git_folder = os.path.join( default_packages_path, ".git" )
+    remove_git_folder( default_git_folder, default_packages_path )
 
 
 def remove_git_folder(default_git_folder, parent_folder=None):
@@ -326,12 +322,14 @@ def ignore_next_packages(package_disabler, package_name, packages_list):
         last_ignored_packges    = packages_list.index( package_name )
         next_packages_to_ignore = packages_list[ last_ignored_packges : last_ignored_packges + PACKAGES_COUNT_TO_IGNORE_AHEAD + 1 ]
 
+        # We never can ignore the Default package, otherwise several errors/anomalies show up
+        intersection_set = PACKAGES_TO_NOT_ADD_TO_IGNORE_LIST.intersection( next_packages_to_ignore )
+
+        if len( intersection_set ) > 0:
+            next_packages_to_ignore = list( set( next_packages_to_ignore ) - intersection_set )
+
         log( 1, "Adding %d packages to be uninstalled to the `ignored_packages` setting list." % len( next_packages_to_ignore ) )
         log( 1, "next_packages_to_ignore: " + str( next_packages_to_ignore ) )
-
-        # We never can ignore the Default package, otherwise several errors/anomalies show up
-        if "Default" in next_packages_to_ignore:
-            next_packages_to_ignore.remove( "Default" )
 
         # Add them to the in_process list
         package_disabler.disable_packages( next_packages_to_ignore, "remove" )
@@ -820,16 +818,20 @@ def setup_packages_to_uninstall_last(channel_settings):
         Remove the remaining packages to be uninstalled separately on another function call.
     """
     global PACKAGES_TO_UNINSTALL_FIRST
-    global PACKAGES_TO_IGNORE_UNINSTALLATION
+    global PACKAGES_TO_UNINSTAL_LATER
+    global PACKAGES_TO_NOT_ADD_TO_IGNORE_LIST
 
-    PACKAGES_TO_IGNORE_UNINSTALLATION = [ "PackagesManager", g_channel_settings['CHANNEL_PACKAGE_NAME'] ]
+    PACKAGES_TO_UNINSTAL_LATER = [ "PackagesManager", g_channel_settings['CHANNEL_PACKAGE_NAME'] ]
     PACKAGES_TO_UNINSTALL_FIRST       = list( reversed( channel_settings['PACKAGES_TO_INSTALL_LAST'] ) )
 
     # We need to remove it by last, after installing Package Control back
-    for package in PACKAGES_TO_IGNORE_UNINSTALLATION:
+    for package in PACKAGES_TO_UNINSTAL_LATER:
 
         if package in PACKAGES_TO_UNINSTALL_FIRST:
             PACKAGES_TO_UNINSTALL_FIRST.remove( package )
+
+    PACKAGES_TO_NOT_ADD_TO_IGNORE_LIST = set( PACKAGES_TO_UNINSTAL_LATER )
+    PACKAGES_TO_NOT_ADD_TO_IGNORE_LIST.add( "Default" )
 
 
 def attempt_to_uninstall_packagesmanager(packages_to_uninstall):

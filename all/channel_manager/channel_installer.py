@@ -812,14 +812,13 @@ def uninstall_package_control():
     """
     log( 2, "uninstall_package_control, g_packages_to_uninstall: " + str( g_packages_to_uninstall ) )
 
+    # Only uninstall it, when `PackagesManager` was also installed
     if "PackagesManager" in g_packages_to_uninstall:
         # Sublime Text is waiting the current thread to finish before loading the just installed
         # PackagesManager, therefore run a new thread delayed which finishes the job
         sublime.set_timeout_async( complete_package_control_uninstallation, 2000 )
 
     else:
-        log.insert_empty_line( 1 )
-        log.insert_empty_line( 1 )
         log( 1, "Warning: PackagesManager is was not installed on the system!" )
 
         global g_is_installation_complete
