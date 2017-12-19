@@ -124,14 +124,16 @@ def main(channel_settings, is_forced=False):
     if is_forced or not os.path.exists( main_git_path ) and is_channel_upgraded( channel_settings ):
         log( 1, "Entering on %s main(0)" % CURRENT_PACKAGE_NAME )
 
-        installer_thread = StartUninstallChannelThread( channel_settings )
+        installer_thread = StartUninstallChannelThread( channel_settings, is_forced )
         installer_thread.start()
 
 
 class StartUninstallChannelThread(threading.Thread):
 
-    def __init__(self, channel_settings):
+    def __init__(self, channel_settings, is_forced):
         threading.Thread.__init__(self)
+
+        self.is_forced        = is_forced
         self.channel_settings = channel_settings
 
     def run(self):
@@ -141,7 +143,7 @@ class StartUninstallChannelThread(threading.Thread):
         """
 
         if is_allowed_to_run():
-            unpack_settings( self.channel_settings )
+            unpack_settings( self.channel_settings, self.is_forced )
 
             uninstaller_thread = UninstallChannelFilesThread()
             uninstaller_thread.start()
@@ -171,23 +173,25 @@ class UninstallChannelFilesThread(threading.Thread):
         log( _downgrade_debug(), "Entering on %s run(1)" % self.__class__.__name__ )
         load_package_manager_settings()
 
+        global g_is_installation_complete
+        g_is_installation_complete = 0
+
         try:
             packages_to_uninstall = get_packages_to_uninstall( IS_DOWNGRADE_INSTALLATION )
 
             log( _downgrade_debug(), "Packages to %s: " % INSTALLATION_TYPE_NAME + str( packages_to_uninstall ) )
-            uninstall_packages( packages_to_uninstall )
+            package_manager = uninstall_packages( packages_to_uninstall )
 
             if not IS_DOWNGRADE_INSTALLATION:
                 remove_channel()
 
                 uninstall_files()
                 uninstall_folders()
-                uninstall_list_of_packages( [(g_channel_settings['CHANNEL_PACKAGE_NAME'], False)] )
 
             attempt_to_uninstall_packagesmanager( packages_to_uninstall )
 
             if not IS_DOWNGRADE_INSTALLATION:
-                restore_the_remove_orphaned_setting()
+                uninstall_list_of_packages( package_manager, [(g_channel_settings['CHANNEL_PACKAGE_NAME'], False)] )
 
         except ( InstallationCancelled, NoPackagesAvailable ) as error:
             log( 1, str( error ) )
@@ -198,8 +202,8 @@ def uninstall_packages(packages_to_uninstall):
     package_manager  = PackageManager()
     package_disabler = PackageDisabler()
 
-    all_packages, dependencies = get_installed_repositories( package_manager )
     ask_user_for_which_packages_to_install( packages_to_uninstall )
+    all_packages, dependencies = get_installed_repositories( package_manager )
 
     current_index  = 0
     packages_count = len( packages_to_uninstall )
@@ -230,6 +234,8 @@ def uninstall_packages(packages_to_uninstall):
         package_manager.remove_package( package_name, is_dependency )
         remove_packages_from_list( package_name )
 
+    return package_manager
+
 
 def get_packages_to_uninstall(is_downgrade):
     filtered_packages     = []
@@ -252,7 +258,7 @@ def get_packages_to_uninstall(is_downgrade):
         if package_name not in filtered_packages:
             filtered_packages.append( package_name )
 
-    if len( filtered_packages ) < 1:
+    if not g_is_forced_installation and len( filtered_packages ) < 1:
         raise NoPackagesAvailable( "There are 0 packages available to uninstall!" )
 
     if is_downgrade:
@@ -444,11 +450,12 @@ def uninstall_packagesmanger(package_manager, installed_packages):
         clean_packagesmanager_settings()
 
 
-def uninstall_list_of_packages(package_manager, packages_to_uninstall=[]):
+def uninstall_list_of_packages(package_manager, packages_to_uninstall):
     """
         By last uninstall itself `g_channel_settings['CHANNEL_PACKAGE_NAME']` and let the package be
         unloaded by Sublime Text
     """
+    log( 1, "uninstall_list_of_packages, %s... " % INSTALLATION_TYPE_NAME + str( packages_to_uninstall ) )
     packages_to_remove = []
 
     packages_to_remove.extend( packages_to_uninstall )
@@ -799,9 +806,12 @@ def is_allowed_to_run():
     return True
 
 
-def unpack_settings(channel_settings):
+def unpack_settings(channel_settings, is_forced):
     global g_channel_settings
-    g_channel_settings = channel_settings
+    global g_is_forced_installation
+
+    g_channel_settings       = channel_settings
+    g_is_forced_installation = is_forced
 
     global INSTALLATION_TYPE_NAME
     global IS_DOWNGRADE_INSTALLATION
@@ -844,6 +854,7 @@ def attempt_to_uninstall_packagesmanager(packages_to_uninstall):
             install_package_control( package_manager )
 
         uninstall_packagesmanger( package_manager, installed_packages )
+        restore_the_remove_orphaned_setting()
 
 
 def restore_the_remove_orphaned_setting():
@@ -862,10 +873,7 @@ def restore_the_remove_orphaned_setting():
 
 
 def load_package_manager_settings():
-    global g_is_installation_complete
     global _uningored_packages_to_flush
-
-    g_is_installation_complete   = 0
     _uningored_packages_to_flush = []
 
     packagesmanager_name = "PackagesManager.sublime-settings"
@@ -902,16 +910,13 @@ def load_package_manager_settings():
     else:
         g_package_control_settings = load_data_file( PACKAGE_CONTROL )
 
-    g_installed_packages = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
+    g_installed_packages     = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
+    g_remove_orphaned_backup = get_dictionary_key( g_package_control_settings, 'remove_orphaned', True )
 
     if not IS_DOWNGRADE_INSTALLATION:
-        g_remove_orphaned_backup = get_dictionary_key( g_package_control_settings, 'remove_orphaned', True )
 
         # Temporally stops Package Control from removing orphaned packages, otherwise it will scroll up
         # the uninstallation when Package Control is installed back
         g_package_control_settings['remove_orphaned'] = False
         save_package_control_settings()
-
-    else:
-        g_remove_orphaned_backup = None
 
