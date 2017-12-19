@@ -856,6 +856,10 @@ def attempt_to_uninstall_packagesmanager(packages_to_uninstall):
         uninstall_packagesmanger( package_manager, installed_packages )
         restore_the_remove_orphaned_setting()
 
+    else:
+        global g_is_installation_complete
+        g_is_installation_complete |= 3
+
 
 def restore_the_remove_orphaned_setting():
 
