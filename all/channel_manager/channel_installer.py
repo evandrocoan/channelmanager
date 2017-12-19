@@ -288,12 +288,12 @@ def ignore_next_packages(package_disabler, package_name, packages_list):
         last_ignored_packges      = packages_list.index( package_name )
         g_next_packages_to_ignore = packages_list[ last_ignored_packges : last_ignored_packges + PACKAGES_COUNT_TO_IGNORE_AHEAD + 1 ]
 
-        log( 1, "Adding %d packages to be uninstalled to the `ignored_packages` setting list." % len( g_next_packages_to_ignore ) )
-        log( 1, "g_next_packages_to_ignore: " + str( g_next_packages_to_ignore ) )
-
         # We never can ignore the Default package, otherwise several errors/anomalies show up
         if "Default" in g_next_packages_to_ignore:
             g_next_packages_to_ignore.remove( "Default" )
+
+        log( 1, "Adding %d packages to be installed to the `ignored_packages` setting list." % len( g_next_packages_to_ignore ) )
+        log( 1, "g_next_packages_to_ignore: " + str( g_next_packages_to_ignore ) )
 
         # Add them to the in_process list
         package_disabler.disable_packages( g_next_packages_to_ignore, "remove" )

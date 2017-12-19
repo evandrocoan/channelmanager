@@ -228,7 +228,7 @@ def uninstall_packages(packages_to_uninstall):
         ignore_next_packages( package_disabler, package_name, packages_to_uninstall )
 
         package_manager.remove_package( package_name, is_dependency )
-        remove_package_from_list( package_name )
+        remove_packages_from_list( package_name )
 
 
 def get_packages_to_uninstall(is_downgrade):
@@ -377,7 +377,7 @@ def save_package_control_settings():
     write_data_file( PACKAGE_CONTROL, g_package_control_settings )
 
 
-def remove_package_from_list(package_name):
+def remove_packages_from_list(package_name):
     remove_if_exists( g_installed_packages, package_name )
     save_package_control_settings()
 
