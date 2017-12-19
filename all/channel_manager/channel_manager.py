@@ -180,8 +180,6 @@ class GenerateChannelThread(threading.Thread):
             @param repositories  a list of all repositories
             @param dependencies  a list of all dependencies
         """
-        log.insert_empty_line( 1 )
-
         create_channel_file( repositories, dependencies )
         create_repository_file( repositories, dependencies )
 
@@ -242,11 +240,14 @@ class GenerateChannelThread(threading.Thread):
             log( 1, "{:s} Processing {:3d} of {:d} repositories... {:s}".format( progress, package_index, self.last_picked_item, package_name ) )
 
             if package_name.endswith( self.exclusion_flag ):
+                log( 1, "Skipping `%s`..." % package_name )
                 continue
 
-            save_items = True
+            save_items      = True
             last_dictionary = get_dictionary_key( self.last_channel_file, package_name, {} )
+
             update_repository( last_dictionary, package_name )
+            log.insert_empty_line( 1 )
 
         if save_items:
             repositories, dependencies = split_repositories_and_depencies( self.last_channel_file )
