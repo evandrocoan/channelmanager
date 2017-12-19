@@ -126,19 +126,6 @@ def main(channel_settings):
     installer_thread.start()
 
 
-def unpack_settings(channel_settings):
-    global g_channel_settings
-    g_channel_settings = channel_settings
-
-    global IS_UPGRADE_INSTALLATION
-    global INSTALLATION_TYPE_NAME
-    global IS_DEVELOPMENT_INSTALLATION
-
-    IS_UPGRADE_INSTALLATION       = True if g_channel_settings['INSTALLATION_TYPE'] == "upgrade"       else False
-    IS_DEVELOPMENT_INSTALLATION   = True if g_channel_settings['INSTALLATION_TYPE'] == "development"   else False
-    INSTALLATION_TYPE_NAME        = "Upgrade" if IS_UPGRADE_INSTALLATION else "Installation"
-
-
 class StartInstallChannelThread(threading.Thread):
 
     def __init__(self, channel_settings):
@@ -152,25 +139,16 @@ class StartInstallChannelThread(threading.Thread):
         """
 
         if is_allowed_to_run():
-            global g_failed_repositories
-            global g_is_installation_complete
-            global _uningored_packages_to_flush
-
-            g_failed_repositories        = []
-            g_is_installation_complete   = False
-            _uningored_packages_to_flush = []
-
             unpack_settings( self.channel_settings )
-
-            installer_thread  = InstallChannelFilesThread()
             installation_type = self.channel_settings['INSTALLATION_TYPE']
 
-            global set_progress
+            installer_thread = InstallChannelFilesThread()
             installer_thread.start()
 
+            global set_progress
             set_progress = CurrentUpdateProgress( 'Installing the %s packages...' % installation_type )
-            ThreadProgress( installer_thread, set_progress, 'The %s was successfully installed.' % installation_type )
 
+            ThreadProgress( installer_thread, set_progress, 'The %s was successfully installed.' % installation_type )
             installer_thread.join()
 
             # The installation is not complete when the user cancelled the installation process or
@@ -184,30 +162,6 @@ class StartInstallChannelThread(threading.Thread):
 
         global g_is_already_running
         g_is_already_running = False
-
-
-def print_failed_repositories():
-
-    if len( g_failed_repositories ) > 0:
-        sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
-
-        log.insert_empty_line( 1 )
-        log.insert_empty_line( 1 )
-        log( 1, "The following repositories failed their commands..." )
-
-    for package_name in g_failed_repositories:
-        log( 1, "Package: %s" % ( package_name ) )
-
-
-def is_allowed_to_run():
-    global g_is_already_running
-
-    if g_is_already_running:
-        print( "You are already running a command. Wait until it finishes or restart Sublime Text" )
-        return False
-
-    g_is_already_running = True
-    return True
 
 
 class InstallChannelFilesThread(threading.Thread):
@@ -233,43 +187,6 @@ class InstallChannelFilesThread(threading.Thread):
 
         if not IS_UPGRADE_INSTALLATION:
             uninstall_package_control()
-
-
-def load_installation_settings_file():
-    global g_package_control_name
-    global g_packagesmanager_name
-
-    g_package_control_name = "Package Control.sublime-settings"
-    g_packagesmanager_name = "PackagesManager.sublime-settings"
-
-    global g_userSettings
-    global g_channelSettings
-    global g_default_ignored_packages
-
-    g_userSettings    = sublime.load_settings( g_channel_settings['USER_SETTINGS_FILE'] )
-    g_channelSettings = load_data_file( g_channel_settings['CHANNEL_INSTALLATION_SETTINGS'] )
-
-    # `g_default_ignored_packages` contains the original user's ignored packages.
-    g_default_ignored_packages = g_userSettings.get( 'ignored_packages', [] )
-
-    global g_packages_to_uninstall
-    global g_files_to_uninstall
-    global g_folders_to_uninstall
-    global g_packages_to_unignore
-    global g_next_packages_to_ignore
-    global g_packages_not_installed
-
-    g_packages_to_uninstall   = get_dictionary_key( g_channelSettings, 'packages_to_uninstall', [] )
-    g_packages_to_unignore    = get_dictionary_key( g_channelSettings, 'packages_to_unignore', [] )
-    g_files_to_uninstall      = get_dictionary_key( g_channelSettings, 'files_to_uninstall', [] )
-    g_folders_to_uninstall    = get_dictionary_key( g_channelSettings, 'folders_to_uninstall', [] )
-    g_next_packages_to_ignore = get_dictionary_key( g_channelSettings, 'next_packages_to_ignore', [] )
-    g_packages_not_installed  = get_dictionary_key( g_channelSettings, 'packages_not_installed', [] )
-
-    unignore_installed_packages()
-
-    log( _upgrade_debug(), "load_installation_settings_file, g_channel_settings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT']: " + str( g_channel_settings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT'] ) )
-    log( _upgrade_debug(), "load_installation_settings_file, g_default_ignored_packages:        " + str( g_default_ignored_packages ) )
 
 
 def install_modules(command_line_interface, git_executable_path):
@@ -302,7 +219,9 @@ def install_stable_packages(packages_to_install):
 
         When trying to install several package at once, then here I am installing them one by one.
     """
-    log( 2, "install_stable_packages, g_channel_settings['PACKAGES_TO_NOT_INSTALL_STABLE']: " + str( g_channel_settings['PACKAGES_TO_NOT_INSTALL_STABLE'] ) )
+    log( 2, "install_stable_packages, g_channel_settings['PACKAGES_TO_NOT_INSTALL_STABLE']: "
+            + str( g_channel_settings['PACKAGES_TO_NOT_INSTALL_STABLE'] ) )
+
     set_default_settings( packages_to_install )
 
     # Package Control: Advanced Install Package
@@ -1188,4 +1107,84 @@ def check_installed_packages(maximum_attempts=10):
 
         print_failed_repositories()
 
+
+def print_failed_repositories():
+
+    if len( g_failed_repositories ) > 0:
+        sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+
+        log.insert_empty_line( 1 )
+        log.insert_empty_line( 1 )
+        log( 1, "The following repositories failed their commands..." )
+
+    for package_name in g_failed_repositories:
+        log( 1, "Package: %s" % ( package_name ) )
+
+
+def is_allowed_to_run():
+    global g_is_already_running
+
+    if g_is_already_running:
+        print( "You are already running a command. Wait until it finishes or restart Sublime Text" )
+        return False
+
+    g_is_already_running = True
+    return True
+
+
+def unpack_settings(channel_settings):
+    global g_channel_settings
+    global g_failed_repositories
+    global g_is_installation_complete
+    global _uningored_packages_to_flush
+
+    g_channel_settings           = channel_settings
+    g_failed_repositories        = []
+    g_is_installation_complete   = False
+    _uningored_packages_to_flush = []
+
+    global IS_UPGRADE_INSTALLATION
+    global INSTALLATION_TYPE_NAME
+    global IS_DEVELOPMENT_INSTALLATION
+
+    IS_UPGRADE_INSTALLATION       = True if g_channel_settings['INSTALLATION_TYPE'] == "upgrade"       else False
+    IS_DEVELOPMENT_INSTALLATION   = True if g_channel_settings['INSTALLATION_TYPE'] == "development"   else False
+    INSTALLATION_TYPE_NAME        = "Upgrade" if IS_UPGRADE_INSTALLATION else "Installation"
+
+
+def load_installation_settings_file():
+    global g_package_control_name
+    global g_packagesmanager_name
+
+    g_package_control_name = "Package Control.sublime-settings"
+    g_packagesmanager_name = "PackagesManager.sublime-settings"
+
+    global g_userSettings
+    global g_channelSettings
+    global g_default_ignored_packages
+
+    g_userSettings    = sublime.load_settings( g_channel_settings['USER_SETTINGS_FILE'] )
+    g_channelSettings = load_data_file( g_channel_settings['CHANNEL_INSTALLATION_SETTINGS'] )
+
+    # `g_default_ignored_packages` contains the original user's ignored packages.
+    g_default_ignored_packages = g_userSettings.get( 'ignored_packages', [] )
+
+    global g_packages_to_uninstall
+    global g_files_to_uninstall
+    global g_folders_to_uninstall
+    global g_packages_to_unignore
+    global g_next_packages_to_ignore
+    global g_packages_not_installed
+
+    g_packages_to_uninstall   = get_dictionary_key( g_channelSettings, 'packages_to_uninstall', [] )
+    g_packages_to_unignore    = get_dictionary_key( g_channelSettings, 'packages_to_unignore', [] )
+    g_files_to_uninstall      = get_dictionary_key( g_channelSettings, 'files_to_uninstall', [] )
+    g_folders_to_uninstall    = get_dictionary_key( g_channelSettings, 'folders_to_uninstall', [] )
+    g_next_packages_to_ignore = get_dictionary_key( g_channelSettings, 'next_packages_to_ignore', [] )
+    g_packages_not_installed  = get_dictionary_key( g_channelSettings, 'packages_not_installed', [] )
+
+    unignore_installed_packages()
+
+    log( _upgrade_debug(), "load_installation_settings_file, g_channel_settings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT']: " + str( g_channel_settings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT'] ) )
+    log( _upgrade_debug(), "load_installation_settings_file, g_default_ignored_packages:        " + str( g_default_ignored_packages ) )
 

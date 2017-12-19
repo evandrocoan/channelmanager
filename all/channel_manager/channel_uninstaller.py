@@ -88,7 +88,6 @@ except ImportError:
 # How many packages to ignore and unignore in batch to fix the ignored packages bug error
 PACKAGES_COUNT_TO_IGNORE_AHEAD = 8
 
-
 from python_debug_tools import Debugger
 from estimated_time_left import sequence_timer
 from estimated_time_left import progress_info
@@ -118,36 +117,6 @@ def main(channel_settings):
 
     installer_thread = StartUninstallChannelThread( channel_settings )
     installer_thread.start()
-
-
-def unpack_settings(channel_settings):
-    global g_channel_settings
-    g_channel_settings = channel_settings
-
-    global INSTALLATION_TYPE_NAME
-    global IS_DOWNGRADE_INSTALLATION
-
-    IS_DOWNGRADE_INSTALLATION = True if g_channel_settings['INSTALLATION_TYPE'] == "downgrade" else False
-    INSTALLATION_TYPE_NAME    = "Downgrade" if IS_DOWNGRADE_INSTALLATION else "Uninstallation"
-
-    setup_packages_to_uninstall_last( g_channel_settings )
-
-
-def setup_packages_to_uninstall_last(channel_settings):
-    """
-        Remove the remaining packages to be uninstalled separately on another function call.
-    """
-    global PACKAGES_TO_UNINSTALL_FIRST
-    global PACKAGES_TO_IGNORE_UNINSTALLATION
-
-    PACKAGES_TO_IGNORE_UNINSTALLATION = [ "PackagesManager", g_channel_settings['CHANNEL_PACKAGE_NAME'] ]
-    PACKAGES_TO_UNINSTALL_FIRST       = list( reversed( channel_settings['PACKAGES_TO_INSTALL_LAST'] ) )
-
-    # We need to remove it by last, after installing Package Control back
-    for package in PACKAGES_TO_IGNORE_UNINSTALLATION:
-
-        if package in PACKAGES_TO_UNINSTALL_FIRST:
-            PACKAGES_TO_UNINSTALL_FIRST.remove( package )
 
 
 class StartUninstallChannelThread(threading.Thread):
@@ -181,17 +150,6 @@ class StartUninstallChannelThread(threading.Thread):
 
         global g_is_already_running
         g_is_already_running = False
-
-
-def is_allowed_to_run():
-    global g_is_already_running
-
-    if g_is_already_running:
-        print( "You are already running a command. Wait until it finishes or restart Sublime Text" )
-        return False
-
-    g_is_already_running = True
-    return True
 
 
 class UninstallChannelFilesThread(threading.Thread):
@@ -231,82 +189,6 @@ class UninstallChannelFilesThread(threading.Thread):
             g_is_installation_complete = 3
 
 
-def attempt_to_uninstall_packagesmanager(packages_to_uninstall):
-
-    if "PackagesManager" in packages_to_uninstall:
-        package_manager    = PackageManager()
-        installed_packages = package_manager.list_packages()
-
-        if "Package Control" not in installed_packages:
-            install_package_control( package_manager )
-
-        uninstall_packagesmanger( package_manager, installed_packages )
-
-
-def restore_the_remove_orphaned_setting():
-
-    if g_remove_orphaned_backup:
-        # By default, it is already True on `Package Control.sublime-settings`, so just remove it
-        del g_package_control_settings['remove_orphaned']
-
-    else:
-        g_package_control_settings['remove_orphaned'] = g_remove_orphaned_backup
-
-    save_package_control_settings()
-
-    global g_is_installation_complete
-    g_is_installation_complete &= 1
-
-
-def load_package_manager_settings():
-    packagesmanager_name = "PackagesManager.sublime-settings"
-    package_control_name = "Package Control.sublime-settings"
-
-    global PACKAGE_CONTROL
-    global PACKAGESMANAGER
-
-    global g_package_control_settings
-    global g_installed_packages
-
-    global g_user_settings
-    global g_default_ignored_packages
-    global g_remove_orphaned_backup
-
-    global g_packages_to_unignore
-    global g_channelSettings
-
-    g_channelSettings      = load_data_file( g_channel_settings['CHANNEL_INSTALLATION_SETTINGS'] )
-    g_packages_to_unignore = get_dictionary_key( g_channelSettings, "packages_to_unignore", [] )
-
-    log( _downgrade_debug(), "Loaded g_channelSettings: " + str( g_channelSettings ) )
-
-    PACKAGESMANAGER = os.path.join( g_channel_settings['USER_FOLDER_PATH'], packagesmanager_name )
-    PACKAGE_CONTROL = os.path.join( g_channel_settings['USER_FOLDER_PATH'], package_control_name )
-
-    g_user_settings            = sublime.load_settings( g_channel_settings['USER_SETTINGS_FILE'] )
-    g_default_ignored_packages = g_user_settings.get( "ignored_packages", [] )
-
-    # Allow to not override the Package Control file when PackagesManager does exists
-    if os.path.exists( PACKAGESMANAGER ):
-        g_package_control_settings = load_data_file( PACKAGESMANAGER )
-
-    else:
-        g_package_control_settings = load_data_file( PACKAGE_CONTROL )
-
-    g_installed_packages = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
-
-    if not IS_DOWNGRADE_INSTALLATION:
-        g_remove_orphaned_backup = get_dictionary_key( g_package_control_settings, 'remove_orphaned', True )
-
-        # Temporally stops Package Control from removing orphaned packages, otherwise it will scroll up
-        # the uninstallation when Package Control is installed back
-        g_package_control_settings['remove_orphaned'] = False
-        save_package_control_settings()
-
-    else:
-        g_remove_orphaned_backup = None
-
-
 def uninstall_packages(packages_to_uninstall):
     package_manager  = PackageManager()
     package_disabler = PackageDisabler()
@@ -339,6 +221,36 @@ def uninstall_packages(packages_to_uninstall):
 
         package_manager.remove_package( package_name, is_dependency )
         remove_package_from_list( package_name )
+
+
+def get_packages_to_uninstall(is_downgrade):
+    filtered_packages     = []
+    packages_to_uninstall = get_dictionary_key( g_channelSettings, 'packages_to_uninstall', [] )
+
+    if is_downgrade:
+        repositories_loaded    = load_repository_file( g_channel_settings['CHANNEL_REPOSITORY_FILE'], False )
+        packages_not_installed = get_dictionary_key( g_channelSettings, 'packages_not_installed', [] )
+        packages_to_uninstall  = list( set( packages_to_uninstall + packages_not_installed ) - set( repositories_loaded ) )
+
+    # Only merges the packages which are actually being uninstalled
+    for package_name in PACKAGES_TO_UNINSTALL_FIRST:
+
+        if package_name in packages_to_uninstall:
+            filtered_packages.append( package_name )
+
+    # Add the actual packages after the packages to install first
+    for package_name in packages_to_uninstall:
+
+        if package_name not in filtered_packages:
+            filtered_packages.append( package_name )
+
+    if len( filtered_packages ) < 1:
+        raise NoPackagesAvailable( "There are 0 packages available to uninstall!" )
+
+    if is_downgrade:
+        log( 1, "New packages packages to uninstall found... " + str( filtered_packages ) )
+
+    return filtered_packages
 
 
 def get_installed_repositories(package_manager):
@@ -389,36 +301,6 @@ def remove_git_folder(default_git_folder, parent_folder=None):
         if len( folders_not_empty ) > 0:
             log( 1, "The installed default_git_folder `%s` could not be removed because is it not empty." % default_git_folder )
             log( 1, "Its files contents are: " + str( os.listdir( default_git_folder ) ) )
-
-
-def get_packages_to_uninstall(is_downgrade):
-    filtered_packages     = []
-    packages_to_uninstall = get_dictionary_key( g_channelSettings, 'packages_to_uninstall', [] )
-
-    if is_downgrade:
-        repositories_loaded    = load_repository_file( g_channel_settings['CHANNEL_REPOSITORY_FILE'], False )
-        packages_not_installed = get_dictionary_key( g_channelSettings, 'packages_not_installed', [] )
-        packages_to_uninstall  = list( set( packages_to_uninstall + packages_not_installed ) - set( repositories_loaded ) )
-
-    # Only merges the packages which are actually being uninstalled
-    for package_name in PACKAGES_TO_UNINSTALL_FIRST:
-
-        if package_name in packages_to_uninstall:
-            filtered_packages.append( package_name )
-
-    # Add the actual packages after the packages to install first
-    for package_name in packages_to_uninstall:
-
-        if package_name not in filtered_packages:
-            filtered_packages.append( package_name )
-
-    if len( filtered_packages ) < 1:
-        raise NoPackagesAvailable( "There are 0 packages available to uninstall!" )
-
-    if is_downgrade:
-        log( 1, "New packages packages to uninstall found... " + str( filtered_packages ) )
-
-    return filtered_packages
 
 
 def ignore_next_packages(package_disabler, package_name, packages_list):
@@ -902,4 +784,120 @@ def check_uninstalled_packages(maximum_attempts=10):
         unignore_user_packages(flush_everything=True)
         sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
 
+
+def is_allowed_to_run():
+    global g_is_already_running
+
+    if g_is_already_running:
+        print( "You are already running a command. Wait until it finishes or restart Sublime Text" )
+        return False
+
+    g_is_already_running = True
+    return True
+
+
+def unpack_settings(channel_settings):
+    global g_channel_settings
+    g_channel_settings = channel_settings
+
+    global INSTALLATION_TYPE_NAME
+    global IS_DOWNGRADE_INSTALLATION
+
+    IS_DOWNGRADE_INSTALLATION = True if g_channel_settings['INSTALLATION_TYPE'] == "downgrade" else False
+    INSTALLATION_TYPE_NAME    = "Downgrade" if IS_DOWNGRADE_INSTALLATION else "Uninstallation"
+
+    setup_packages_to_uninstall_last( g_channel_settings )
+
+
+def setup_packages_to_uninstall_last(channel_settings):
+    """
+        Remove the remaining packages to be uninstalled separately on another function call.
+    """
+    global PACKAGES_TO_UNINSTALL_FIRST
+    global PACKAGES_TO_IGNORE_UNINSTALLATION
+
+    PACKAGES_TO_IGNORE_UNINSTALLATION = [ "PackagesManager", g_channel_settings['CHANNEL_PACKAGE_NAME'] ]
+    PACKAGES_TO_UNINSTALL_FIRST       = list( reversed( channel_settings['PACKAGES_TO_INSTALL_LAST'] ) )
+
+    # We need to remove it by last, after installing Package Control back
+    for package in PACKAGES_TO_IGNORE_UNINSTALLATION:
+
+        if package in PACKAGES_TO_UNINSTALL_FIRST:
+            PACKAGES_TO_UNINSTALL_FIRST.remove( package )
+
+
+def attempt_to_uninstall_packagesmanager(packages_to_uninstall):
+
+    if "PackagesManager" in packages_to_uninstall:
+        package_manager    = PackageManager()
+        installed_packages = package_manager.list_packages()
+
+        if "Package Control" not in installed_packages:
+            install_package_control( package_manager )
+
+        uninstall_packagesmanger( package_manager, installed_packages )
+
+
+def restore_the_remove_orphaned_setting():
+
+    if g_remove_orphaned_backup:
+        # By default, it is already True on `Package Control.sublime-settings`, so just remove it
+        del g_package_control_settings['remove_orphaned']
+
+    else:
+        g_package_control_settings['remove_orphaned'] = g_remove_orphaned_backup
+
+    save_package_control_settings()
+
+    global g_is_installation_complete
+    g_is_installation_complete &= 1
+
+
+def load_package_manager_settings():
+    packagesmanager_name = "PackagesManager.sublime-settings"
+    package_control_name = "Package Control.sublime-settings"
+
+    global PACKAGE_CONTROL
+    global PACKAGESMANAGER
+
+    global g_package_control_settings
+    global g_installed_packages
+
+    global g_user_settings
+    global g_default_ignored_packages
+    global g_remove_orphaned_backup
+
+    global g_packages_to_unignore
+    global g_channelSettings
+
+    g_channelSettings      = load_data_file( g_channel_settings['CHANNEL_INSTALLATION_SETTINGS'] )
+    g_packages_to_unignore = get_dictionary_key( g_channelSettings, "packages_to_unignore", [] )
+
+    log( _downgrade_debug(), "Loaded g_channelSettings: " + str( g_channelSettings ) )
+
+    PACKAGESMANAGER = os.path.join( g_channel_settings['USER_FOLDER_PATH'], packagesmanager_name )
+    PACKAGE_CONTROL = os.path.join( g_channel_settings['USER_FOLDER_PATH'], package_control_name )
+
+    g_user_settings            = sublime.load_settings( g_channel_settings['USER_SETTINGS_FILE'] )
+    g_default_ignored_packages = g_user_settings.get( "ignored_packages", [] )
+
+    # Allow to not override the Package Control file when PackagesManager does exists
+    if os.path.exists( PACKAGESMANAGER ):
+        g_package_control_settings = load_data_file( PACKAGESMANAGER )
+
+    else:
+        g_package_control_settings = load_data_file( PACKAGE_CONTROL )
+
+    g_installed_packages = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
+
+    if not IS_DOWNGRADE_INSTALLATION:
+        g_remove_orphaned_backup = get_dictionary_key( g_package_control_settings, 'remove_orphaned', True )
+
+        # Temporally stops Package Control from removing orphaned packages, otherwise it will scroll up
+        # the uninstallation when Package Control is installed back
+        g_package_control_settings['remove_orphaned'] = False
+        save_package_control_settings()
+
+    else:
+        g_remove_orphaned_backup = None
 
