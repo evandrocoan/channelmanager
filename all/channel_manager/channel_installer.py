@@ -190,7 +190,9 @@ class InstallChannelFilesThread(threading.Thread):
         try:
             install_modules( command_line_interface, git_executable_path )
 
-        except ( InstallationCancelled, NoPackagesAvailable ):
+        except ( InstallationCancelled, NoPackagesAvailable ) as error:
+            log( 1, str( error ) )
+
             global g_is_installation_complete
             g_is_installation_complete = True
 
@@ -1159,6 +1161,9 @@ def unpack_settings(channel_settings):
     IS_UPGRADE_INSTALLATION       = True if g_channel_settings['INSTALLATION_TYPE'] == "upgrade"       else False
     IS_DEVELOPMENT_INSTALLATION   = True if g_channel_settings['INSTALLATION_TYPE'] == "development"   else False
     INSTALLATION_TYPE_NAME        = "Upgrade" if IS_UPGRADE_INSTALLATION else "Installation"
+
+    log( 1, "IS_UPGRADE_INSTALLATION:     " + str( IS_UPGRADE_INSTALLATION ) )
+    log( 1, "IS_DEVELOPMENT_INSTALLATION: " + str( IS_DEVELOPMENT_INSTALLATION ) )
 
 
 def load_installation_settings_file():

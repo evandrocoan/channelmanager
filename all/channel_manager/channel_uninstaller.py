@@ -60,6 +60,7 @@ from .channel_utilities import remove_only_if_exists
 from .channel_utilities import InstallationCancelled
 from .channel_utilities import NoPackagesAvailable
 from .channel_utilities import load_repository_file
+from .channel_utilities import is_channel_upgraded
 
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
@@ -140,13 +141,14 @@ class StartUninstallChannelThread(threading.Thread):
         """
 
         if is_allowed_to_run():
-            unpack_settings(self.channel_settings)
+            unpack_settings( self.channel_settings )
 
             uninstaller_thread = UninstallChannelFilesThread()
             uninstaller_thread.start()
 
             global set_progress
-            set_progress = CurrentUpdateProgress( '%s of Sublime Text %s packages...' % ( INSTALLATION_TYPE_NAME, g_channel_settings['CHANNEL_PACKAGE_NAME'] ) )
+            set_progress = CurrentUpdateProgress( '%s of Sublime Text %s packages...'
+                    % ( INSTALLATION_TYPE_NAME, g_channel_settings['CHANNEL_PACKAGE_NAME'] ) )
 
             ThreadProgress( uninstaller_thread, set_progress, 'The %s of %s was successfully completed.'
                     % ( INSTALLATION_TYPE_NAME, g_channel_settings['CHANNEL_PACKAGE_NAME'] ) )
@@ -167,12 +169,6 @@ class UninstallChannelFilesThread(threading.Thread):
 
     def run(self):
         log( _downgrade_debug(), "Entering on %s run(1)" % self.__class__.__name__ )
-        global g_is_installation_complete
-        global _uningored_packages_to_flush
-
-        g_is_installation_complete   = 0
-        _uningored_packages_to_flush = []
-
         load_package_manager_settings()
 
         try:
@@ -193,7 +189,8 @@ class UninstallChannelFilesThread(threading.Thread):
             if not IS_DOWNGRADE_INSTALLATION:
                 restore_the_remove_orphaned_setting()
 
-        except ( InstallationCancelled, NoPackagesAvailable ):
+        except ( InstallationCancelled, NoPackagesAvailable ) as error:
+            log( 1, str( error ) )
             g_is_installation_complete = 3
 
 
@@ -814,6 +811,7 @@ def unpack_settings(channel_settings):
     IS_DOWNGRADE_INSTALLATION = True if g_channel_settings['INSTALLATION_TYPE'] == "downgrade" else False
     INSTALLATION_TYPE_NAME    = "Downgrade" if IS_DOWNGRADE_INSTALLATION else "Uninstallation"
 
+    log( 1, "IS_DOWNGRADE_INSTALLATION: " + str( IS_DOWNGRADE_INSTALLATION ) )
     setup_packages_to_uninstall_last( g_channel_settings )
 
 
@@ -862,6 +860,12 @@ def restore_the_remove_orphaned_setting():
 
 
 def load_package_manager_settings():
+    global g_is_installation_complete
+    global _uningored_packages_to_flush
+
+    g_is_installation_complete   = 0
+    _uningored_packages_to_flush = []
+
     packagesmanager_name = "PackagesManager.sublime-settings"
     package_control_name = "Package Control.sublime-settings"
 

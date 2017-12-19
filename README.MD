@@ -478,9 +478,23 @@ as you usually do with the default `Package Control` channel.
    except ImportError:
        pass
 
+
    from channel_manager.channel_manager import main as manager_main
    from channel_manager.submodules_manager import main as submodules_main
    from channel_manager.copy_default_package import main as copy_default_main
+
+   # # Run unit tests
+   # from channel_manager import channel_manager_tests
+   # channel_manager_tests.main()
+
+   # # How to reload a Sublime Text dependency?
+   # # https://github.com/randy3k/AutomaticPackageReloader/issues/12
+   # sublime_plugin.reload_plugin( "channel_manager.channel_utilities" )
+   # sublime_plugin.reload_plugin( "channel_manager.channel_manager" )
+   # sublime_plugin.reload_plugin( "channel_manager.channel_manager_tests" )
+
+   # sublime_plugin.reload_plugin( "channel_manager.channel_installer" )
+   # sublime_plugin.reload_plugin( "channel_manager.channel_uninstaller" )
 
 
    # Infer the correct package name and current directory absolute path
@@ -491,6 +505,63 @@ as you usually do with the default `Package Control` channel.
    # Hold all the information for this channel, which will be used by the `ChannelManager` to install
    # this channel
    g_channel_settings = {}
+
+
+   class MyBrandNewChannelExtractDefaultPackages( sublime_plugin.ApplicationCommand ):
+
+       def run(self):
+           sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+           copy_default_main( g_channel_settings['DEFAULT_PACKAGE_FILES'], True )
+
+       def is_enabled(self):
+           return is_channel_installed()
+
+
+   class MyBrandNewChannelRun( sublime_plugin.ApplicationCommand ):
+
+       def run(self, run):
+           sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+           submodules_main( run )
+
+       def is_enabled(self):
+           return is_channel_installed()
+
+
+   class MyBrandNewChannelGenerateChannelFile( sublime_plugin.ApplicationCommand ):
+
+       def run(self, command="all"):
+           sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+           manager_main( g_channel_settings, command )
+
+       def is_enabled(self):
+           return is_channel_installed()
+
+
+   class MyBrandNewChannelRunUninstallation( sublime_plugin.ApplicationCommand ):
+
+       def run(self):
+           """
+               You can always run the uninstaller, either to uninstall everything, or just this
+               package or just some packages.
+           """
+           channel_uninstaller.main( g_channel_settings )
+
+
+   class MyBrandNewChannelRunInstallation( sublime_plugin.ApplicationCommand ):
+
+       def run(self, version="stable"):
+           """
+               Call the ChannelManager installer to install all the channel packages.
+               @param version   Either the value "stable" or "development" to install the
+                                Development or Stable Version of the channel.
+           """
+           add_channel()
+           g_channel_settings['INSTALLATION_TYPE'] = version
+
+           channel_installer.main( g_channel_settings )
+
+       def is_enabled(self):
+           return not is_channel_installed()
 
 
    def plugin_loaded():
@@ -597,6 +668,45 @@ as you usually do with the default `Package Control` channel.
            "Context.sublime-menu",
        ]
 
+       # Call the channel upgrade/downgrade wizards to maintain old installation up to date with the
+       # main channel file when there are new packages additions or deletions.
+       run_channel_setup()
+
+
+   is_delayed = False
+
+   def run_channel_setup():
+
+       # If the settings are not yet loaded, wait a little
+       if "DEFAULT_PACKAGE_FILES" not in g_channel_settings:
+           global is_delayed
+
+           # Stop delaying indefinitely
+           if is_delayed:
+               log( 1, "Error: Could not load the settings files! g_channel_settings:" + str( g_channel_settings ) )
+               return
+
+           is_delayed = True
+           sublime.set_timeout( plugin_loaded, 2000 )
+
+       else:
+           run_channel_upgrade()
+
+
+   def run_channel_upgrade():
+       channel_settings = g_channel_settings
+       copy_default_package.main( channel_settings['DEFAULT_PACKAGE_FILES'], False )
+
+       if is_channel_installed():
+           channel_settings['INSTALLATION_TYPE'] = "upgrade"
+           channel_installer.main( channel_settings )
+
+           channel_settings['INSTALLATION_TYPE'] = "downgrade"
+           channel_uninstaller.main( channel_settings )
+
+           # Restore the default value
+           channel_settings['INSTALLATION_TYPE'] = ""
+
 
    def is_channel_installed():
        """
@@ -635,60 +745,6 @@ as you usually do with the default `Package Control` channel.
        sublime.save_settings( package_control )
 
        clear_cache()
-
-
-   class MyBrandNewChannelRunUninstallation( sublime_plugin.ApplicationCommand ):
-
-       def run(self):
-           channel_uninstaller.main( g_channel_settings )
-
-
-   class MyBrandNewChannelRunInstallation( sublime_plugin.ApplicationCommand ):
-
-       def run(self, version="stable"):
-           """
-               Call the ChannelManager installer to install all the channel packages.
-
-               @param version   Either the value "stable" or "development" to install the
-                                Development or Stable Version of the channel.
-           """
-           add_channel()
-           g_channel_settings['INSTALLATION_TYPE'] = version
-
-           channel_installer.main( g_channel_settings )
-
-       def is_enabled(self):
-           return not is_channel_installed()
-
-
-   class MyBrandNewChannelGenerateChannelFile( sublime_plugin.ApplicationCommand ):
-
-       def run(self, command="all"):
-           sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
-           manager_main( g_channel_settings, command )
-
-       def is_enabled(self):
-           return is_channel_installed()
-
-
-   class MyBrandNewChannelRun( sublime_plugin.ApplicationCommand ):
-
-       def run(self, run):
-           sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
-           submodules_main( run )
-
-       def is_enabled(self):
-           return is_channel_installed()
-
-
-   class MyBrandNewChannelExtractDefaultPackages( sublime_plugin.ApplicationCommand ):
-
-       def run(self):
-           sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
-           copy_default_main( g_channel_settings['DEFAULT_PACKAGE_FILES'], True )
-
-       def is_enabled(self):
-           return is_channel_installed()
    ```
 
 1. Lastly we need to make these commands from our configuration file named

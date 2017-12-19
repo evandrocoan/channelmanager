@@ -66,6 +66,7 @@ def assert_path(module):
 # Allow using this file on the website where the sublime module is unavailable
 try:
     import sublime
+    import configparser
 
     try:
         from package_control.download_manager import downloader
