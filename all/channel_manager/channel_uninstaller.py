@@ -191,7 +191,7 @@ class UninstallChannelFilesThread(threading.Thread):
 
         except ( InstallationCancelled, NoPackagesAvailable ) as error:
             log( 1, str( error ) )
-            g_is_installation_complete = 3
+            g_is_installation_complete |= 3
 
 
 def uninstall_packages(packages_to_uninstall):
@@ -511,7 +511,7 @@ def clean_packagesmanager_settings(maximum_attempts=3):
         return
 
     global g_is_installation_complete
-    g_is_installation_complete &= 2
+    g_is_installation_complete |= 2
 
 
 def uninstall_folders():
@@ -856,7 +856,7 @@ def restore_the_remove_orphaned_setting():
     save_package_control_settings()
 
     global g_is_installation_complete
-    g_is_installation_complete &= 1
+    g_is_installation_complete |= 1
 
 
 def load_package_manager_settings():
