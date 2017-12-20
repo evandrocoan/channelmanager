@@ -639,41 +639,6 @@ def add_git_folder_by_file(file_relative_path, git_folders):
             git_folders.append( git_folder_relative )
 
 
-def complete_channel_uninstallation(maximum_attempts=3):
-    """
-        Ensure the file is deleted
-    """
-
-    if maximum_attempts == 3:
-        log.insert_empty_line( 1 )
-        log.insert_empty_line( 1 )
-
-        log( 1, "Uninstalling channel settings file: %s" % str( g_channel_settings['CHANNEL_INSTALLATION_SETTINGS'] ) )
-        write_data_file( g_channel_settings['CHANNEL_INSTALLATION_SETTINGS'], {} )
-
-    else:
-        log( 1, "Uninstalling channel settings file, maximum_attempts: %s" % str( maximum_attempts ) )
-
-    remove_only_if_exists( g_channel_settings['CHANNEL_INSTALLATION_SETTINGS'] )
-
-    if maximum_attempts > 0:
-        maximum_attempts -= 1
-
-        sublime.set_timeout_async( lambda: complete_channel_uninstallation( maximum_attempts ), 1000 )
-        return
-
-    sublime.message_dialog( end_user_message( """\
-            The %s %s was successfully completed.
-
-            You need to restart Sublime Text to unload the uninstalled packages and finish
-            uninstalling the unused dependencies.
-
-            Check you Sublime Text Console for more information.
-            """ % ( g_channel_settings['CHANNEL_PACKAGE_NAME'], INSTALLATION_TYPE_NAME ) ) )
-
-    sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
-
-
 def ask_user_for_which_packages_to_install(packages_names):
     can_continue  = [False]
     active_window = sublime.active_window()
@@ -754,6 +719,41 @@ def ask_user_for_which_packages_to_install(packages_names):
     for package_name in selected_packages_to_not_install:
         target_index = packages_names.index( package_name )
         del packages_names[target_index]
+
+
+def complete_channel_uninstallation(maximum_attempts=3):
+    """
+        Ensure the file is deleted
+    """
+
+    if maximum_attempts == 3:
+        log.insert_empty_line( 1 )
+        log.insert_empty_line( 1 )
+
+        log( 1, "Uninstalling channel settings file: %s" % str( g_channel_settings['CHANNEL_INSTALLATION_SETTINGS'] ) )
+        write_data_file( g_channel_settings['CHANNEL_INSTALLATION_SETTINGS'], {} )
+
+    else:
+        log( 1, "Uninstalling channel settings file, maximum_attempts: %s" % str( maximum_attempts ) )
+
+    remove_only_if_exists( g_channel_settings['CHANNEL_INSTALLATION_SETTINGS'] )
+
+    if maximum_attempts > 0:
+        maximum_attempts -= 1
+
+        sublime.set_timeout_async( lambda: complete_channel_uninstallation( maximum_attempts ), 1000 )
+        return
+
+    sublime.message_dialog( end_user_message( """\
+            The %s %s was successfully completed.
+
+            You need to restart Sublime Text to unload the uninstalled packages and finish
+            uninstalling the unused dependencies.
+
+            Check you Sublime Text Console for more information.
+            """ % ( g_channel_settings['CHANNEL_PACKAGE_NAME'], INSTALLATION_TYPE_NAME ) ) )
+
+    sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
 
 
 def check_uninstalled_packages_alert(maximum_attempts=10):
