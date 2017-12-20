@@ -158,10 +158,8 @@ class StartUninstallChannelThread(threading.Thread):
             uninstaller_thread.join()
 
             # Wait PackagesManager to load the found dependencies, before announcing it to the user
+            sublime.set_timeout_async( check_uninstalled_packages_alert, 1000 )
             sublime.set_timeout_async( check_uninstalled_packages, 10000 )
-
-        global g_is_already_running
-        g_is_already_running = False
 
 
 class UninstallChannelFilesThread(threading.Thread):
@@ -664,7 +662,7 @@ def complete_channel_uninstallation(maximum_attempts=3):
         sublime.set_timeout_async( lambda: complete_channel_uninstallation( maximum_attempts ), 1000 )
         return
 
-    sublime.message_dialog( wrap_text( """\
+    sublime.message_dialog( end_user_message( """\
             The %s %s was successfully completed.
 
             You need to restart Sublime Text to unload the uninstalled packages and finish
@@ -758,6 +756,18 @@ def ask_user_for_which_packages_to_install(packages_names):
         del packages_names[target_index]
 
 
+def check_uninstalled_packages_alert(maximum_attempts=10):
+    """
+        Show a message to the user observing the Sublime Text console, so he know the process is not
+        finished yet.
+    """
+    log( _downgrade_debug(), "Looking for new tasks... %s seconds remaining." % str( maximum_attempts ) )
+    maximum_attempts -= 1
+
+    if maximum_attempts > 0 and g_is_already_running:
+        sublime.set_timeout_async( lambda: check_uninstalled_packages_alert( maximum_attempts ), 1000 )
+
+
 def check_uninstalled_packages(maximum_attempts=10):
     """
         Display warning when the uninstallation process is finished or ask the user to restart
@@ -776,13 +786,17 @@ def check_uninstalled_packages(maximum_attempts=10):
         if not IS_DOWNGRADE_INSTALLATION:
             complete_channel_uninstallation()
 
+        else:
+            global g_is_already_running
+            g_is_already_running = False
+
         return
 
     if maximum_attempts > 0:
         sublime.set_timeout_async( lambda: check_uninstalled_packages( maximum_attempts ), 2000 )
 
     else:
-        sublime.error_message( wrap_text( """\
+        sublime.error_message( end_user_message( """\
                 The %s %s could NOT be successfully completed.
 
                 Check you Sublime Text Console for more information.
@@ -791,8 +805,16 @@ def check_uninstalled_packages(maximum_attempts=10):
                 so later others can see what happened try to fix it.
                 """ % ( g_channel_settings['CHANNEL_PACKAGE_NAME'], INSTALLATION_TYPE_NAME ) ) )
 
-        unignore_user_packages(flush_everything=True)
+        unignore_user_packages( flush_everything=True )
         sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+
+
+def end_user_message(message):
+    # This is here because it is almost the last thing to be done
+    global g_is_already_running
+    g_is_already_running = False
+
+    return wrap_text( message )
 
 
 def is_allowed_to_run():
