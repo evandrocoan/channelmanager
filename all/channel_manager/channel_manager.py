@@ -134,6 +134,8 @@ class GenerateChannelThread(threading.Thread):
             # print_some_repositories( all_packages )
             if self.command == "all":
                 repositories, dependencies = create_repositories_list( all_packages, last_channel_file )
+
+                log.insert_empty_line( 1 )
                 self.save_log_file( repositories, dependencies )
 
             elif self.command == "git_tag":
@@ -287,14 +289,17 @@ def update_repository(last_dictionary, package_name):
 
     release_data['date']    = release_date
     release_data['version'] = date_tag
-    release_data['url']     = release_data['url'].replace( release_data['git_tag'], git_tag )
 
-    # Only push the new tag, if it is not created yet.
-    if release_data['git_tag'] != git_tag:
-        release_data['git_tag'] = git_tag
+    # Check this to do not erase the tagged branch
+    if 'is_branched_tag' not in release_data:
+        release_data['url'] = release_data['url'].replace( release_data['git_tag'], git_tag )
 
-        command = "git push origin %s" % git_tag
-        command_line_interface.execute( shlex.split( command ), absolute_path, live_output=True, short_errors=True )
+        # Only push the new tag, if it is not created yet.
+        if release_data['git_tag'] != git_tag:
+            release_data['git_tag'] = git_tag
+
+            command = "git push origin %s" % git_tag
+            command_line_interface.execute( shlex.split( command ), absolute_path, live_output=True, short_errors=True )
 
 
 def print_failed_repositories():
@@ -420,12 +425,12 @@ def create_repositories_list(all_packages, last_channel_file):
     return sort_list_of_dictionary( repositories), sort_list_of_dictionary( dependencies )
 
 
-def get_last_tag_fixed(absolute_path, last_dictionary, command_line_interface, force_tag_creation=False):
+def get_last_tag_fixed(absolute_path, last_dictionary, command_line_interface, force_tag_update=False):
     """
         This is a entry point to do some batch operation on each git submodule. We can temporarily
         insert the code we want to run with `command_line_interface` and remove later.
 
-        @param force_tag_creation if True, the tag will be created and also push the created tag to origin.
+        @param force_tag_update if True, the tag will be created and also push the created tag to origin.
     """
     release_date = get_git_date( absolute_path, command_line_interface )
     date_tag     = get_git_version( release_date )
@@ -437,7 +442,7 @@ def get_last_tag_fixed(absolute_path, last_dictionary, command_line_interface, f
     # output  = command_line_interface.execute( command, absolute_path, short_errors=True )
     # log( 1, "output: " + str( output ) )
 
-    if force_tag_creation:
+    if force_tag_update:
 
         # If it does not exists, it means this is the first time and there was not previous data
         if 'releases' in last_dictionary:
@@ -451,7 +456,7 @@ def get_last_tag_fixed(absolute_path, last_dictionary, command_line_interface, f
 
             # if LooseVersion( date_tag ) > LooseVersion( last_date_tag ):
             if True:
-                next_git_tag, is_incremented, unprefixed_tag = increment_patch_version( git_tag, force_tag_creation )
+                next_git_tag, is_incremented, unprefixed_tag = increment_patch_version( git_tag, force_tag_update )
                 current_tags = get_current_cummit_tags( absolute_path, command_line_interface )
 
                 if len( current_tags ) > 0:
@@ -526,7 +531,7 @@ def get_current_cummit_tags(absolute_path, command_line_interface):
     return str( output )
 
 
-def increment_patch_version(git_tag, force_tag_creation=False):
+def increment_patch_version(git_tag, force_tag_update=False):
     """
         Increments tags on the form `0.0.0`.
 
@@ -535,7 +540,7 @@ def increment_patch_version(git_tag, force_tag_creation=False):
 
         @return is_incremented     False, when the tag was not incremented, True otherwise.
     """
-    # log( 2, "Incrementing %s (%s)" % ( str( git_tag ), str( force_tag_creation ) ) )
+    # log( 2, "Incrementing %s (%s)" % ( str( git_tag ), str( force_tag_update ) ) )
 
     # if the tag is just an integer, it should be a Sublime Text build as 3147
     try:
@@ -557,7 +562,7 @@ def increment_patch_version(git_tag, force_tag_creation=False):
 
     log( 1, "Warning: Could not increment the git_tag: " + str( git_tag ) )
 
-    if force_tag_creation:
+    if force_tag_update:
         return "1.0.0", True, "1.0.0"
 
     return "master", False, "master"
@@ -701,12 +706,12 @@ def fix_semantic_version(tag):
     """
     regexes = [ ("(\d+)", ".0.0"), ("(\d+\.\d+)", ".0"), ("(\d+\.\d+\.\d+)", "") ]
 
-    for search_data in reversed( regexes ):
-        matches = re.search( search_data[0], tag )
+    for expression, complement in reversed( regexes ):
+        matches = re.search( expression, tag )
 
         if matches:
             matched_text = tag[matches.start(0):matches.end(0)]
-            return matches.group(0) + search_data[1], matched_text
+            return matches.group(0) + complement, matched_text
 
     return tag, tag
 
@@ -906,12 +911,14 @@ class Repository():
         return get_download_url( self.url, self.release_data['git_tag'] )
 
     def setVersioningTag(self, last_channel_file, command_line_interface):
-        main_branch     = self._getMainVersionBranch()
+        main_branch     = self.getMainVersionBranch()
         last_dictionary = get_dictionary_key( last_channel_file, self.name, {} )
 
         git_tag, date_tag, release_date = get_last_tag_fixed( self.absolute_path, last_dictionary, command_line_interface )
 
         if main_branch:
+            self.release_data['is_branched_tag'] = True
+
             self.release_data['date']    = release_date
             self.release_data['version'] = date_tag
             self.release_data['git_tag'] = main_branch
@@ -921,7 +928,7 @@ class Repository():
             self.release_data['version'] = date_tag
             self.release_data['git_tag'] = git_tag
 
-    def _getMainVersionBranch(self):
+    def getMainVersionBranch(self):
         """
             @return None when not branch is found.
         """
