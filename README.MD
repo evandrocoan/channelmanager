@@ -94,6 +94,11 @@ The `tags` is a comma separated list of remote tags and the version of Sublime t
 used. For example, `tags = 3143, 3147` indicates the repository `Notepad++ Color Scheme` has the
 following git tags called `3143` and `3147`.
 
+Note, if some value of the `tag` option is not an integer, the download/url link will point to that
+name. For example, if you set `tag = master`, the download link will always point the master branch.
+This is useful when you are want a package to always be downloaded from the latest version on the
+master branch.
+
 The key `dependency` is comma separate lists of `dependencies` a package has. If the dependency key
 start with number like in `dependency = 50, PythonDebugTools, regex`, it would mean that the package
 `Packages/Notepad++ Color Scheme` would be a dependency with load order of 50, which requires as
@@ -201,8 +206,8 @@ look like:
 
 Sadly, this feature is not implemented yet. However, the `upstream` key is used by the plugin
 `submodules_manager.py`, with the command line argument `-f`. The `submodules_manager.py` provides
-some commands which are not available from Sublime Text due they being too long to run. Moreover is
-proper to use a dedicated shell for them. You can see the available options for the
+some commands which are not available from Sublime Text due they being too long to run. Moreover,
+it is proper to use a dedicated shell for them. You can see the available options for the
 `submodules_manager.py` by running it:
 ```java
 $ python3 submodules_manager.py
@@ -444,6 +449,7 @@ as you usually do with the default `Package Control` channel.
        url = https://github.com/your_user_name/MyBrandNewChannel
        upstream =
        dependency = ChannelManager, PythonDebugTools
+       tags = master
    ```
 
    * Note: Due Package Control currently not accept dependencies requiring dependencies, we also
@@ -453,6 +459,13 @@ as you usually do with the default `Package Control` channel.
      issue for details about when this should be correctly supported by `Package Control`:
 
      1. [package_control#1300](https://github.com/wbond/package_control/issues/1300) If a dependency has a dependency, its dependencies are not installed
+
+   * Note: We need to add the entry `tag = master` on the `MyBrandNewChannel` repository entry due
+     the `ChannelManager` installer get the packages names list to install from the current
+     installed version of `MyBrandNewChannel` repository. Then if we only download the latest tag
+     for `MyBrandNewChannel`, we will miss installing the latest added packages, unless the
+     `MyBrandNewChannel` is re-tagged right after the creation of the `channel.json` and
+     `repository.json` files.
 
 1. Now on this new package called `Packages/MyBrandNewChannel`, you need to create the plugin to
    call the channel manager passing the required configurations. In the following we may see a full

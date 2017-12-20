@@ -906,12 +906,40 @@ class Repository():
         return get_download_url( self.url, self.release_data['git_tag'] )
 
     def setVersioningTag(self, last_channel_file, command_line_interface):
+        main_branch     = self._getMainVersionBranch()
         last_dictionary = get_dictionary_key( last_channel_file, self.name, {} )
+
         git_tag, date_tag, release_date = get_last_tag_fixed( self.absolute_path, last_dictionary, command_line_interface )
 
-        self.release_data['date']    = release_date
-        self.release_data['version'] = date_tag
-        self.release_data['git_tag'] = git_tag
+        if main_branch:
+            self.release_data['date']    = release_date
+            self.release_data['version'] = date_tag
+            self.release_data['git_tag'] = main_branch
+
+        else:
+            self.release_data['date']    = release_date
+            self.release_data['version'] = date_tag
+            self.release_data['git_tag'] = git_tag
+
+    def _getMainVersionBranch(self):
+        """
+            @return None when not branch is found.
+        """
+        main_branch = None
+
+        if self.gitModulesFile.has_option( self.section, "tags" ):
+            tags_list = string_convert_list( self.gitModulesFile.get( self.section, "tags" ) )
+
+            for tag in tags_list:
+
+                try:
+                    tag_interger = int( tag )
+
+                except ValueError as error:
+                    main_branch = tag
+                    break
+
+        return main_branch
 
     def ensureAuthorName(self, user_forker):
 
@@ -953,7 +981,13 @@ class Repository():
             tags_list = string_convert_list( self.gitModulesFile.get( self.section, "tags" ) )
 
             for tag in tags_list:
-                tag_interger = int( tag )
+
+                try:
+                    tag_interger = int( tag )
+
+                except ValueError as error:
+                    log( 1, "Warning: Skipping tag... %s" % error )
+                    continue
 
                 release_data = OrderedDict()
                 tag_date     = get_git_tag_date( self.absolute_path, command_line_interface, tag )
