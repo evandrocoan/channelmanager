@@ -167,10 +167,8 @@ class StartInstallChannelThread(threading.Thread):
                 save_default_settings()
 
             # Wait PackagesManager to load the found dependencies, before announcing it to the user
-            sublime.set_timeout_async( check_installed_packages, 2000 )
-
-        global g_is_already_running
-        g_is_already_running = False
+            sublime.set_timeout_async( check_installed_packages_alert, 1000 )
+            sublime.set_timeout_async( check_installed_packages, 10000 )
 
 
 class InstallChannelFilesThread(threading.Thread):
@@ -1074,6 +1072,18 @@ def ask_user_for_which_packages_to_install(packages_to_install):
         del packages_to_install[target_index]
 
 
+def check_installed_packages_alert(maximum_attempts=10):
+    """
+        Show a message to the user observing the Sublime Text console, so he know the process is not
+        finished yet.
+    """
+    log( _downgrade_debug(), "Looking for new tasks... %s seconds remaining." % str( maximum_attempts ) )
+    maximum_attempts -= 1
+
+    if maximum_attempts > 0 and g_is_already_running:
+        sublime.set_timeout_async( lambda: check_installed_packages_alert( maximum_attempts ), 1000 )
+
+
 def check_installed_packages(maximum_attempts=10):
     """
         Display warning when the installation process is finished or ask the user to restart
@@ -1089,8 +1099,7 @@ def check_installed_packages(maximum_attempts=10):
     if g_is_installation_complete:
 
         if not IS_UPGRADE_INSTALLATION:
-
-            sublime.message_dialog( wrap_text( """\
+            sublime.message_dialog( end_user_message( """\
                     The %s %s was successfully completed.
 
                     You need to restart Sublime Text to load the installed packages and finish
@@ -1099,6 +1108,10 @@ def check_installed_packages(maximum_attempts=10):
                     Check you Sublime Text Console for more information.
                     """ % ( g_channel_settings['CHANNEL_PACKAGE_NAME'], INSTALLATION_TYPE_NAME ) ) )
 
+        else:
+            global g_is_already_running
+            g_is_already_running = False
+
         print_failed_repositories()
         return
 
@@ -1106,7 +1119,7 @@ def check_installed_packages(maximum_attempts=10):
         sublime.set_timeout_async( lambda: check_installed_packages( maximum_attempts ), 2000 )
 
     else:
-        sublime.error_message( wrap_text( """\
+        sublime.error_message( end_user_message( """\
                 The %s %s could not be successfully completed.
 
                 Check you Sublime Text Console for more information.
@@ -1116,6 +1129,25 @@ def check_installed_packages(maximum_attempts=10):
                 """ % ( g_channel_settings['CHANNEL_PACKAGE_NAME'], INSTALLATION_TYPE_NAME ) ) )
 
         print_failed_repositories()
+
+
+def end_user_message(message):
+    # This is here because it is almost the last thing to be done
+    global g_is_already_running
+    g_is_already_running = False
+
+    return wrap_text( message )
+
+
+def is_allowed_to_run():
+    global g_is_already_running
+
+    if g_is_already_running:
+        print( "You are already running a command. Wait until it finishes or restart Sublime Text" )
+        return False
+
+    g_is_already_running = True
+    return True
 
 
 def print_failed_repositories():
@@ -1129,17 +1161,6 @@ def print_failed_repositories():
 
     for package_name in g_failed_repositories:
         log( 1, "Package: %s" % ( package_name ) )
-
-
-def is_allowed_to_run():
-    global g_is_already_running
-
-    if g_is_already_running:
-        print( "You are already running a command. Wait until it finishes or restart Sublime Text" )
-        return False
-
-    g_is_already_running = True
-    return True
 
 
 def unpack_settings(channel_settings):
