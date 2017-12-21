@@ -90,7 +90,8 @@ except( ImportError, ValueError ):
     assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools/all' ) )
     assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PackagesManager' ) )
     assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'EstimatedTimeLeft/all' ) )
-    assert_path( os.path.join( CURRENT_DIRECTORY, CURRENT_PACKAGE_NAME, 'all' ) )
+    assert_path( os.path.join( CURRENT_DIRECTORY, 'six' ) )
+    assert_path( os.path.join( CURRENT_DIRECTORY, 'all' ) )
 
     from six.moves import configparser
     from packagesmanager import cmd
