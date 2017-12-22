@@ -36,7 +36,7 @@ import zipfile
 import threading
 import contextlib
 
-from .settings import CURRENT_DIRECTORY
+from .settings import CURRENT_PACKAGE_ROOT_DIRECTORY
 from .settings import CURRENT_PACKAGE_NAME
 
 from .channel_utilities import is_sublime_text_upgraded
@@ -50,14 +50,14 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 # log( 2, "..." )
 # log( 2, "..." )
 # log( 2, "Debugging" )
-# log( 2, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
+# log( 2, "CURRENT_PACKAGE_ROOT_DIRECTORY: " + CURRENT_PACKAGE_ROOT_DIRECTORY )
 
 
 def main(default_package_files=[], is_forced=False):
 
     # We can only run this when we are using the development version of the channel. And when there
     # is a `.git` folder, we are running the `Development Version` of the channel.
-    main_git_path = os.path.join( CURRENT_DIRECTORY, ".git" )
+    main_git_path = os.path.join( CURRENT_PACKAGE_ROOT_DIRECTORY, ".git" )
 
     # Not attempt to run when we are running from inside a `.sublime-package` because this is only
     # available for the `Development Version` as there is not need to unpack the `Default Package`

@@ -44,7 +44,7 @@ import configparser
 from collections import OrderedDict
 
 
-from .settings import CURRENT_DIRECTORY
+from .settings import CURRENT_PACKAGE_ROOT_DIRECTORY
 from .settings import CURRENT_PACKAGE_NAME
 
 g_is_already_running = False
@@ -110,7 +110,7 @@ def _upgrade_debug():
 # log( 2, "..." )
 # log( 2, "..." )
 # log( 2, "Debugging" )
-# log( 2, "CURRENT_DIRECTORY_:     " + CURRENT_DIRECTORY )
+# log( 2, "CURRENT_PACKAGE_ROOT_DIRECTORY_:     " + CURRENT_PACKAGE_ROOT_DIRECTORY )
 
 
 def main(channel_settings, is_forced=False):
@@ -123,7 +123,7 @@ def main(channel_settings, is_forced=False):
     """
     # We can only run this when we are using the stable version of the channel. And when there is
     # not a `.git` folder, we are running the `Development Version` of the channel.
-    main_git_path = os.path.join( CURRENT_DIRECTORY, ".git" )
+    main_git_path = os.path.join( CURRENT_PACKAGE_ROOT_DIRECTORY, ".git" )
 
     # Not attempt to run when we are running from outside a `.sublime-package` as the upgrader is
     # only available for the `Stable Version` of the channel. The `Development Version` must use

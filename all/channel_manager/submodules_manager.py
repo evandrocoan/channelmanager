@@ -45,14 +45,14 @@ import subprocess
 # Relative imports in Python 3
 # https://stackoverflow.com/questions/16981921/relative-imports-in-python-3
 try:
-    from .settings import CURRENT_DIRECTORY
+    from .settings import CURRENT_PACKAGE_ROOT_DIRECTORY
     from .settings import CURRENT_PACKAGE_NAME
 
     from .channel_utilities import get_main_directory
     from .channel_utilities import assert_path
 
 except( ImportError, ValueError ):
-    from settings import CURRENT_DIRECTORY
+    from settings import CURRENT_PACKAGE_ROOT_DIRECTORY
     from settings import CURRENT_PACKAGE_NAME
 
     from channel_utilities import get_main_directory
@@ -87,11 +87,11 @@ except( ImportError, ValueError ):
     # Import the debugger. It will fail when `PythonDebugTools` is inside a `.sublime-package`,
     # however, this is only meant to be used on the Development version, `PythonDebugTools` is
     # unpacked at the loose packages folder as a git submodule.
-    assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PythonDebugTools/all' ) )
-    assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'PackagesManager' ) )
-    assert_path( os.path.join( os.path.dirname( CURRENT_DIRECTORY ), 'EstimatedTimeLeft/all' ) )
-    assert_path( os.path.join( CURRENT_DIRECTORY, 'six' ) )
-    assert_path( os.path.join( CURRENT_DIRECTORY, 'all' ) )
+    assert_path( os.path.join( os.path.dirname( CURRENT_PACKAGE_ROOT_DIRECTORY ), 'PythonDebugTools/all' ) )
+    assert_path( os.path.join( os.path.dirname( CURRENT_PACKAGE_ROOT_DIRECTORY ), 'PackagesManager' ) )
+    assert_path( os.path.join( os.path.dirname( CURRENT_PACKAGE_ROOT_DIRECTORY ), 'EstimatedTimeLeft/all' ) )
+    assert_path( os.path.join( CURRENT_PACKAGE_ROOT_DIRECTORY, 'six' ) )
+    assert_path( os.path.join( CURRENT_PACKAGE_ROOT_DIRECTORY, 'all' ) )
 
     from six.moves import configparser
     from packagesmanager import cmd
@@ -125,8 +125,8 @@ def print_python_envinronment():
 
 
 # print_python_envinronment()
-CHANNEL_SESSION_FILE = os.path.join( CURRENT_DIRECTORY, "all", "last_session.channel-manager" )
-FIND_FORKS_PATH      = os.path.join( CURRENT_DIRECTORY, "find_forks" )
+CHANNEL_SESSION_FILE = os.path.join( CURRENT_PACKAGE_ROOT_DIRECTORY, "all", "last_session.channel-manager" )
+FIND_FORKS_PATH      = os.path.join( CURRENT_PACKAGE_ROOT_DIRECTORY, "find_forks" )
 
 # How many errors are acceptable when the GitHub API request fails
 MAXIMUM_REQUEST_ERRORS = 10
@@ -143,7 +143,7 @@ if Debugger:
     # log( 1, "..." )
     # log( 1, "..." )
     # log( 1, "Debugging" )
-    # log( 1, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
+    # log( 1, "CURRENT_PACKAGE_ROOT_DIRECTORY: " + CURRENT_PACKAGE_ROOT_DIRECTORY )
 
 
 def main(command=None):
@@ -151,7 +151,7 @@ def main(command=None):
     global CHANNEL_ROOT_DIRECTORY
 
     argumentsNamespace     = None
-    CHANNEL_ROOT_DIRECTORY = get_main_directory( CURRENT_DIRECTORY )
+    CHANNEL_ROOT_DIRECTORY = get_main_directory( CURRENT_PACKAGE_ROOT_DIRECTORY )
 
     # https://stackoverflow.com/questions/6382804/how-to-use-getopt-optarg-in-python-how-to-shift
     if not command:

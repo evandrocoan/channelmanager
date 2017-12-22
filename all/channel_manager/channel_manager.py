@@ -44,7 +44,7 @@ from collections import OrderedDict
 from distutils.version import LooseVersion
 
 
-from .settings import CURRENT_DIRECTORY
+from .settings import CURRENT_PACKAGE_ROOT_DIRECTORY
 from .settings import CURRENT_PACKAGE_NAME
 
 g_is_already_running = False
@@ -91,7 +91,7 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 # log( 2, "..." )
 # log( 2, "..." )
 # log( 2, "Debugging" )
-# log( 2, "CURRENT_DIRECTORY: " + CURRENT_DIRECTORY )
+# log( 2, "CURRENT_PACKAGE_ROOT_DIRECTORY: " + CURRENT_PACKAGE_ROOT_DIRECTORY )
 
 
 def main(channel_settings, command="all"):
