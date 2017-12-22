@@ -470,75 +470,32 @@ as you usually do with the default `Package Control` channel.
 1. Now on this new package called `Packages/MyBrandNewChannel`,
    you need to create the plugin to call the `ChannelManager` passing the required configurations.
    In the following we may see a full example configuration file,
-   you can save it inside the folder `Packages/MyBrandNewChannel` with the name you like most as
-   `settings.py`:
+   you can save it inside the folder `Packages/MyBrandNewChannel` with the name you like most as `settings.py`:
    ```python
    import os
-   import sublime, sublime_plugin
+   import sublime
 
    from channel_manager.channel_utilities import clean_urljoin
    from channel_manager.channel_utilities import get_main_directory
    from channel_manager.channel_utilities import run_channel_setup
-   from channel_manager.channel_utilities import print_all_variables_for_debugging
-   # sublime_plugin.reload_plugin( "channel_manager.channel_utilities" )
 
-   # Infer the correct package name and current directory absolute path
-   CURRENT_DIRECTORY    = os.path.dirname( os.path.realpath( __file__ ) ).replace( ".sublime-package", "" )
-   CURRENT_PACKAGE_NAME = os.path.basename( CURRENT_DIRECTORY )
+   CURRENT_PACKAGE_ROOT_DIRECTORY = os.path.dirname( os.path.realpath( __file__ ) ).replace( ".sublime-package", "" )
+   CURRENT_PACKAGE_NAME           = os.path.basename( CURRENT_PACKAGE_ROOT_DIRECTORY )
 
    def plugin_loaded():
-       """
-           We can only load the information when the Sublime Text API is available due the use of the
-           get_main_directory() which requires it.
-       """
-
-       # Generate the files `Main.sublime-menu`, `Default.sublime-commands` and `commands.py` files
-       run_channel_setup( CURRENT_PACKAGE_NAME, CURRENT_DIRECTORY )
-
-       # The folder where the directory where the Sublime Text `Packages` (loose packages) folder is on
-       CHANNEL_ROOT_DIRECTORY = get_main_directory( CURRENT_DIRECTORY )
-
-       # The folder where the User settings are on
-       USER_FOLDER_PATH = os.path.join( CHANNEL_ROOT_DIRECTORY, "Packages", "User" )
-
-       # Hold all the information for this channel, which will be used to install this channel
        global g_channel_settings
-
-       # The temporary folder to download the main repository when installing the development version
-       g_channel_settings['CHANNEL_PACKAGE_NAME']    = CURRENT_PACKAGE_NAME
-       g_channel_settings['TEMPORARY_FOLDER_TO_USE'] = "__channel_temporary_directory"
-
-       # The User settings folder
-       g_channel_settings['USER_FOLDER_PATH'] = USER_FOLDER_PATH
-
-       # You channel installation details saved after the installation of the channel
-       g_channel_settings['CHANNEL_INSTALLATION_DETAILS'] = \
-               os.path.join( USER_FOLDER_PATH, CURRENT_PACKAGE_NAME + ".sublime-settings" )
-
-       # The default Package Control channel
-       g_channel_settings['DEFAULT_CHANNEL_URL'] = "https://packagecontrol.io/channel_v3.json"
-
-       # The URL of the directory where the files `channel.json` and `repository.json` are hosted
        CHANNEL_RAW_URL = "https://raw.githubusercontent.com/your_user_name/MyBrandNewChannel/master/"
 
-       # The URL to the main A direct URL/Path to the repository where there is the `.gitmodules`
-       g_channel_settings['CHANNEL_ROOT_URL']       = "https://github.com/your_user_name/MyParentRepository"
-       g_channel_settings['CHANNEL_ROOT_DIRECTORY'] = CHANNEL_ROOT_DIRECTORY
+       g_channel_settings = {}
+       g_channel_settings['CHANNEL_ROOT_URL']    = "https://github.com/your_user_name/MyParentRepository"
+       g_channel_settings['DEFAULT_CHANNEL_URL'] = "https://packagecontrol.io/channel_v3.json"
 
-       # The file path to the Channel File `channel.json` to use when installing the development version
        g_channel_settings['CHANNEL_FILE_URL']  = clean_urljoin( CHANNEL_RAW_URL, "channel.json" )
-       g_channel_settings['CHANNEL_FILE_PATH'] = os.path.join( CURRENT_DIRECTORY, "channel.json" )
+       g_channel_settings['CHANNEL_FILE_PATH'] = os.path.join( CURRENT_PACKAGE_ROOT_DIRECTORY, "channel.json" )
 
-       # A direct URL/Path to the Repository File `repository.json` to use when installing the
-       # stable/development version
        g_channel_settings['CHANNEL_REPOSITORY_URL']  = clean_urljoin( CHANNEL_RAW_URL, "repository.json" )
-       g_channel_settings['CHANNEL_REPOSITORY_FILE'] = os.path.join( CURRENT_DIRECTORY, "repository.json" )
+       g_channel_settings['CHANNEL_REPOSITORY_FILE'] = os.path.join( CURRENT_PACKAGE_ROOT_DIRECTORY, "repository.json" )
 
-       # The default user preferences file
-       g_channel_settings['USER_SETTINGS_FILE'] = "Preferences.sublime-settings"
-
-       # You can specify for some packages to be popped out from the list and being installed by
-       # first/last in the following order presented.
        g_channel_settings['PACKAGES_TO_INSTALL_FIRST'] = \
        [
            "My First Package",
@@ -553,43 +510,100 @@ as you usually do with the default `Package Control` channel.
            "My Package Last Package",
        ]
 
-       # Packages which are not allowed to be selected by the user while choosing the packages to not
-       # be installed. Useful for packages which are required for the channel maintainability.
        g_channel_settings['FORBIDDEN_PACKAGES'] = \
        [
            "My First Forbidden Package",
            "My Second Forbidden Package",
        ]
 
-       # Packages which you do want to install when reading the `.gitmodules` packages list (stable)
        g_channel_settings['PACKAGES_TO_NOT_INSTALL_STABLE'] = \
        [
            "My First Package to not Install",
            "My Second Package to not Install",
        ]
 
-       # Packages which you do want to install when reading the `.gitmodules` packages list (development)
        g_channel_settings['PACKAGES_TO_NOT_INSTALL_DEVELOPMENT'] = \
        [
            "My First Package to not Install",
            "My Second Package to not Install",
        ]
 
-       # Packages which must not be installed on the stable version and must be disabled by default on
-       # the development version.
        g_channel_settings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT'] = \
        [
            "My First Package to ignore",
            "My Second Package to ignore",
        ]
 
-       # The files of the `Default.sublime-package` you are installing
        g_channel_settings['DEFAULT_PACKAGE_FILES'] = \
        [
            "Tab Context.sublime-menu",
            "Context.sublime-menu",
        ]
+
+       CHANNEL_ROOT_DIRECTORY = get_main_directory( CURRENT_PACKAGE_ROOT_DIRECTORY )
+       run_channel_setup( CURRENT_PACKAGE_NAME, CURRENT_PACKAGE_ROOT_DIRECTORY )
+
+       USER_FOLDER_PATH = os.path.join( CHANNEL_ROOT_DIRECTORY, "Packages", "User" )
+       g_channel_settings['CHANNEL_INSTALLATION_DETAILS'] = os.path.join( USER_FOLDER_PATH, CURRENT_PACKAGE_NAME + ".sublime-settings" )
+
+       g_channel_settings['USER_FOLDER_PATH']    = USER_FOLDER_PATH
+       g_channel_settings['USER_SETTINGS_FILE']  = "Preferences.sublime-settings"
+
+       g_channel_settings['CHANNEL_PACKAGE_NAME']    = CURRENT_PACKAGE_NAME
+       g_channel_settings['CHANNEL_ROOT_DIRECTORY']  = CHANNEL_ROOT_DIRECTORY
+       g_channel_settings['TEMPORARY_FOLDER_TO_USE'] = "__channel_temporary_directory"
+
+       # from channel_manager.channel_utilities import print_all_variables_for_debugging
+       # print_all_variables_for_debugging
+       # import sublime_plugin
+       # sublime_plugin.reload_plugin( "channel_manager.channel_utilities" )
    ```
+
+1. CURRENT_PACKAGE_ROOT_DIRECTORY/CURRENT_PACKAGE_NAME
+   * Infer the correct package name and the root directory of the channel
+1. plugin_loaded()
+   * We can only load the information when the Sublime Text API is available due the use of the get_main_directory() which requires it.
+1. run_channel_setup()
+   * Generate the files `Main.sublime-menu`, `Default.sublime-commands` and `commands.py` files
+1. CHANNEL_ROOT_DIRECTORY
+   * The directory where the Sublime Text loose Packages directory IS ON/IN/INSIDE
+1. g_channel_settings
+   * Hold all the information for this channel, which will be used to install this channel
+1. CHANNEL_PACKAGE_NAME
+   * The name of your channel
+1. TEMPORARY_FOLDER_TO_USE
+   * The temporary folder to download the main repository when installing the development version
+1. USER_FOLDER_PATH
+   * A direct Path to the User settings folder
+1. CHANNEL_INSTALLATION_DETAILS
+   * A direct Path to the channel installation details saved after the completion of installation of the channel
+1. DEFAULT_CHANNEL_URL
+   * The default Package Control channel full URL address
+1. CHANNEL_RAW_URL
+   * The URL of the directory where the files `channel.json` and `repository.json` are hosted
+1. CHANNEL_ROOT_URL/CHANNEL_ROOT_DIRECTORY
+   * A direct URL/Path to the main to the repository where there is the `.gitmodules`
+1. CHANNEL_FILE_URL/CHANNEL_FILE_PATH
+   * A direct URL/Path to the Repository File `channel.json` to use when installing the stable/development version
+1. CHANNEL_REPOSITORY_URL/CHANNEL_REPOSITORY_FILE
+   * A direct URL/Path to the Repository File `repository.json` to use when installing the stable/development version
+1. USER_SETTINGS_FILE
+   * The default user preferences file
+1. PACKAGES_TO_INSTALL_FIRST/PACKAGES_TO_INSTALL_LAST
+   * You can specify for some packages to be popped out from the list and being installed by first/last in the following order presented.
+1. FORBIDDEN_PACKAGES
+   * Packages which are not allowed to be selected by the user while choosing the packages to not be installed.
+     Useful for packages which are required for the channel maintainability.
+1. PACKAGES_TO_NOT_INSTALL_STABLE
+   * Packages which you do want to install when reading the `.gitmodules` packages list (stable)
+1. PACKAGES_TO_NOT_INSTALL_DEVELOPMENT
+   * Packages which you do want to install when reading the `.gitmodules` packages list (development)
+1. PACKAGES_TO_IGNORE_ON_DEVELOPMENT
+   * Packages which must not be installed on the stable version and must be disabled by default on
+     the development version.
+1. DEFAULT_PACKAGE_FILES:
+   * The files of the `Default.sublime-package` you are installing
+
 
 If you want to get more elaborated with the installation process, you can see the
 [StudioChannel](https://github.com/evandrocoan/SublimeStudioChannel) and the
