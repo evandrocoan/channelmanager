@@ -467,122 +467,33 @@ as you usually do with the default `Package Control` channel.
      `MyBrandNewChannel` is re-tagged right after the creation of the `channel.json` and
      `repository.json` files.
 
-1. Now on this new package called `Packages/MyBrandNewChannel`, you need to create the plugin to
-   call the channel manager passing the required configurations. In the following we may see a full
-   example configuration file, you can save it inside the folder `Packages/MyBrandNewChannel` with
-   the name you like most as `settings.py` or `settings_and_commands.py`:
+1. Now on this new package called `Packages/MyBrandNewChannel`,
+   you need to create the plugin to call the `ChannelManager` passing the required configurations.
+   In the following we may see a full example configuration file,
+   you can save it inside the folder `Packages/MyBrandNewChannel` with the name you like most as
+   `settings.py`:
    ```python
    import os
-
-   import sublime
-   import sublime_plugin
+   import sublime, sublime_plugin
 
    from channel_manager.channel_utilities import clean_urljoin
-   from channel_manager.channel_utilities import load_data_file
    from channel_manager.channel_utilities import get_main_directory
-   from channel_manager.channel_utilities import get_dictionary_key
-
-   from channel_manager import channel_installer
-   from channel_manager import channel_uninstaller
-
-   try:
-       from package_control.package_manager import clear_cache
-
-   except ImportError:
-       pass
-
-
-   from channel_manager.channel_manager import main as manager_main
-   from channel_manager.submodules_manager import main as submodules_main
-   from channel_manager.copy_default_package import main as copy_default_main
-
-   # # Run unit tests
-   # from channel_manager import channel_manager_tests
-   # channel_manager_tests.main()
-
-   # # How to reload a Sublime Text dependency?
-   # # https://github.com/randy3k/AutomaticPackageReloader/issues/12
+   from channel_manager.channel_utilities import run_channel_setup
+   from channel_manager.channel_utilities import print_all_variables_for_debugging
    # sublime_plugin.reload_plugin( "channel_manager.channel_utilities" )
-   # sublime_plugin.reload_plugin( "channel_manager.channel_manager" )
-   # sublime_plugin.reload_plugin( "channel_manager.channel_manager_tests" )
-
-   # sublime_plugin.reload_plugin( "channel_manager.channel_installer" )
-   # sublime_plugin.reload_plugin( "channel_manager.channel_uninstaller" )
-
 
    # Infer the correct package name and current directory absolute path
-   CURRENT_DIRECTORY    = os.path.dirname( os.path.realpath( __file__ ) )
-   CURRENT_DIRECTORY    = CURRENT_DIRECTORY.replace( ".sublime-package", "" )
+   CURRENT_DIRECTORY    = os.path.dirname( os.path.realpath( __file__ ) ).replace( ".sublime-package", "" )
    CURRENT_PACKAGE_NAME = os.path.basename( CURRENT_DIRECTORY )
-
-   # Hold all the information for this channel, which will be used by the `ChannelManager` to install
-   # this channel
-   g_channel_settings = {}
-
-
-   class MyBrandNewChannelExtractDefaultPackages( sublime_plugin.ApplicationCommand ):
-
-       def run(self):
-           sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
-           copy_default_main( g_channel_settings['DEFAULT_PACKAGE_FILES'], True )
-
-       def is_enabled(self):
-           return is_channel_installed()
-
-
-   class MyBrandNewChannelRun( sublime_plugin.ApplicationCommand ):
-
-       def run(self, run):
-           sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
-           submodules_main( run )
-
-       def is_enabled(self):
-           return is_channel_installed()
-
-
-   class MyBrandNewChannelGenerateChannelFile( sublime_plugin.ApplicationCommand ):
-
-       def run(self, command="all"):
-           sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
-           manager_main( g_channel_settings, command )
-
-       def is_enabled(self):
-           return is_channel_installed()
-
-
-   class MyBrandNewChannelRunUninstallation( sublime_plugin.ApplicationCommand ):
-
-       def run(self):
-           """
-               You can always run the uninstaller, either to uninstall everything, or just this
-               package or just some packages.
-           """
-           channel_uninstaller.main( g_channel_settings )
-
-
-   class MyBrandNewChannelRunInstallation( sublime_plugin.ApplicationCommand ):
-
-       def run(self, version="stable"):
-           """
-               Call the ChannelManager installer to install all the channel packages.
-               @param version   Either the value "stable" or "development" to install the
-                                Development or Stable Version of the channel.
-           """
-           add_channel()
-           g_channel_settings['INSTALLATION_TYPE'] = version
-
-           channel_installer.main( g_channel_settings )
-
-       def is_enabled(self):
-           return not is_channel_installed()
-
 
    def plugin_loaded():
        """
            We can only load the information when the Sublime Text API is available due the use of the
            get_main_directory() which requires it.
        """
-       global g_channel_settings
+
+       # Generate the files `Main.sublime-menu`, `Default.sublime-commands` and `commands.py` files
+       run_channel_setup( CURRENT_PACKAGE_NAME, CURRENT_DIRECTORY )
 
        # The folder where the directory where the Sublime Text `Packages` (loose packages) folder is on
        CHANNEL_ROOT_DIRECTORY = get_main_directory( CURRENT_DIRECTORY )
@@ -590,19 +501,19 @@ as you usually do with the default `Package Control` channel.
        # The folder where the User settings are on
        USER_FOLDER_PATH = os.path.join( CHANNEL_ROOT_DIRECTORY, "Packages", "User" )
 
+       # Hold all the information for this channel, which will be used to install this channel
+       global g_channel_settings
+
        # The temporary folder to download the main repository when installing the development version
        g_channel_settings['CHANNEL_PACKAGE_NAME']    = CURRENT_PACKAGE_NAME
        g_channel_settings['TEMPORARY_FOLDER_TO_USE'] = "__channel_temporary_directory"
 
-       # Where to save the settings for channel after it is installed on the user's machine
-       g_channel_settings['USER_FOLDER_PATH']              = USER_FOLDER_PATH
+       # The User settings folder
+       g_channel_settings['USER_FOLDER_PATH'] = USER_FOLDER_PATH
+
+       # You channel installation details saved after the installation of the channel
        g_channel_settings['CHANNEL_INSTALLATION_SETTINGS'] = \
-               os.path.join( USER_FOLDER_PATH,CURRENT_PACKAGE_NAME + ".sublime-settings" )
-
-
-       # The local path to the files, used to save the generated channels. Valid URLs to the files, to use
-       # when installing the stable version of the channel See also:
-       # https://packagecontrol.io/docs/channels_and_repositories
+               os.path.join( USER_FOLDER_PATH, CURRENT_PACKAGE_NAME + ".sublime-settings" )
 
        # The default Package Control channel
        g_channel_settings['DEFAULT_CHANNEL_URL'] = "https://packagecontrol.io/channel_v3.json"
@@ -610,8 +521,7 @@ as you usually do with the default `Package Control` channel.
        # The URL of the directory where the files `channel.json` and `repository.json` are hosted
        CHANNEL_RAW_URL = "https://raw.githubusercontent.com/your_user_name/MyBrandNewChannel/master/"
 
-       # The URL to the main A direct URL/Path to the repository where there is the `.gitmodules` file
-       # listing all the channel packages to use when generating the Channel files.
+       # The URL to the main A direct URL/Path to the repository where there is the `.gitmodules`
        g_channel_settings['CHANNEL_ROOT_URL']       = "https://github.com/your_user_name/MyParentRepository"
        g_channel_settings['CHANNEL_ROOT_DIRECTORY'] = CHANNEL_ROOT_DIRECTORY
 
@@ -626,7 +536,6 @@ as you usually do with the default `Package Control` channel.
 
        # The default user preferences file
        g_channel_settings['USER_SETTINGS_FILE'] = "Preferences.sublime-settings"
-
 
        # You can specify for some packages to be popped out from the list and being installed by
        # first/last in the following order presented.
@@ -680,220 +589,6 @@ as you usually do with the default `Package Control` channel.
            "Tab Context.sublime-menu",
            "Context.sublime-menu",
        ]
-
-       # Call the channel upgrade/downgrade wizards to maintain old installation up to date with the
-       # main channel file when there are new packages additions or deletions.
-       run_channel_setup()
-
-
-   is_delayed = False
-
-   def run_channel_setup():
-
-       # If the settings are not yet loaded, wait a little
-       if "DEFAULT_PACKAGE_FILES" not in g_channel_settings:
-           global is_delayed
-
-           # Stop delaying indefinitely
-           if is_delayed:
-               log( 1, "Error: Could not load the settings files! g_channel_settings:" + str( g_channel_settings ) )
-               return
-
-           is_delayed = True
-           sublime.set_timeout( plugin_loaded, 2000 )
-
-       else:
-           run_channel_upgrade()
-
-
-   def run_channel_upgrade():
-       channel_settings = g_channel_settings
-       copy_default_package.main( channel_settings['DEFAULT_PACKAGE_FILES'], False )
-
-       if is_channel_installed():
-           channel_settings['INSTALLATION_TYPE'] = "upgrade"
-           channel_installer.main( channel_settings )
-
-           channel_settings['INSTALLATION_TYPE'] = "downgrade"
-           channel_uninstaller.main( channel_settings )
-
-           # Restore the default value
-           channel_settings['INSTALLATION_TYPE'] = ""
-
-
-   def is_channel_installed():
-       """
-           Returns True if the channel is installed, i.e., there are packages added to the
-           `packages_to_uninstall` list.
-       """
-
-       # Only attempt to check it, if the settings are loaded
-       if len( g_channel_settings ) > 0:
-           channelSettingsPath = g_channel_settings['CHANNEL_INSTALLATION_SETTINGS']
-
-           if os.path.exists( channelSettingsPath ):
-               settings = load_data_file( channelSettingsPath )
-               return len( get_dictionary_key( settings, "packages_to_uninstall", [] ) ) > 0
-
-       return False
-
-
-   def add_channel():
-       """
-           Add your channel URL to the Package Control channel list and cleans the cached channels.
-       """
-       package_control = "Package Control.sublime-settings"
-       channel_url     = g_channel_settings['CHANNEL_FILE_URL']
-
-       package_control_settings = sublime.load_settings( package_control )
-       channels                 = package_control_settings.get( "channels", [] )
-
-       while channel_url in channels:
-           channels.remove( channel_url )
-
-       channels.append( channel_url )
-       package_control_settings.set( "channels", channels )
-
-       print( "Adding %s channel to %s: %s" % ( CURRENT_PACKAGE_NAME, package_control, str( channels ) ) )
-       sublime.save_settings( package_control )
-
-       clear_cache()
-   ```
-
-1. Lastly we need to make these commands from our configuration file named
-   `settings_and_commands.py` (or the name you picked up) available for the user to install your
-   channel. Remembering, to create the channel, i.e, generate the files `channel.json` and
-   `repositories.json`, you need to have everything installed as Development Version with all
-   packages cloned as git submodules with the `--recursive` option (if applied).
-
-   Creating a file like these should be able to make you new commands for you channel
-   `MyBrandNewChannel` to be accessible easily. You can create a file named
-   `Commands.sublime-commands` inside your `MyBrandNewChannel` directory:
-   ```javascript
-   [
-       { "caption": "My Brand New Channel: Generate Channel File",
-               "command": "my_brand_new_channel_generate_channel_file",
-               "args": {"command": "all" } },
-
-       { "caption": "My Brand New Channel: Select Packages to Update Git Tag",
-               "command": "my_brand_new_channel_generate_channel_file",
-               "args": {"command": "git_tag" } },
-
-       { "caption": "My Brand New Channel: Update All Packages Git Tag",
-               "command": "my_brand_new_channel_generate_channel_file",
-               "args": {"command": "git_tag_all" } },
-
-       { "caption": "My Brand New Channel: Run Stable Installation",
-               "command": "my_brand_new_channel_run_installation",
-               "args": {"version": "stable"} },
-
-       { "caption": "My Brand New Channel: Run Development Installation",
-               "command": "my_brand_new_channel_run_installation",
-               "args": {"version": "development"} },
-
-       { "caption": "My Brand New Channel: Run Uninstallation",
-               "command": "my_brand_new_channel_run_uninstallation" },
-
-       { "caption": "My Brand New Channel: Extract Default Package",
-               "command": "my_brand_new_channel_extract_default_packages" },
-
-       { "caption": "My Brand New Channel: Run Backstroke Requests",
-               "command": "my_brand_new_channel_run", "args": {"run": "-b"} },
-
-       { "caption": "My Brand New Channel: Fetch All Submodules remote origin",
-               "command": "my_brand_new_channel_run", "args": {"run": "-fo"} },
-
-       { "caption": "My Brand New Channel: Pull & Rebase All Submodules (git)",
-               "command": "my_brand_new_channel_run", "args": {"run": "-p"} },
-
-       { "caption": "My Brand New Channel: Pull & Rebase All Submodules (python)",
-               "command": "my_brand_new_channel_run", "args": {"run": "-o"} },
-
-       { "caption": "My Brand New Channel: Push Local Git Tags",
-               "command": "my_brand_new_channel_run", "args": {"run": "-t"} },
-
-       { "caption": "My Brand New Channel: Add All Upstreams Remotes",
-               "command": "my_brand_new_channel_run", "args": {"run": "-u"} },
-
-       { "caption": "My Brand New Channel: Delete All remote Except origin",
-               "command": "my_brand_new_channel_run", "args": {"run": "-d"} },
-   ]
-   ```
-
-1. Although if you prefer, you can provide a menu entry for these commands instead of providing them
-   by the command palette. You just need to create the file called `Main.sublime-menu` inside your
-   `MyBrandNewChannel` directory:
-   ```javascript
-   [
-       {
-           "caption": "Preferences",
-           "mnemonic": "n",
-           "id": "preferences",
-           "children":
-           [
-               {
-                   "caption": "Package Settings",
-                   "mnemonic": "P",
-                   "id": "package-settings",
-                   "children":
-                   [
-                       {
-                           "caption": "My Brand New Channel",
-                           "children":
-                           [
-                               { "caption": "Generate Channel File",
-                                       "command": "my_brand_new_channel_generate_channel_file",
-                                       "args": {"command": "all" } },
-
-                               { "caption": "Select Packages to Update Git Tag",
-                                       "command": "my_brand_new_channel_generate_channel_file",
-                                       "args": {"command": "git_tag" } },
-
-                               { "caption": "Update All Packages Git Tag",
-                                       "command": "my_brand_new_channel_generate_channel_file",
-                                       "args": {"command": "git_tag_all" } },
-
-                               { "caption": "Run Stable Installation",
-                                       "command": "my_brand_new_channel_run_installation",
-                                       "args": {"version": "stable"} },
-
-                               { "caption": "Run Development Installation",
-                                       "command": "my_brand_new_channel_run_installation",
-                                       "args": {"version": "development"} },
-
-                               { "caption": "Run Uninstallation",
-                                       "command": "my_brand_new_channel_run_uninstallation" },
-
-                               { "caption": "Extract Default Package",
-                                       "command": "my_brand_new_channel_extract_default_packages" },
-
-                               { "caption": "Run Backstroke Requests",
-                                       "command": "my_brand_new_channel_run", "args": {"run": "-b"} },
-
-                               { "caption": "Fetch All Submodules remote origin",
-                                       "command": "my_brand_new_channel_run", "args": {"run": "-fo"} },
-
-                               { "caption": "Pull & Rebase All Submodules (git)",
-                                       "command": "my_brand_new_channel_run", "args": {"run": "-p"} },
-
-                               { "caption": "Pull & Rebase All Submodules (python)",
-                                       "command": "my_brand_new_channel_run", "args": {"run": "-o"} },
-
-                               { "caption": "Push Local Git Tags",
-                                       "command": "my_brand_new_channel_run", "args": {"run": "-t"} },
-
-                               { "caption": "Add All Upstreams Remotes",
-                                       "command": "my_brand_new_channel_run", "args": {"run": "-u"} },
-
-                               { "caption": "Delete All remote Except origin",
-                                       "command": "my_brand_new_channel_run", "args": {"run": "-d"} },
-                           ]
-                       }
-                   ]
-               }
-           ]
-       }
-   ]
    ```
 
 If you want to get more elaborated with the installation process, you can see the

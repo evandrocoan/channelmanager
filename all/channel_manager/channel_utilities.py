@@ -34,6 +34,7 @@ import stat
 
 import re
 import time
+import datetime
 import textwrap
 
 from distutils.version import LooseVersion
@@ -50,6 +51,7 @@ except( ImportError, ValueError):
     from settings import CURRENT_PACKAGE_NAME
 
 
+BASE_FILE_FOLDER          = os.path.join( CURRENT_DIRECTORY, "all", "channel_manager", "base_file" )
 UPGRADE_SESSION_FILE      = os.path.join( CURRENT_DIRECTORY, "all", "last_sublime_upgrade.channel-manager" )
 LAST_SUBLIME_TEXT_SECTION = "last_sublime_text_version"
 
@@ -223,6 +225,87 @@ def get_main_directory(current_directory):
     return possible_main_directory
 
 
+def run_channel_setup(channel_package_name, channel_package_directory):
+    _configure_channel_menu_file( channel_package_name, channel_package_directory )
+    _configure_channel_runner_file( channel_package_name, channel_package_directory )
+    _configure_channel_commands_file( channel_package_name, channel_package_directory )
+
+
+def convert_to_pascal_case(input_string):
+    """
+        how to replace multiple characters in a string?
+        https://stackoverflow.com/questions/21859203/how-to-replace-multiple-characters-in-a-string
+    """
+    clean_string = re.sub( '[=+-:*?"<>|]', ' ', input_string )
+    return ''.join( word[0].upper() + word[1:] if len( word ) else word for word in clean_string.split() )
+
+
+def convert_to_snake_case(pascal_case_name):
+    """
+        Elegant Python function to convert CamelCase to snake_case?
+        https://stackoverflow.com/questions/1175208/elegant-python-function-to-convert-camelcase-to-snake-case
+    """
+    first_substitution = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', pascal_case_name)
+    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', first_substitution).lower()
+
+
+def _get_base_and_destine_paths(base_file_name, destine_file_name, channel_package_directory):
+    base_file    = os.path.join( BASE_FILE_FOLDER, base_file_name )
+    destine_file = os.path.join( channel_package_directory, destine_file_name )
+    return base_file, destine_file
+
+
+def _configure_channel_runner_file(channel_package_name, channel_package_directory):
+    pascal_case_name = convert_to_pascal_case( channel_package_name )
+    base_file, destine_file = _get_base_and_destine_paths( "commands.py", "commands.py", channel_package_directory )
+
+    with open( base_file, "r" ) as file:
+        text = file.read()
+        text = text.replace( "MyBrandNewChannel", pascal_case_name )
+
+        with open( destine_file, "w", newline='\n' ) as file:
+            file.write( text )
+
+
+def _configure_channel_menu_file(channel_package_name, channel_package_directory):
+    pascal_case_name = convert_to_pascal_case( channel_package_name )
+    snake_case_name  = convert_to_snake_case( pascal_case_name )
+
+    # Use the extension `.js` instead of `sublime-menu` to not allow Sublime Text load the template file
+    base_file, destine_file = _get_base_and_destine_paths( "Main.js", "Main.sublime-menu", channel_package_directory )
+
+    with open( base_file, "r" ) as file:
+        text = file.read()
+
+        text = text.replace( "MyBrandNewChannel", channel_package_name )
+        text = text.replace( "my_brand_new_channel", snake_case_name )
+
+        with open( destine_file, "w", newline='\n' ) as file:
+            file.write( text )
+
+
+def _configure_channel_commands_file(channel_package_name, channel_package_directory):
+    pascal_case_name = convert_to_pascal_case( channel_package_name )
+    snake_case_name  = convert_to_snake_case( pascal_case_name )
+
+    # Use the extension `.js` instead of `sublime-menu` to not allow Sublime Text load the template file
+    base_file, destine_file = _get_base_and_destine_paths( "Default.js", "Default.sublime-commands", channel_package_directory )
+
+    with open( base_file, "r" ) as file:
+        text = file.read()
+
+        text = text.replace( "MyBrandNewChannel", channel_package_name )
+        text = text.replace( "my_brand_new_channel", snake_case_name )
+
+        with open( destine_file, "w", newline='\n' ) as file:
+            file.write( text )
+
+
+def print_all_variables_for_debugging(dictionary):
+    dictionary_lines = dictionary_to_string_by_line( dictionary )
+    log( 1, "\nImporting %s settings... \n%s" % ( str(datetime.datetime.now())[0:19], dictionary_lines ) )
+
+
 def print_data_file(file_path):
     channel_dictionary = load_data_file( file_path )
     log( 1, "channel_dictionary: " + json.dumps( channel_dictionary, indent=4, sort_keys=True ) )
@@ -357,7 +440,7 @@ def dictionary_to_string_by_line(dictionary):
         for variable_name in dictionary.keys()
     ]
 
-    return "\n\n%s" % ( "\n".join( sorted(variables) ) )
+    return "%s" % ( "\n".join( sorted( variables ) ) )
 
 
 def convert_to_unix_path(relative_path):

@@ -109,7 +109,7 @@ def unpack_settings(channel_settings):
     global g_channel_settings
     g_channel_settings = channel_settings
 
-    # log( 1, "g_channel_settings: " + dictionary_to_string_by_line( g_channel_settings ) )
+    # log( 1, "g_channel_settings: \n\n" + dictionary_to_string_by_line( g_channel_settings ) )
 
 
 class GenerateChannelThread(threading.Thread):
