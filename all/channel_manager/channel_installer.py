@@ -253,8 +253,8 @@ def install_stable_packages(packages_to_install):
         # if current_index > 3:
         #     break
 
-        log.insert_empty_line( 1 )
-        log.insert_empty_line( 1 )
+        log.insert_empty_line()
+        log.insert_empty_line()
 
         log( 1, "%s Installing %d of %d: %s" % ( progress, current_index, git_packages_count, str( package_name ) ) )
         ignore_next_packages( package_disabler, package_name, packages_to_install )
@@ -427,11 +427,11 @@ def clone_sublime_text_channel(command_line_interface, git_executable_path):
     main_git_folder = os.path.join( g_channel_settings['CHANNEL_ROOT_DIRECTORY'], ".git" )
 
     if os.path.exists( main_git_folder ):
-        log.insert_empty_line( 1 )
-        log.insert_empty_line( 1 )
+        log.insert_empty_line()
+        log.insert_empty_line()
 
         log( 1, "Error: The folder '%s' already exists.\nYou already has some custom channel git installation." % main_git_folder )
-        log.insert_empty_line( 1 )
+        log.insert_empty_line()
 
     else:
         channel_temporary_folder = os.path.join( g_channel_settings['CHANNEL_ROOT_DIRECTORY'], g_channel_settings['TEMPORARY_FOLDER_TO_USE'] )
@@ -528,8 +528,8 @@ def add_folders_and_files_for_removal(root_source_folder, relative_path):
 
 def download_main_repository(command_line_interface, git_executable_path, channel_temporary_folder):
     log( 1, "download_main_repository..." )
-    log.insert_empty_line( 1 )
-    log.insert_empty_line( 1 )
+    log.insert_empty_line()
+    log.insert_empty_line()
     log( 1, "Installing: %s" % ( str( g_channel_settings['CHANNEL_ROOT_URL'] ) ) )
 
     if os.path.isdir( channel_temporary_folder ):
@@ -578,8 +578,8 @@ def download_not_packages_submodules(command_line_interface, git_executable_path
 
             if is_empty:
                 log( 1, "download_not_packages_submodules..." )
-                log.insert_empty_line( 1 )
-                log.insert_empty_line( 1 )
+                log.insert_empty_line()
+                log.insert_empty_line()
                 log( 1, "Installing: %s" % ( str( url ) ) )
 
                 command = shlex.split( '"%s" clone "%s" "%s"' % ( git_executable_path, url, path ) )
@@ -611,8 +611,8 @@ def install_development_packages(packages_to_install, git_executable_path, comma
         # if current_index > 3:
         #     break
 
-        log.insert_empty_line( 1 )
-        log.insert_empty_line( 1 )
+        log.insert_empty_line()
+        log.insert_empty_line()
         log( 1, "%s Installing %d of %d: %s" % ( progress, current_index, git_packages_count, str( package_name ) ) )
 
         command = shlex.split( '"%s" clone --recursive "%s" "%s"' % ( git_executable_path, url, path) )
@@ -824,8 +824,8 @@ def uninstall_package_control():
 
 
 def complete_package_control_uninstallation(maximum_attempts=3):
-    log.insert_empty_line( 1 )
-    log.insert_empty_line( 1 )
+    log.insert_empty_line()
+    log.insert_empty_line()
     log( 1, "Finishing Package Control Uninstallation... maximum_attempts: " + str( maximum_attempts ) )
 
     # Import the recent installed PackagesManager
@@ -855,8 +855,8 @@ def complete_package_control_uninstallation(maximum_attempts=3):
     unique_list_append( _uningored_packages_to_flush, packages_names )
 
     for package_name, is_dependency in packages_to_remove:
-        log.insert_empty_line( 1 )
-        log.insert_empty_line( 1 )
+        log.insert_empty_line()
+        log.insert_empty_line()
 
         log( 1, "Uninstalling: %s..." % str( package_name ) )
         package_manager.remove_package( package_name, is_dependency )
@@ -1020,7 +1020,7 @@ def ask_user_for_which_packages_to_install(packages_to_install):
             return
 
         if item_index == 1:
-            log.insert_empty_line( 1 )
+            log.insert_empty_line()
             log( 1, "Continuing the %s after the packages pick up..." % INSTALLATION_TYPE_NAME )
 
             can_continue[0] = True
@@ -1062,7 +1062,7 @@ def ask_user_for_which_packages_to_install(packages_to_install):
     sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
 
     if g_is_installation_complete:
-        log.insert_empty_line( 1 )
+        log.insert_empty_line()
         raise InstallationCancelled( "The user closed the installer's packages pick up list." )
 
     for package_name in selected_packages_to_not_install:
@@ -1155,8 +1155,8 @@ def print_failed_repositories():
     if len( g_failed_repositories ) > 0:
         sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
 
-        log.insert_empty_line( 1 )
-        log.insert_empty_line( 1 )
+        log.insert_empty_line()
+        log.insert_empty_line()
         log( 1, "The following repositories failed their commands..." )
 
     for package_name in g_failed_repositories:

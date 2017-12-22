@@ -335,16 +335,16 @@ class RunBackstrokeThread(threading.Thread):
         with open( CHANNEL_SESSION_FILE, 'wt' ) as configfile:
 
             if maximum_errors == MAXIMUM_REQUEST_ERRORS:
-                log.insert_empty_line( 1 )
-                log.insert_empty_line( 1 )
+                log.insert_empty_line()
+                log.insert_empty_line()
                 log( 1, "Congratulations! It was a successful execution." )
 
                 lastSection.set( session_key, 'index', "0" )
                 lastSection.write( configfile )
 
             else:
-                log.insert_empty_line( 1 )
-                log.insert_empty_line( 1 )
+                log.insert_empty_line()
+                log.insert_empty_line()
 
                 log( 1, "Attention! There were errors on execution, please review its output." )
                 lastSection.write( configfile )
@@ -433,9 +433,9 @@ class RunBackstrokeThread(threading.Thread):
                     )
 
                 else:
-                    log.insert_empty_line( 1 )
-                    log.insert_empty_line( 1 )
-                    log.insert_empty_line( 1 )
+                    log.insert_empty_line()
+                    log.insert_empty_line()
+                    log.insert_empty_line()
                     log( 1, "Error, invalid/missing upstream: " + str( upstream ) )
 
             elif command == "backstroke":
@@ -465,9 +465,9 @@ class RunBackstrokeThread(threading.Thread):
                     except HTTPError as error:
                         maximum_errors -= 1
 
-                        log.insert_empty_line( 1 )
-                        log.insert_empty_line( 1 )
-                        log.insert_empty_line( 1 )
+                        log.insert_empty_line()
+                        log.insert_empty_line()
+                        log.insert_empty_line()
                         log( 1, "ERROR! ", error.read() )
 
                         # Save only where the first error happened
@@ -478,9 +478,9 @@ class RunBackstrokeThread(threading.Thread):
                             break
 
                 else:
-                    log.insert_empty_line( 1 )
-                    log.insert_empty_line( 1 )
-                    log.insert_empty_line( 1 )
+                    log.insert_empty_line()
+                    log.insert_empty_line()
+                    log.insert_empty_line()
                     log( 1, "Missing backstroke key for upstream: " + upstream )
 
             elif command == "create_upstreams" or command == "delete_remotes":

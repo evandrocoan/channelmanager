@@ -41,8 +41,8 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 
 
 def main():
-    log( 2, "Entering on main(0)" )
-    # log.insert_empty_line( 2 )
+    log( 1, "Entering on main(0)" )
+    # log.insert_empty_line()
 
     runner = unittest.TextTestRunner()
     runner.run( suite() )

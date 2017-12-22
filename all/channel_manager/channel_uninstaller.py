@@ -211,8 +211,8 @@ def uninstall_packages(packages_to_uninstall):
         progress       = progress_info( pi, set_progress )
         is_dependency  = is_package_dependency( package_name, dependencies, all_packages )
 
-        log.insert_empty_line( 1 )
-        log.insert_empty_line( 1 )
+        log.insert_empty_line()
+        log.insert_empty_line()
 
         log( 1, "%s %s of %d of %d: %s (%s)" % ( progress, INSTALLATION_TYPE_NAME,
                 current_index, packages_count, str( package_name ), str( is_dependency ) ) )
@@ -358,8 +358,8 @@ def is_package_dependency(package, dependencies, packages):
 
 def install_package_control(package_manager):
     package_name = "Package Control"
-    log.insert_empty_line( 1 )
-    log.insert_empty_line( 1 )
+    log.insert_empty_line()
+    log.insert_empty_line()
 
     log( 1, "Installing: %s" % str( package_name ) )
     package_manager.install_package( package_name, False )
@@ -438,8 +438,8 @@ def uninstall_packagesmanger(package_manager, installed_packages):
 
     # Only uninstall them when they were installed
     if "PackagesManager" in installed_packages:
-        log.insert_empty_line( 1 )
-        log.insert_empty_line( 1 )
+        log.insert_empty_line()
+        log.insert_empty_line()
 
         log( 1, "Finishing PackagesManager %s..." % INSTALLATION_TYPE_NAME )
         uninstall_list_of_packages( [ ("PackagesManager", False), ("0_packagesmanager_loader", None) ] )
@@ -460,8 +460,8 @@ def uninstall_list_of_packages(package_manager, packages_to_uninstall):
     add_packages_to_ignored_list( [ package_name for package_name, _ in packages_to_remove ] )
 
     for package_name, is_dependency in packages_to_remove:
-        log.insert_empty_line( 1 )
-        log.insert_empty_line( 1 )
+        log.insert_empty_line()
+        log.insert_empty_line()
         log( 1, "%s of: %s..." % ( INSTALLATION_TYPE_NAME, str( package_name ) ) )
 
         silence_error_message_box(62.0)
@@ -520,8 +520,8 @@ def clean_packagesmanager_settings(maximum_attempts=3):
 def uninstall_folders():
     folders_to_remove = get_dictionary_key( g_channelSettings, "folders_to_uninstall", [] )
 
-    log.insert_empty_line( 1 )
-    log.insert_empty_line( 1 )
+    log.insert_empty_line()
+    log.insert_empty_line()
     log( 1, "%s of added folders: %s" % ( INSTALLATION_TYPE_NAME, str( folders_to_remove ) ) )
 
     for folder in reversed( folders_to_remove ):
@@ -612,8 +612,8 @@ def uninstall_files():
     git_folders = []
     files_to_remove = get_dictionary_key( g_channelSettings, "files_to_uninstall", [] )
 
-    log.insert_empty_line( 1 )
-    log.insert_empty_line( 1 )
+    log.insert_empty_line()
+    log.insert_empty_line()
     log( 1, "%s of added files: %s" % ( INSTALLATION_TYPE_NAME, str( files_to_remove ) ) )
 
     for file in files_to_remove:
@@ -671,7 +671,7 @@ def ask_user_for_which_packages_to_install(packages_names):
             return
 
         if item_index == 1:
-            log.insert_empty_line( 1 )
+            log.insert_empty_line()
             log( 1, "Continuing the %s after the packages pick up..." % INSTALLATION_TYPE_NAME )
 
             can_continue[0] = True
@@ -713,7 +713,7 @@ def ask_user_for_which_packages_to_install(packages_names):
     sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
 
     if not g_is_already_running:
-        log.insert_empty_line( 1 )
+        log.insert_empty_line()
         raise InstallationCancelled( "The user closed the installer's packages pick up list." )
 
     for package_name in selected_packages_to_not_install:
@@ -727,8 +727,8 @@ def complete_channel_uninstallation(maximum_attempts=3):
     """
 
     if maximum_attempts == 3:
-        log.insert_empty_line( 1 )
-        log.insert_empty_line( 1 )
+        log.insert_empty_line()
+        log.insert_empty_line()
 
         log( 1, "Uninstalling channel settings file: %s" % str( g_channel_settings['CHANNEL_INSTALLATION_SETTINGS'] ) )
         write_data_file( g_channel_settings['CHANNEL_INSTALLATION_SETTINGS'], {} )
