@@ -225,7 +225,19 @@ def get_main_directory(current_directory):
     return possible_main_directory
 
 
-def run_channel_setup(channel_package_name, channel_package_directory):
+def run_channel_setup(channel_settings, channel_package_name, channel_package_directory):
+    channel_directory = get_main_directory( channel_package_directory )
+
+    user_folder = os.path.join( channel_directory, "Packages", "User" )
+    channel_settings['CHANNEL_INSTALLATION_DETAILS'] = os.path.join( user_folder, channel_package_name + ".sublime-settings" )
+
+    channel_settings['USER_FOLDER_PATH']   = user_folder
+    channel_settings['USER_SETTINGS_FILE'] = "Preferences.sublime-settings"
+
+    channel_settings['CHANNEL_PACKAGE_NAME']    = channel_package_name
+    channel_settings['CHANNEL_ROOT_DIRECTORY']  = channel_directory
+    channel_settings['TEMPORARY_FOLDER_TO_USE'] = "__channel_temporary_directory"
+
     _configure_channel_menu_file( channel_package_name, channel_package_directory )
     _configure_channel_runner_file( channel_package_name, channel_package_directory )
     _configure_channel_commands_file( channel_package_name, channel_package_directory )
