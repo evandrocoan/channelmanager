@@ -730,13 +730,13 @@ def complete_channel_uninstallation(maximum_attempts=3):
         log.insert_empty_line()
         log.insert_empty_line()
 
-        log( 1, "Uninstalling channel settings file: %s" % str( g_channel_settings['CHANNEL_INSTALLATION_SETTINGS'] ) )
-        write_data_file( g_channel_settings['CHANNEL_INSTALLATION_SETTINGS'], {} )
+        log( 1, "Uninstalling channel settings file: %s" % str( g_channel_settings['CHANNEL_INSTALLATION_DETAILS'] ) )
+        write_data_file( g_channel_settings['CHANNEL_INSTALLATION_DETAILS'], {} )
 
     else:
         log( 1, "Uninstalling channel settings file, maximum_attempts: %s" % str( maximum_attempts ) )
 
-    remove_only_if_exists( g_channel_settings['CHANNEL_INSTALLATION_SETTINGS'] )
+    remove_only_if_exists( g_channel_settings['CHANNEL_INSTALLATION_DETAILS'] )
 
     if maximum_attempts > 0:
         maximum_attempts -= 1
@@ -918,7 +918,7 @@ def load_package_manager_settings():
     global g_packages_to_unignore
     global g_channelSettings
 
-    g_channelSettings      = load_data_file( g_channel_settings['CHANNEL_INSTALLATION_SETTINGS'] )
+    g_channelSettings      = load_data_file( g_channel_settings['CHANNEL_INSTALLATION_DETAILS'] )
     g_packages_to_unignore = get_dictionary_key( g_channelSettings, "packages_to_unignore", [] )
 
     log( _downgrade_debug(), "Loaded g_channelSettings: " + str( g_channelSettings ) )

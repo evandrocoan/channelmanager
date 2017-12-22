@@ -494,7 +494,7 @@ def save_session_data(last_section, session_file):
 
 def is_channel_upgraded(channel_settings):
     channelSettings     = load_data_file( channel_settings['CHANNEL_REPOSITORY_FILE'] )
-    userChannelSettings = load_data_file( channel_settings['CHANNEL_INSTALLATION_SETTINGS'] )
+    userChannelSettings = load_data_file( channel_settings['CHANNEL_INSTALLATION_DETAILS'] )
 
     current_version      = get_dictionary_key( channelSettings, 'current_version', '0.0.0' )
     user_current_version = get_dictionary_key( userChannelSettings, 'current_version', '0.0.0' )

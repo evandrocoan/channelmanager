@@ -772,7 +772,7 @@ def save_default_settings():
     g_channelSettings = sort_dictionary( g_channelSettings )
     # log( 1, "save_default_settings, g_channelSettings: " + json.dumps( g_channelSettings, indent=4 ) )
 
-    write_data_file( g_channel_settings['CHANNEL_INSTALLATION_SETTINGS'], g_channelSettings )
+    write_data_file( g_channel_settings['CHANNEL_INSTALLATION_DETAILS'], g_channelSettings )
 
 
 def sort_dictionary(dictionary):
@@ -1198,7 +1198,7 @@ def load_installation_settings_file():
     global g_default_ignored_packages
 
     g_userSettings    = sublime.load_settings( g_channel_settings['USER_SETTINGS_FILE'] )
-    g_channelSettings = load_data_file( g_channel_settings['CHANNEL_INSTALLATION_SETTINGS'] )
+    g_channelSettings = load_data_file( g_channel_settings['CHANNEL_INSTALLATION_DETAILS'] )
 
     # `g_default_ignored_packages` contains the original user's ignored packages.
     g_default_ignored_packages = g_userSettings.get( 'ignored_packages', [] )
