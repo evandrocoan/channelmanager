@@ -768,6 +768,7 @@ def save_default_settings():
     g_channelSettings['folders_to_uninstall']    = g_folders_to_uninstall
     g_channelSettings['next_packages_to_ignore'] = g_next_packages_to_ignore
     g_channelSettings['packages_not_installed']  = g_packages_not_installed
+    g_channelSettings['installation_type']       = g_installation_type
 
     g_channelSettings = sort_dictionary( g_channelSettings )
     # log( 1, "save_default_settings, g_channelSettings: " + json.dumps( g_channelSettings, indent=4 ) )
@@ -1209,6 +1210,7 @@ def load_installation_settings_file():
     global g_packages_to_unignore
     global g_next_packages_to_ignore
     global g_packages_not_installed
+    global g_installation_type
 
     g_packages_to_uninstall   = get_dictionary_key( g_channelSettings, 'packages_to_uninstall', [] )
     g_packages_to_unignore    = get_dictionary_key( g_channelSettings, 'packages_to_unignore', [] )
@@ -1216,6 +1218,7 @@ def load_installation_settings_file():
     g_folders_to_uninstall    = get_dictionary_key( g_channelSettings, 'folders_to_uninstall', [] )
     g_next_packages_to_ignore = get_dictionary_key( g_channelSettings, 'next_packages_to_ignore', [] )
     g_packages_not_installed  = get_dictionary_key( g_channelSettings, 'packages_not_installed', [] )
+    g_installation_type       = get_dictionary_key( g_channelSettings, 'installation_type', g_channel_settings['INSTALLATION_TYPE'] )
 
     unignore_installed_packages()
 
