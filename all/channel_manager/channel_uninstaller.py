@@ -96,7 +96,7 @@ from estimated_time_left import CurrentUpdateProgress
 # Debugger settings: 0 - disabled, 127 - enabled
 log = Debugger( 127, os.path.basename( __file__ ) )
 
-def _downgrade_debug():
+def _grade():
     return 1 & ( not IS_DOWNGRADE_INSTALLATION )
 
 # log( 2, "..." )
@@ -167,7 +167,7 @@ class UninstallChannelFilesThread(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
-        log( _downgrade_debug(), "Entering on %s run(1)" % self.__class__.__name__ )
+        log( _grade(), "Entering on %s run(1)" % self.__class__.__name__ )
         load_package_manager_settings()
 
         global g_is_installation_complete
@@ -176,7 +176,7 @@ class UninstallChannelFilesThread(threading.Thread):
         try:
             packages_to_uninstall = get_packages_to_uninstall( IS_DOWNGRADE_INSTALLATION )
 
-            log( _downgrade_debug(), "Packages to %s: " % INSTALLATION_TYPE_NAME + str( packages_to_uninstall ) )
+            log( _grade(), "Packages to %s: " % INSTALLATION_TYPE_NAME + str( packages_to_uninstall ) )
             package_manager = uninstall_packages( packages_to_uninstall )
 
             if not IS_DOWNGRADE_INSTALLATION:
@@ -773,7 +773,7 @@ def check_uninstalled_packages_alert(maximum_attempts=10):
         Show a message to the user observing the Sublime Text console, so he know the process is not
         finished yet.
     """
-    log( _downgrade_debug(), "Looking for new tasks... %s seconds remaining." % str( maximum_attempts ) )
+    log( _grade(), "Looking for new tasks... %s seconds remaining." % str( maximum_attempts ) )
     maximum_attempts -= 1
 
     if maximum_attempts > 0 and g_is_already_running:
@@ -789,7 +789,7 @@ def check_uninstalled_packages(maximum_attempts=10):
         they differ, attempt to uninstall they again for some times. If not successful, stop trying
         and warn the user.
     """
-    log( _downgrade_debug(), "Finishing %s... maximum_attempts: " % INSTALLATION_TYPE_NAME + str( maximum_attempts ) )
+    log( _grade(), "Finishing %s... maximum_attempts: " % INSTALLATION_TYPE_NAME + str( maximum_attempts ) )
     maximum_attempts -= 1
 
     if g_is_installation_complete & 3:
@@ -933,7 +933,7 @@ def load_package_manager_settings():
     g_channelSettings      = load_data_file( g_channel_settings['CHANNEL_INSTALLATION_DETAILS'] )
     g_packages_to_unignore = get_dictionary_key( g_channelSettings, "packages_to_unignore", [] )
 
-    log( _downgrade_debug(), "Loaded g_channelSettings: " + str( g_channelSettings ) )
+    log( _grade(), "Loaded g_channelSettings: " + str( g_channelSettings ) )
 
     PACKAGESMANAGER = os.path.join( g_channel_settings['USER_FOLDER_PATH'], packagesmanager_name )
     PACKAGE_CONTROL = os.path.join( g_channel_settings['USER_FOLDER_PATH'], package_control_name )

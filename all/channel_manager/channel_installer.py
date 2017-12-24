@@ -102,7 +102,7 @@ from estimated_time_left import CurrentUpdateProgress
 # Debugger settings: 0 - disabled, 127 - enabled
 log = Debugger( 127, os.path.basename( __file__ ) )
 
-def _upgrade_debug():
+def _grade():
     return 1 & ( not IS_UPGRADE_INSTALLATION )
 
 # log( 2, "..." )
@@ -175,13 +175,13 @@ class InstallChannelFilesThread(threading.Thread):
         threading.Thread.__init__(self)
 
     def run(self):
-        log( _upgrade_debug(), "Entering on run(1)" )
+        log( _grade(), "Entering on run(1)" )
 
         load_installation_settings_file()
         command_line_interface = cmd.Cli( None, True )
 
         git_executable_path = command_line_interface.find_binary( "git.exe" if os.name == 'nt' else "git" )
-        log( _upgrade_debug(), "run, git_executable_path: " + str( git_executable_path ) )
+        log( _grade(), "run, git_executable_path: " + str( git_executable_path ) )
 
         try:
             install_modules( command_line_interface, git_executable_path )
@@ -197,7 +197,7 @@ class InstallChannelFilesThread(threading.Thread):
 
 
 def install_modules(command_line_interface, git_executable_path):
-    log( _upgrade_debug(), "install_modules_, git_executable_path: " + str( git_executable_path ) )
+    log( _grade(), "install_modules_, git_executable_path: " + str( git_executable_path ) )
 
     if IS_DEVELOPMENT_INSTALLATION:
         packages_to_install = download_not_packages_submodules( command_line_interface, git_executable_path )
@@ -208,7 +208,7 @@ def install_modules(command_line_interface, git_executable_path):
 
     else:
         packages_to_install = get_stable_packages( IS_UPGRADE_INSTALLATION )
-        log( _upgrade_debug(), "install_modules, packages_to_install: " + str( packages_to_install ) )
+        log( _grade(), "install_modules, packages_to_install: " + str( packages_to_install ) )
 
         install_stable_packages( packages_to_install )
         accumulative_unignore_user_packages( flush_everything=True )
@@ -354,7 +354,7 @@ def get_stable_packages(is_upgrade):
     filtered_packages = []
 
     installed_packages = get_installed_packages( list_default_packages=True, exclusion_list=[g_channel_settings['CHANNEL_PACKAGE_NAME']] )
-    log( _upgrade_debug(), "get_stable_packages, installed_packages: " + str( installed_packages ) )
+    log( _grade(), "get_stable_packages, installed_packages: " + str( installed_packages ) )
 
     # Do not try to install this own package and the Package Control, as they are currently running
     currently_running = [ "Package Control", settings.CURRENT_PACKAGE_NAME, g_channel_settings['CHANNEL_PACKAGE_NAME'] ]
@@ -373,7 +373,7 @@ def get_stable_packages(is_upgrade):
     is_exclusively_install = not not len( install_exclusively )
 
     repositories_loaded = load_repository_file( g_channel_settings['CHANNEL_REPOSITORY_FILE'], {} )
-    log( _upgrade_debug(), "get_stable_packages, packages_tonot_install: " + str( packages_tonot_install ) )
+    log( _grade(), "get_stable_packages, packages_tonot_install: " + str( packages_tonot_install ) )
 
     if is_exclusively_install:
         repositories_loaded = set( repositories_loaded ).intersection( install_exclusively )
@@ -965,7 +965,7 @@ def unignore_installed_packages():
         if package_name in g_packages_to_uninstall:
             packages_to_unignore.append( package_name )
 
-    log( _upgrade_debug(), "unignore_installed_packages: " + str( packages_to_unignore ) )
+    log( _grade(), "unignore_installed_packages: " + str( packages_to_unignore ) )
     unignore_some_packages( packages_to_unignore )
 
 
@@ -1094,7 +1094,7 @@ def check_installed_packages_alert(maximum_attempts=10):
         Show a message to the user observing the Sublime Text console, so he know the process is not
         finished yet.
     """
-    log( _upgrade_debug(), "Looking for new tasks... %s seconds remaining." % str( maximum_attempts ) )
+    log( _grade(), "Looking for new tasks... %s seconds remaining." % str( maximum_attempts ) )
     maximum_attempts -= 1
 
     if maximum_attempts > 0 and g_is_already_running:
@@ -1110,7 +1110,7 @@ def check_installed_packages(maximum_attempts=10):
         differ, attempt to install they again for some times. If not successful, stop trying and
         warn the user.
     """
-    log( _upgrade_debug(), "Finishing installation... maximum_attempts: " + str( maximum_attempts ) )
+    log( _grade(), "Finishing installation... maximum_attempts: " + str( maximum_attempts ) )
     maximum_attempts -= 1
 
     if g_is_installation_complete:
@@ -1238,8 +1238,8 @@ def load_installation_settings_file():
 
     unignore_installed_packages()
 
-    log( _upgrade_debug(), "load_installation_settings_file, PACKAGES_TO_IGNORE_ON_DEVELOPMENT: "
+    log( _grade(), "load_installation_settings_file, PACKAGES_TO_IGNORE_ON_DEVELOPMENT: "
             + str( g_channel_settings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT'] ) )
 
-    log( _upgrade_debug(), "load_installation_settings_file, g_default_ignored_packages:        " + str( g_default_ignored_packages ) )
+    log( _grade(), "load_installation_settings_file, g_default_ignored_packages:        " + str( g_default_ignored_packages ) )
 
