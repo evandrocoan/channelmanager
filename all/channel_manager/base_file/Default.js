@@ -11,15 +11,10 @@
             "command": "my_brand_new_channel_generate_channel_file",
             "args": {"command": "git_tag_all" } },
 
-    { "caption": "MyBrandNewChannel: Run Stable Installation",
-            "command": "my_brand_new_channel_run_installation",
-            "args": {"version": "stable"} },
+    { "caption": "MyBrandNewChannel: Run Installation Wizard",
+            "command": "my_brand_new_channel_run_installation" },
 
-    { "caption": "MyBrandNewChannel: Run Development Installation",
-            "command": "my_brand_new_channel_run_installation",
-            "args": {"version": "development"} },
-
-    { "caption": "MyBrandNewChannel: Run Uninstallation",
+    { "caption": "MyBrandNewChannel: Run Uninstallation Wizard",
             "command": "my_brand_new_channel_run_uninstallation" },
 
     { "caption": "MyBrandNewChannel: Extract Default Package",

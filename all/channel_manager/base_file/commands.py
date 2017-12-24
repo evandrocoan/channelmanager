@@ -58,6 +58,7 @@ from channel_manager.channel_utilities import clean_urljoin
 from channel_manager.channel_utilities import load_data_file
 from channel_manager.channel_utilities import get_main_directory
 from channel_manager.channel_utilities import get_dictionary_key
+from channel_manager.channel_utilities import write_data_file
 
 # # Run unit tests
 # from channel_manager import channel_manager_tests
@@ -114,6 +115,15 @@ class MyBrandNewChannelGenerateChannelFile( sublime_plugin.ApplicationCommand ):
         return is_channel_installed() and is_development_version()
 
 
+class MyBrandNewChannelRunInstallation( sublime_plugin.ApplicationCommand ):
+
+    def run(self):
+        installation_wizard.main( g_channel_settings )
+
+    def is_enabled(self):
+        return not is_channel_installed()
+
+
 class MyBrandNewChannelRunUninstallation( sublime_plugin.ApplicationCommand ):
 
     def run(self):
@@ -122,15 +132,6 @@ class MyBrandNewChannelRunUninstallation( sublime_plugin.ApplicationCommand ):
             package or just some packages.
         """
         uninstallation_wizard.main( g_channel_settings )
-
-
-class MyBrandNewChannelRunInstallation( sublime_plugin.ApplicationCommand ):
-
-    def run(self):
-        installation_wizard.main( g_channel_settings )
-
-    def is_enabled(self):
-        return not is_channel_installed()
 
 
 def plugin_loaded():
@@ -150,6 +151,9 @@ def load_installation_details():
         if os.path.exists( installationDetailsPath ):
             global g_installation_details
             g_installation_details = load_data_file( installationDetailsPath )
+
+        else:
+            write_data_file( installationDetailsPath, {"automatically_show_installation_wizard": True} )
 
 
 def load_channel_settings():
@@ -175,22 +179,47 @@ def load_channel_settings():
 def run_channel_update():
 
     if len( g_channel_settings ) > 0:
-        run_channel_upgrade( g_channel_settings )
+
+        if is_channel_installed():
+            g_channel_settings['INSTALLATION_TYPE'] = ""
+            copy_default_package.main( g_channel_settings['DEFAULT_PACKAGE_FILES'], False )
+
+            g_channel_settings['INSTALLATION_TYPE'] = "upgrade"
+            channel_installer.main( g_channel_settings )
+
+            g_channel_settings['INSTALLATION_TYPE'] = "downgrade"
+            channel_uninstaller.main( g_channel_settings )
+
+            # Restore the default value
+            g_channel_settings['INSTALLATION_TYPE'] = ""
+
+        else:
+            sublime.set_timeout_async( check_for_the_first_time, 1000 )
 
 
-def run_channel_upgrade(channel_settings):
-    channel_settings['INSTALLATION_TYPE'] = ""
-    copy_default_package.main( channel_settings['DEFAULT_PACKAGE_FILES'], False )
+def check_for_the_first_time():
+    """
+        Automatically run the channel installer wizard when installing the channel package for the
+        first time.
+    """
+    if is_the_first_load_time():
+        installation_wizard.main( g_channel_settings )
 
-    if is_channel_installed():
-        channel_settings['INSTALLATION_TYPE'] = "upgrade"
-        channel_installer.main( channel_settings )
 
-        channel_settings['INSTALLATION_TYPE'] = "downgrade"
-        channel_uninstaller.main( channel_settings )
+def is_the_first_load_time():
+    """
+        Check whether this is the first time the user is running it. If so, then start the
+        installation wizard to install the channel or postpone the installation process.
 
-        # Restore the default value
-        channel_settings['INSTALLATION_TYPE'] = ""
+        If the installation is postponed, then the user must to manually start it by running its
+        command on the command palette or in the preferences menu.
+    """
+    channelSettingsPath = g_channel_settings['CHANNEL_INSTALLATION_DETAILS']
+
+    if len( g_installation_details ):
+        return get_dictionary_key( g_installation_details, "automatically_show_installation_wizard", False )
+
+    return True
 
 
 def is_development_version():

@@ -36,7 +36,6 @@ import textwrap
 import threading
 
 g_is_already_running = False
-g_is_package_control_installed = False
 
 from . import settings
 from .settings import CURRENT_PACKAGE_ROOT_DIRECTORY
@@ -55,8 +54,6 @@ try:
     from package_control import cmd
     from package_control.thread_progress import ThreadProgress
     from package_control.package_manager import clear_cache
-
-    g_is_package_control_installed = True
 
 except ImportError:
     from PackagesManager.packagesmanager import cmd
@@ -83,29 +80,18 @@ g_link_wrapper  = textwrap.TextWrapper( initial_indent="    ", width=80, subsequ
 g_is_to_go_back = False
 
 
-def main():
+def main(channel_settings):
     log( 2, "Entering on %s main(0)" % CURRENT_PACKAGE_NAME )
 
-    wizard_thread = StartInstallationWizardThread()
+    wizard_thread = StartInstallationWizardThread( channel_settings )
     wizard_thread.start()
-
-
-def unpack_settings():
-    """
-        How to import python class file from same directory?
-        https://stackoverflow.com/questions/21139364/how-to-import-python-class-file-from-same-directory
-
-        Global variable is not updating in python
-        https://stackoverflow.com/questions/30392157/global-variable-is-not-updating-in-python
-    """
-    global g_channel_settings
-    g_channel_settings = settings.g_channel_settings
 
 
 class StartInstallationWizardThread(threading.Thread):
 
-    def __init__(self):
+    def __init__(self, channel_settings):
         threading.Thread.__init__(self)
+        self.channel_settings = channel_settings
 
     def run(self):
         """
@@ -114,7 +100,9 @@ class StartInstallationWizardThread(threading.Thread):
         """
 
         if is_allowed_to_run():
-            unpack_settings()
+            global g_channel_settings
+            g_channel_settings = self.channel_settings
+
             wizard_thread = InstallationWizardThread()
 
             wizard_thread.start()
@@ -560,40 +548,6 @@ def show_goodbye_message():
     return False
 
 
-def is_the_first_load_time():
-    """
-        Check whether this is the first time the user is running it. If so, then start the
-        installation wizard to install the channel or postpone the installation process.
-
-        If the installation is postponed, then the user must to manually start it by running its
-        command on the command palette or in the preferences menu.
-    """
-    channelSettingsPath = g_channel_settings['CHANNEL_INSTALLATION_DETAILS']
-
-    if os.path.exists( channelSettingsPath ):
-        settings = load_data_file( channelSettingsPath )
-        return get_dictionary_key( settings, "automatically_show_installation_wizard", False )
-
-    else:
-        write_data_file( channelSettingsPath, {"automatically_show_installation_wizard": False} )
-
-    return True
-
-
-def plugin_loaded():
-    # Wait for settings to load
-
-    if Debugger:
-        sublime.set_timeout( check_for_the_first_time, 2000 )
-
-
-def check_for_the_first_time():
-    unpack_settings()
-
-    if is_the_first_load_time() and g_is_package_control_installed:
-        main()
-
-
 def install_channel():
     g_channel_settings['INSTALLATION_TYPE'] = g_version_to_install
 
@@ -624,7 +578,6 @@ def install(version="stable"):
     """
         Used for testing purposes while developing this package.
     """
-    unpack_settings()
     add_channel()
 
     g_channel_settings['INSTALLATION_TYPE'] = version

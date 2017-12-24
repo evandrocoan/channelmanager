@@ -63,7 +63,7 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 # log( 2, "CURRENT_PACKAGE_ROOT_DIRECTORY_: " + CURRENT_PACKAGE_ROOT_DIRECTORY )
 
 
-def main():
+def main(channel_settings):
     """
         Before calling this installer, the `Package Control` user settings file, must have the
         Studio Channel file set before the default channel key `channels`.
@@ -73,26 +73,15 @@ def main():
     """
     log( 2, "Entering on %s main(0)" % CURRENT_PACKAGE_NAME )
 
-    wizard_thread = StartInstallationWizardThread()
+    wizard_thread = StartInstallationWizardThread( channel_settings )
     wizard_thread.start()
-
-
-def unpack_settings():
-    """
-        How to import python class file from same directory?
-        https://stackoverflow.com/questions/21139364/how-to-import-python-class-file-from-same-directory
-
-        Global variable is not updating in python
-        https://stackoverflow.com/questions/30392157/global-variable-is-not-updating-in-python
-    """
-    global g_channel_settings
-    g_channel_settings = settings.g_channel_settings
 
 
 class StartInstallationWizardThread(threading.Thread):
 
-    def __init__(self):
+    def __init__(self, channel_settings):
         threading.Thread.__init__(self)
+        self.channel_settings = channel_settings
 
     def run(self):
         """
@@ -101,7 +90,9 @@ class StartInstallationWizardThread(threading.Thread):
         """
 
         if is_allowed_to_run():
-            unpack_settings()
+            global g_channel_settings
+            g_channel_settings = self.channel_settings
+
             wizard_thread = InstallationWizardThread()
 
             wizard_thread.start()
@@ -180,6 +171,5 @@ def uninstall():
     """
         Used for testing purposes while developing this package.
     """
-    unpack_settings()
     channel_uninstaller.main( g_channel_settings, True )
 
