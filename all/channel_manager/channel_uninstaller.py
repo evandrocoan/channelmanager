@@ -217,6 +217,10 @@ def uninstall_packages(packages_to_uninstall):
         log( 1, "%s %s of %d of %d: %s (%s)" % ( progress, INSTALLATION_TYPE_NAME,
                 current_index, packages_count, str( package_name ), str( is_dependency ) ) )
 
+        if is_dependency:
+            log( 1, "Skipping the dependency as they are automatically uninstalled..." )
+            continue
+
         if package_name == "Default":
             uninstall_default_package()
             continue
@@ -350,17 +354,19 @@ def ignore_next_packages(package_disabler, package_name, packages_list):
         add_packages_to_ignored_list( next_packages_to_ignore )
 
 
-def is_package_dependency(package, dependencies, packages):
+def is_package_dependency(package_name, dependencies, packages):
     """
-        None when the package is not found.
+        Return by default True to stop the uninstallation as the package not was not found on the
+        `channel.json` repository file
     """
-    if package in dependencies:
+    if package_name in dependencies:
         return True
 
-    if package in packages:
+    if package_name in packages:
         return False
 
-    return None
+    log( 1, "Warning: The package name `%s` could not be found on the repositories_dictionary!" % package_name )
+    return True
 
 
 def install_package_control(package_manager):

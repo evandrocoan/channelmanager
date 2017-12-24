@@ -972,8 +972,16 @@ def unignore_installed_packages():
 
 
 def is_dependency(package_name, repositories_dictionary):
-    package_dicitonary = repositories_dictionary[package_name]
-    return "load_order" in package_dicitonary
+    """
+        Return by default True to stop the installation as the package not was not found on the
+        `channel.json` repository file
+    """
+    if package_name in repositories_dictionary:
+        package_dicitonary = repositories_dictionary[package_name]
+        return "load_order" in package_dicitonary
+
+    log( 1, "Warning: The package name `%s` could not be found on the repositories_dictionary!" % package_name )
+    return True
 
 
 def ensure_installed_packages_name(package_control_settings):
