@@ -44,8 +44,8 @@ g_is_settings_load_delayed = False
 # https://stackoverflow.com/questions/30392157/global-variable-is-not-updating-in-python
 from . import settings
 
-from . import installation_wizard
-from . import uninstallation_wizard
+from channel_manager import installation_wizard
+from channel_manager import uninstallation_wizard
 
 from channel_manager import channel_installer
 from channel_manager import channel_uninstaller
@@ -121,13 +121,13 @@ class MyBrandNewChannelRunUninstallation( sublime_plugin.ApplicationCommand ):
             You can always run the uninstaller, either to uninstall everything, or just this
             package or just some packages.
         """
-        uninstallation_wizard.main()
+        uninstallation_wizard.main( g_channel_settings )
 
 
 class MyBrandNewChannelRunInstallation( sublime_plugin.ApplicationCommand ):
 
     def run(self):
-        installation_wizard.main()
+        installation_wizard.main( g_channel_settings )
 
     def is_enabled(self):
         return not is_channel_installed()
