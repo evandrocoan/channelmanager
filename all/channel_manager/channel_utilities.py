@@ -43,16 +43,14 @@ from distutils.version import LooseVersion
 # Relative imports in Python 3
 # https://stackoverflow.com/questions/16981921/relative-imports-in-python-3
 try:
-    from .settings import CURRENT_PACKAGE_ROOT_DIRECTORY
-    from .settings import CURRENT_PACKAGE_NAME
+    from . import settings
 
 except( ImportError, ValueError):
-    from settings import CURRENT_PACKAGE_ROOT_DIRECTORY
-    from settings import CURRENT_PACKAGE_NAME
+    import settings
 
 
-BASE_FILE_FOLDER          = os.path.join( CURRENT_PACKAGE_ROOT_DIRECTORY, "all", "channel_manager", "base_file" )
-UPGRADE_SESSION_FILE      = os.path.join( CURRENT_PACKAGE_ROOT_DIRECTORY, "all", "last_sublime_upgrade.channel-manager" )
+BASE_FILE_FOLDER          = os.path.join( settings.CURRENT_PACKAGE_ROOT_DIRECTORY, "all", "channel_manager", "base_file" )
+UPGRADE_SESSION_FILE      = os.path.join( settings.CURRENT_PACKAGE_ROOT_DIRECTORY, "all", "last_sublime_upgrade.channel-manager" )
 LAST_SUBLIME_TEXT_SECTION = "last_sublime_text_version"
 
 # print_python_envinronment()
@@ -94,7 +92,7 @@ except ImportError:
     # Import the debugger. It will fail when `PythonDebugTools` is inside a `.sublime-package`,
     # however, this is only meant to be used on the Development version, when `PythonDebugTools` is
     # unpacked at the loose packages folder as a git submodule.
-    assert_path( os.path.join( os.path.dirname( CURRENT_PACKAGE_ROOT_DIRECTORY ), 'PythonDebugTools/all' ) )
+    assert_path( os.path.join( os.path.dirname( settings.CURRENT_PACKAGE_ROOT_DIRECTORY ), 'PythonDebugTools/all' ) )
     from python_debug_tools import Debugger
 
 

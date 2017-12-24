@@ -36,9 +36,6 @@ import threading
 g_is_already_running = False
 from . import settings
 
-from .settings import CURRENT_PACKAGE_ROOT_DIRECTORY
-from .settings import CURRENT_PACKAGE_NAME
-
 from channel_manager import channel_uninstaller
 from channel_manager.channel_utilities import wrap_text
 
@@ -60,7 +57,7 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 # log( 2, "..." )
 # log( 2, "..." )
 # log( 2, "Debugging" )
-# log( 2, "CURRENT_PACKAGE_ROOT_DIRECTORY_: " + CURRENT_PACKAGE_ROOT_DIRECTORY )
+# log( 2, "CURRENT_PACKAGE_ROOT_DIRECTORY: " + settings.CURRENT_PACKAGE_ROOT_DIRECTORY )
 
 
 def main(channel_settings):
@@ -71,7 +68,7 @@ def main(channel_settings):
         Also the current `Package Control` cache must be cleaned, ensuring it is downloading and
         using the Studio Channel repositories/channel list.
     """
-    log( 2, "Entering on %s main(0)" % CURRENT_PACKAGE_NAME )
+    log( 2, "Entering on %s main(0)" % settings.CURRENT_PACKAGE_NAME )
 
     wizard_thread = StartInstallationWizardThread( channel_settings )
     wizard_thread.start()
@@ -90,30 +87,17 @@ class StartInstallationWizardThread(threading.Thread):
         """
 
         if is_allowed_to_run():
-            global g_channel_settings
-            g_channel_settings = self.channel_settings
-
+            unpack_settigns( self.channel_settings )
             wizard_thread = InstallationWizardThread()
 
             wizard_thread.start()
-            ThreadProgress( wizard_thread, 'Running the %s Installation Wizard' % CURRENT_PACKAGE_NAME,
-                    'The %s Installation Wizard finished' % CURRENT_PACKAGE_NAME )
+            ThreadProgress( wizard_thread, 'Running the %s Installation Wizard' % CHANNEL_PACKAGE_NAME,
+                    'The %s Installation Wizard finished' % CHANNEL_PACKAGE_NAME )
 
             wizard_thread.join()
 
         global g_is_already_running
         g_is_already_running = False
-
-
-def is_allowed_to_run():
-    global g_is_already_running
-
-    if g_is_already_running:
-        print( "You are already running a command. Wait until it finishes or restart Sublime Text" )
-        return False
-
-    g_is_already_running = True
-    return True
 
 
 class InstallationWizardThread(threading.Thread):
@@ -160,11 +144,30 @@ def show_program_description():
         install manually PackagesManager, before running the %s uninstaller.
 
         Click on the `Cancel` button if you want give up from installing the %s.
-        """ % ( CURRENT_PACKAGE_NAME, uninstall_button, CURRENT_PACKAGE_NAME,
-                CURRENT_PACKAGE_NAME, CURRENT_PACKAGE_NAME ) ),
+        """ % ( CHANNEL_PACKAGE_NAME, uninstall_button, CHANNEL_PACKAGE_NAME,
+                CHANNEL_PACKAGE_NAME, CHANNEL_PACKAGE_NAME ) ),
     ]
 
     return sublime.ok_cancel_dialog( "\n".join( lines ), uninstall_button )
+
+
+def unpack_settigns(channel_settings):
+    global g_channel_settings
+    global CHANNEL_PACKAGE_NAME
+
+    g_channel_settings   = channel_settings
+    CHANNEL_PACKAGE_NAME = g_channel_settings['CHANNEL_PACKAGE_NAME']
+
+
+def is_allowed_to_run():
+    global g_is_already_running
+
+    if g_is_already_running:
+        print( "You are already running a command. Wait until it finishes or restart Sublime Text" )
+        return False
+
+    g_is_already_running = True
+    return True
 
 
 def uninstall():

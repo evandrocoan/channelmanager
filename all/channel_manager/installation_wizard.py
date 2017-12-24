@@ -36,10 +36,7 @@ import textwrap
 import threading
 
 g_is_already_running = False
-
 from . import settings
-from .settings import CURRENT_PACKAGE_ROOT_DIRECTORY
-from .settings import CURRENT_PACKAGE_NAME
 
 from channel_manager import channel_installer
 from channel_manager.channel_utilities import wrap_text
@@ -69,7 +66,7 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 # log( 2, "..." )
 # log( 2, "..." )
 # log( 2, "Debugging" )
-# log( 2, "CURRENT_PACKAGE_ROOT_DIRECTORY_: " + CURRENT_PACKAGE_ROOT_DIRECTORY )
+# log( 2, "CURRENT_PACKAGE_ROOT_DIRECTORY: " + settings.CURRENT_PACKAGE_ROOT_DIRECTORY )
 
 
 g_version_to_install     = ""
@@ -81,7 +78,7 @@ g_is_to_go_back = False
 
 
 def main(channel_settings):
-    log( 2, "Entering on %s main(0)" % CURRENT_PACKAGE_NAME )
+    log( 2, "Entering on %s main(0)" % settings.CURRENT_PACKAGE_NAME )
 
     wizard_thread = StartInstallationWizardThread( channel_settings )
     wizard_thread.start()
@@ -100,31 +97,18 @@ class StartInstallationWizardThread(threading.Thread):
         """
 
         if is_allowed_to_run():
-            global g_channel_settings
-            g_channel_settings = self.channel_settings
-
+            unpack_settigns( self.channel_settings )
             wizard_thread = InstallationWizardThread()
 
             wizard_thread.start()
-            ThreadProgress( wizard_thread, 'Running the %s Installation Wizard...' % CURRENT_PACKAGE_NAME,
-                    'The %s Installation Wizard finished.' % CURRENT_PACKAGE_NAME )
+            ThreadProgress( wizard_thread, 'Running the %s Installation Wizard...' % CHANNEL_PACKAGE_NAME,
+                    'The %s Installation Wizard finished.' % CHANNEL_PACKAGE_NAME )
 
             wizard_thread.join()
             # check_uninstalled_packages()
 
         global g_is_already_running
         g_is_already_running = False
-
-
-def is_allowed_to_run():
-    global g_is_already_running
-
-    if g_is_already_running:
-        print( "You are already running a command. Wait until it finishes or restart Sublime Text" )
-        return False
-
-    g_is_already_running = True
-    return True
 
 
 class InstallationWizardThread(threading.Thread):
@@ -242,8 +226,8 @@ def start_the_installation_process():
         The installation process should take about 2~5 minutes for the Stable Version and 10~20
         minutes for the Development Version, depending on your Computer Performance. Any problems
         you have with the process you can open issue on the %s issue tracker at the address:
-        """ % ( CURRENT_PACKAGE_NAME, CURRENT_PACKAGE_NAME, g_uninstallation_command,
-                CURRENT_PACKAGE_NAME, CURRENT_PACKAGE_NAME, CURRENT_PACKAGE_NAME ) ),
+        """ % ( CHANNEL_PACKAGE_NAME, CHANNEL_PACKAGE_NAME, g_uninstallation_command,
+                CHANNEL_PACKAGE_NAME, CHANNEL_PACKAGE_NAME, CHANNEL_PACKAGE_NAME ) ),
         "",
         g_link_wrapper.fill( "<%s/issues>" % g_channel_settings['CHANNEL_ROOT_URL'] ),
         "",
@@ -291,9 +275,9 @@ def show_installation_confirmation():
         installed. Later on, to finish the installation you will need to run the uninstaller by
         going on the menu `Preferences -> Packages Settings -> %s` and select the option `%s`. Then
         later install again the %s.
-        """ % ( version_to_install, version_to_install, CURRENT_PACKAGE_NAME,
-                CURRENT_PACKAGE_NAME, CURRENT_PACKAGE_NAME, g_uninstallation_command,
-                CURRENT_PACKAGE_NAME ) ),
+        """ % ( version_to_install, version_to_install, CHANNEL_PACKAGE_NAME,
+                CHANNEL_PACKAGE_NAME, CHANNEL_PACKAGE_NAME, g_uninstallation_command,
+                CHANNEL_PACKAGE_NAME ) ),
         ]
 
     return calculate_next_step( sublime.yes_no_cancel_dialog( "\n".join( lines ),  "Install Now", "Go Back" ) )
@@ -337,7 +321,7 @@ def select_stable_or_developent_version():
         when you are elsewhere you have no time for fixing bugs or testing new things. Also because
         elsewhere you are, not always there will be enough free space required by the Development
         Version.
-        """ % CURRENT_PACKAGE_NAME ),
+        """ % CHANNEL_PACKAGE_NAME ),
     ]
 
     user_response = sublime.yes_no_cancel_dialog(
@@ -367,7 +351,7 @@ def select_stable_or_developent_version():
                     not forget to save your Sublime Text Console output, as it recorded everything
                     which happened, and should be very helpful in finding the solution for the
                     problem.
-                    """ % ( CURRENT_PACKAGE_NAME, g_channel_settings['CHANNEL_ROOT_URL'] ) ) )
+                    """ % ( CHANNEL_PACKAGE_NAME, g_channel_settings['CHANNEL_ROOT_URL'] ) ) )
 
     return user_response != sublime.DIALOG_CANCEL, False
 
@@ -399,7 +383,7 @@ def show_license_agreement():
         On the following addresses you can find the list and links for all distributed contents by
         this installer, which these conditions above applies to, and their respective software
         license:
-        """ % CURRENT_PACKAGE_NAME ),
+        """ % CHANNEL_PACKAGE_NAME ),
         "",
         g_link_wrapper.fill( "<%s#License>" % g_channel_settings['CHANNEL_ROOT_URL'] ),
         g_link_wrapper.fill( "<%s>" % g_channel_settings['CHANNEL_FILE_URL'] ),
@@ -426,7 +410,7 @@ def show_license_agreement():
 
                 Please, click in `Cancel` instead of `Next`, if you do not agree with the %s
                 license.
-                """ % ( user_input_text[0], CURRENT_PACKAGE_NAME, CURRENT_PACKAGE_NAME ) ) )
+                """ % ( user_input_text[0], CHANNEL_PACKAGE_NAME, CHANNEL_PACKAGE_NAME ) ) )
 
     def show_acknowledgment_panel():
         active_window.show_input_panel( "Did you read and agree with these conditions for using these softwares?",
@@ -486,7 +470,7 @@ def show_program_description():
         This is a small channel of packages for Sublime Text's Package Control, which replace and
         install some of the packages by a forked version. i.e., custom modification of them. You can
         find this list of packages to be installed on channel on the following addresses:
-        """ % CURRENT_PACKAGE_NAME ),
+        """ % CHANNEL_PACKAGE_NAME ),
         "",
         g_link_wrapper.fill( "<%s>" % g_channel_settings['CHANNEL_ROOT_URL'] ),
         g_link_wrapper.fill( "<%s>" % g_channel_settings['CHANNEL_FILE_URL'] ),
@@ -525,27 +509,46 @@ def show_goodbye_message():
 
         If you wish to install the %s later, after uninstalling it, you can just install this
         package again.
-        """ % ( CURRENT_PACKAGE_NAME, CURRENT_PACKAGE_NAME, CURRENT_PACKAGE_NAME,
-                ok_button_text, CURRENT_PACKAGE_NAME, CURRENT_PACKAGE_NAME,
-                CURRENT_PACKAGE_NAME, ask_later_text, g_installation_command ) ),
+        """ % ( CHANNEL_PACKAGE_NAME, CHANNEL_PACKAGE_NAME, CHANNEL_PACKAGE_NAME,
+                ok_button_text, CHANNEL_PACKAGE_NAME, CHANNEL_PACKAGE_NAME,
+                CHANNEL_PACKAGE_NAME, ask_later_text, g_installation_command ) ),
     ]
 
-    channelSettingsPath = g_channel_settings['CHANNEL_INSTALLATION_DETAILS']
+    channelDetailsPath = g_channel_settings['CHANNEL_INSTALLATION_DETAILS']
 
-    settings       = load_data_file( channelSettingsPath )
+    channelDetails = load_data_file( channelDetailsPath )
     sublime_dialog = sublime.yes_no_cancel_dialog( "\n".join( lines ), ok_button_text, ask_later_text )
 
     if sublime_dialog == sublime.DIALOG_YES:
         return True
 
     elif sublime_dialog == sublime.DIALOG_NO:
-        settings['automatically_show_installation_wizard'] = True
+        channelDetails['automatically_show_installation_wizard'] = True
 
     else:
-        settings['automatically_show_installation_wizard'] = False
+        channelDetails['automatically_show_installation_wizard'] = False
 
-    write_data_file( channelSettingsPath, settings )
+    write_data_file( channelDetailsPath, channelDetails )
     return False
+
+
+def unpack_settigns(channel_settings):
+    global g_channel_settings
+    global CHANNEL_PACKAGE_NAME
+
+    g_channel_settings   = channel_settings
+    CHANNEL_PACKAGE_NAME = g_channel_settings['CHANNEL_PACKAGE_NAME']
+
+
+def is_allowed_to_run():
+    global g_is_already_running
+
+    if g_is_already_running:
+        print( "You are already running a command. Wait until it finishes or restart Sublime Text" )
+        return False
+
+    g_is_already_running = True
+    return True
 
 
 def install_channel():
@@ -570,7 +573,7 @@ def add_channel():
     channels.insert( 0, channel_url )
     package_control_settings.set( "channels", channels )
 
-    log( 1, "Adding %s channel to %s: %s" % ( CURRENT_PACKAGE_NAME, package_control, str( channels ) ) )
+    log( 1, "Adding %s channel to %s: %s" % ( CHANNEL_PACKAGE_NAME, package_control, str( channels ) ) )
     sublime.save_settings( package_control )
 
 
