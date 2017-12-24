@@ -516,6 +516,12 @@ as you usually do with the default `Package Control` channel.
            "My Second Forbidden Package",
        ]
 
+       g_channel_settings['DEFAULT_PACKAGE_FILES'] = \
+       [
+           "Tab Context.sublime-menu",
+           "Context.sublime-menu",
+       ]
+
        g_channel_settings['PACKAGES_TO_NOT_INSTALL_STABLE'] = \
        [
            "My First Package to not Install",
@@ -528,16 +534,14 @@ as you usually do with the default `Package Control` channel.
            "My Second Package to not Install",
        ]
 
+       g_channel_settings['PACKAGES_TO_INSTALL_EXCLUSIVELY'] = \
+       [
+       ]
+
        g_channel_settings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT'] = \
        [
            "My First Package to ignore",
            "My Second Package to ignore",
-       ]
-
-       g_channel_settings['DEFAULT_PACKAGE_FILES'] = \
-       [
-           "Tab Context.sublime-menu",
-           "Context.sublime-menu",
        ]
 
        run_channel_setup( g_channel_settings, CURRENT_PACKAGE_NAME, CURRENT_PACKAGE_ROOT_DIRECTORY )
@@ -589,9 +593,13 @@ as you usually do with the default `Package Control` channel.
    * Packages which you do want to install when reading the `.gitmodules` packages list (development)
 1. PACKAGES_TO_IGNORE_ON_DEVELOPMENT
    * Packages which must not be installed on the stable version and must be disabled by default on
-     the development version.
+     the development version, i.e., added to the `ignored_packages` list setting.
 1. DEFAULT_PACKAGE_FILES:
    * The files of the `Default.sublime-package` you are installing
+1. PACKAGES_TO_INSTALL_EXCLUSIVELY
+   * If this list variable has length greater than 0, it will only add the packages which are listed
+     on it when installing the channel. This is useful to maintain two or more channels within the
+     same `channel.json` repository file.
 
 
 If you want to get more elaborated with the installation process, you can see the

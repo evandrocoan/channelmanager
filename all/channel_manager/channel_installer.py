@@ -371,8 +371,14 @@ def get_stable_packages(is_upgrade):
         g_channel_settings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT'],
     )
 
+    install_exclusively    = g_channel_settings['PACKAGES_TO_INSTALL_EXCLUSIVELY'],
+    is_exclusively_install = not not len( install_exclusively )
+
     repositories_loaded = load_repository_file( g_channel_settings['CHANNEL_REPOSITORY_FILE'], False )
     log( _upgrade_debug(), "get_stable_packages, packages_tonot_install: " + str( packages_tonot_install ) )
+
+    if is_exclusively_install:
+        repositories_loaded = repositories_loaded.intersection( install_exclusively )
 
     for package_name in repositories_loaded:
         # # For quick testing
@@ -385,7 +391,11 @@ def get_stable_packages(is_upgrade):
 
             filtered_packages.append( package_name )
 
-        if not is_upgrade and package_name in installed_packages:
+        # When installing the channel, we must mark the packages already installed as packages which
+        # where not installed, so they are not uninstalled when the channel is uninstalled.
+        if not is_upgrade \
+                and package_name in installed_packages:
+
             g_packages_not_installed.append( package_name )
 
     # return \

@@ -240,23 +240,30 @@ def get_packages_to_uninstall(is_downgrade):
     packages_to_uninstall = get_dictionary_key( g_channelSettings, 'packages_to_uninstall', [] )
 
     if is_downgrade:
-        repositories_loaded    = load_repository_file( g_channel_settings['CHANNEL_REPOSITORY_FILE'], False )
+        repositories_loaded    = load_repository_file( g_channel_settings['CHANNEL_REPOSITORY_FILE'], {} )
         packages_not_installed = get_dictionary_key( g_channelSettings, 'packages_not_installed', [] )
-        packages_to_uninstall  = list( set( packages_to_uninstall + packages_not_installed ) - set( repositories_loaded ) )
 
-    # Only merges the packages which are actually being uninstalled
+        install_exclusively    = g_channel_settings['PACKAGES_TO_INSTALL_EXCLUSIVELY'],
+        is_exclusively_install = not not len( install_exclusively )
+
+        if is_exclusively_install:
+            repositories_loaded = repositories_loaded.intersection( install_exclusively )
+
+        packages_to_uninstall  = set( packages_to_uninstall + packages_not_installed ) - repositories_loaded
+
     for package_name in PACKAGES_TO_UNINSTALL_FIRST:
 
+        # Only merges the packages which are actually being uninstalled
         if package_name in packages_to_uninstall:
             filtered_packages.append( package_name )
 
-    # Add the actual packages after the packages to install first
+    # Add the remaining packages after the packages to install first
     for package_name in packages_to_uninstall:
 
         if package_name not in filtered_packages:
             filtered_packages.append( package_name )
 
-    if not g_is_forced_installation and len( filtered_packages ) < 1:
+    if not g_is_forced_uninstallation and len( filtered_packages ) < 1:
         raise NoPackagesAvailable( "There are 0 packages available to uninstall!" )
 
     if is_downgrade:
@@ -830,10 +837,10 @@ def is_allowed_to_run():
 
 def unpack_settings(channel_settings, is_forced):
     global g_channel_settings
-    global g_is_forced_installation
+    global g_is_forced_uninstallation
 
     g_channel_settings       = channel_settings
-    g_is_forced_installation = is_forced
+    g_is_forced_uninstallation = is_forced
 
     global INSTALLATION_TYPE_NAME
     global IS_DOWNGRADE_INSTALLATION
