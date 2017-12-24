@@ -243,16 +243,21 @@ def get_packages_to_uninstall(is_downgrade):
     packages_to_uninstall = get_dictionary_key( g_channelSettings, 'packages_to_uninstall', [] )
 
     if is_downgrade:
+        packages_to_not_remove = set()
         repositories_loaded    = load_repository_file( g_channel_settings['CHANNEL_REPOSITORY_FILE'], {} )
         packages_not_installed = get_dictionary_key( g_channelSettings, 'packages_not_installed', [] )
 
-        install_exclusively    = g_channel_settings['PACKAGES_TO_INSTALL_EXCLUSIVELY'],
+        install_exclusively    = g_channel_settings['PACKAGES_TO_INSTALL_EXCLUSIVELY']
         is_exclusively_install = not not len( install_exclusively )
 
         if is_exclusively_install:
-            repositories_loaded = set( repositories_loaded ).intersection( install_exclusively )
 
-        packages_to_uninstall  = set( packages_to_uninstall + packages_not_installed ) - repositories_loaded
+            for package_name in repositories_loaded:
+
+                if package_name in install_exclusively:
+                    packages_to_not_remove.add( package_name )
+
+        packages_to_uninstall = set( packages_to_uninstall + packages_not_installed ) - packages_to_not_remove
 
     for package_name in PACKAGES_TO_UNINSTALL_FIRST:
 
@@ -266,6 +271,7 @@ def get_packages_to_uninstall(is_downgrade):
         if package_name not in filtered_packages:
             filtered_packages.append( package_name )
 
+    # Allow to uninstall only the channel package when there is no other packages installed
     if not g_is_forced_uninstallation and len( filtered_packages ) < 1:
         raise NoPackagesAvailable( "There are 0 packages available to uninstall!" )
 

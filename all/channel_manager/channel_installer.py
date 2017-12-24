@@ -369,23 +369,32 @@ def get_stable_packages(is_upgrade):
         g_channel_settings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT'],
     )
 
-    install_exclusively    = g_channel_settings['PACKAGES_TO_INSTALL_EXCLUSIVELY'],
+    packages_to_install    = {}
+    install_exclusively    = g_channel_settings['PACKAGES_TO_INSTALL_EXCLUSIVELY']
     is_exclusively_install = not not len( install_exclusively )
 
     repositories_loaded = load_repository_file( g_channel_settings['CHANNEL_REPOSITORY_FILE'], {} )
     log( _grade(), "get_stable_packages, packages_tonot_install: " + str( packages_tonot_install ) )
 
     if is_exclusively_install:
-        repositories_loaded = set( repositories_loaded ).intersection( install_exclusively )
+        log( _grade(), "Performing exclusively installation of the packages: " + str( install_exclusively ) )
 
-    for package_name in repositories_loaded:
+        for package_name in repositories_loaded:
+
+            if package_name in install_exclusively:
+                packages_to_install[package_name] = repositories_loaded[package_name]
+
+    else:
+        packages_to_install = repositories_loaded
+
+    for package_name in packages_to_install:
         # # For quick testing
         # current_index += 1
         # if current_index > 7:
         #     break
 
         if package_name not in packages_tonot_install \
-                and not is_dependency( package_name, repositories_loaded ):
+                and not is_dependency( package_name, packages_to_install ):
 
             filtered_packages.append( package_name )
 
