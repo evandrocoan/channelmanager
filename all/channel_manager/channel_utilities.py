@@ -381,6 +381,64 @@ def _delete_read_only_file(action, name, exc):
     os.remove( name )
 
 
+def recursively_delete_empty_folders(root_folder, folders_not_empty):
+    """
+        Recursively descend the directory tree rooted at top, calling the callback function for each
+        regular file.
+
+        Python script: Recursively remove empty folders/directories
+        https://www.jacobtomlinson.co.uk/2014/02/16/python-script-recursively-remove-empty-folders-directories/
+    """
+
+    try:
+        children_folders = os.listdir( root_folder )
+
+        for child_folder in children_folders:
+            child_path = os.path.join( root_folder, child_folder )
+
+            if os.path.isdir( child_path ):
+                recursively_delete_empty_folders( child_path, folders_not_empty )
+
+                try:
+                    os.removedirs( root_folder )
+                    is_empty = True
+
+                except OSError:
+                    is_empty = False
+
+                    try:
+                        _removeEmptyFolders( root_folder )
+
+                    except:
+                        pass
+
+                if not is_empty:
+                    folders_not_empty.append( child_path )
+
+        os.rmdir( root_folder )
+
+    except:
+        pass
+
+
+def _removeEmptyFolders(path):
+
+    if not os.path.isdir( path ):
+        return
+
+    files = os.listdir( path )
+
+    if len( files ):
+
+        for file in files:
+            fullpath = os.path.join( path, file )
+
+            if os.path.isdir( fullpath ):
+                _removeEmptyFolders( fullpath )
+
+    os.rmdir( path )
+
+
 def get_immediate_subdirectories(a_dir):
     """
         How to get all of the immediate subdirectories in Python

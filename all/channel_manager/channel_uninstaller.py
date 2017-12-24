@@ -60,6 +60,7 @@ from .channel_utilities import InstallationCancelled
 from .channel_utilities import NoPackagesAvailable
 from .channel_utilities import load_repository_file
 from .channel_utilities import is_channel_upgraded
+from .channel_utilities import recursively_delete_empty_folders
 
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
@@ -566,64 +567,6 @@ def uninstall_folders():
         if len( folders_not_empty ) > 0:
             log( 1, "The installed folder `%s` could not be removed because is it not empty." % folder_absolute_path )
             log( 1, "Its files contents are: " + str( os.listdir( folder_absolute_path ) ) )
-
-
-def recursively_delete_empty_folders(root_folder, folders_not_empty):
-    """
-        Recursively descend the directory tree rooted at top, calling the callback function for each
-        regular file.
-
-        Python script: Recursively remove empty folders/directories
-        https://www.jacobtomlinson.co.uk/2014/02/16/python-script-recursively-remove-empty-folders-directories/
-    """
-
-    try:
-        children_folders = os.listdir( root_folder )
-
-        for child_folder in children_folders:
-            child_path = os.path.join( root_folder, child_folder )
-
-            if os.path.isdir( child_path ):
-                recursively_delete_empty_folders( child_path, folders_not_empty )
-
-                try:
-                    os.removedirs( root_folder )
-                    is_empty = True
-
-                except OSError:
-                    is_empty = False
-
-                    try:
-                        _removeEmptyFolders( root_folder )
-
-                    except:
-                        pass
-
-                if not is_empty:
-                    folders_not_empty.append( child_path )
-
-        os.rmdir( root_folder )
-
-    except:
-        pass
-
-
-def _removeEmptyFolders(path):
-
-    if not os.path.isdir( path ):
-        return
-
-    files = os.listdir( path )
-
-    if len( files ):
-
-        for file in files:
-            fullpath = os.path.join( path, file )
-
-            if os.path.isdir( fullpath ):
-                _removeEmptyFolders( fullpath )
-
-    os.rmdir( path )
 
 
 def uninstall_files():
