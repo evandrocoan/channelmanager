@@ -372,11 +372,11 @@ def get_stable_packages(is_upgrade):
     install_exclusively    = g_channel_settings['PACKAGES_TO_INSTALL_EXCLUSIVELY'],
     is_exclusively_install = not not len( install_exclusively )
 
-    repositories_loaded = load_repository_file( g_channel_settings['CHANNEL_REPOSITORY_FILE'], False )
+    repositories_loaded = load_repository_file( g_channel_settings['CHANNEL_REPOSITORY_FILE'], {} )
     log( _upgrade_debug(), "get_stable_packages, packages_tonot_install: " + str( packages_tonot_install ) )
 
     if is_exclusively_install:
-        repositories_loaded = repositories_loaded.intersection( install_exclusively )
+        repositories_loaded = set( repositories_loaded ).intersection( install_exclusively )
 
     for package_name in repositories_loaded:
         # # For quick testing
@@ -1094,7 +1094,7 @@ def check_installed_packages_alert(maximum_attempts=10):
         Show a message to the user observing the Sublime Text console, so he know the process is not
         finished yet.
     """
-    log( _downgrade_debug(), "Looking for new tasks... %s seconds remaining." % str( maximum_attempts ) )
+    log( _upgrade_debug(), "Looking for new tasks... %s seconds remaining." % str( maximum_attempts ) )
     maximum_attempts -= 1
 
     if maximum_attempts > 0 and g_is_already_running:

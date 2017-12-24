@@ -250,7 +250,7 @@ def get_packages_to_uninstall(is_downgrade):
         is_exclusively_install = not not len( install_exclusively )
 
         if is_exclusively_install:
-            repositories_loaded = repositories_loaded.intersection( install_exclusively )
+            repositories_loaded = set( repositories_loaded ).intersection( install_exclusively )
 
         packages_to_uninstall  = set( packages_to_uninstall + packages_not_installed ) - repositories_loaded
 
