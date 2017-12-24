@@ -241,6 +241,14 @@ def start_the_installation_process():
     sublime.message_dialog( "\n".join( lines ) )
 
 
+def install_channel():
+    g_channel_settings['INSTALLATION_TYPE'] = g_version_to_install
+    add_channel()
+
+    clear_cache()
+    channel_installer.main( g_channel_settings )
+
+
 def show_installation_confirmation():
     version_to_install = upcase_first_letter( g_version_to_install )
 
@@ -528,15 +536,6 @@ def is_allowed_to_run():
     return True
 
 
-def install_channel():
-    g_channel_settings['INSTALLATION_TYPE'] = g_version_to_install
-
-    add_channel()
-    clear_cache()
-
-    channel_installer.main( g_channel_settings )
-
-
 def add_channel():
     package_control    = "Package Control.sublime-settings"
     channel_url = g_channel_settings['CHANNEL_FILE_URL']
@@ -552,15 +551,5 @@ def add_channel():
 
     log( 1, "Adding %s channel to %s: %s" % ( CHANNEL_PACKAGE_NAME, package_control, str( channels ) ) )
     sublime.save_settings( package_control )
-
-
-def install(version="stable"):
-    """
-        Used for testing purposes while developing this package.
-    """
-    add_channel()
-
-    g_channel_settings['INSTALLATION_TYPE'] = version
-    channel_installer.main( g_channel_settings, True )
 
 

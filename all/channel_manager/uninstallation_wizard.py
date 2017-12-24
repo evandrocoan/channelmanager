@@ -113,7 +113,11 @@ class InstallationWizardThread(threading.Thread):
 def run_the_installation_wizard(step=1):
 
     if show_program_description():
-        uninstall()
+        uninstall_channel()
+
+
+def uninstall_channel():
+    channel_uninstaller.main( g_channel_settings, True )
 
 
 def show_program_description():
@@ -168,11 +172,4 @@ def is_allowed_to_run():
 
     g_is_already_running = True
     return True
-
-
-def uninstall():
-    """
-        Used for testing purposes while developing this package.
-    """
-    channel_uninstaller.main( g_channel_settings, True )
 
