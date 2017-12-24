@@ -289,31 +289,7 @@ def select_stable_or_developent_version():
     lines = \
     [
         wrap_text( """\
-        There are two versions of the channel. Each one of them has its proper usage depending on
-        your plans. The Stable Version is the most tested and trusted set of packages to be
-        installed. It contains all the packages which can be actively enabled and used on daily
-        basis usage and it requires the latest Stable Build of Sublime Text available, as builds
-        3126 and 3143.
-
-        The Development Version has the same packages as the Stable Version, however it also
-        installs candidate packages to the Stable Version, i.e., packages which are not thoroughly
-        tested. Some of them are expected to have serious bugs as crash your Sublime Text,
-        significantly slow down the Sublime Text performance, i.e., create great problems. Due this,
-        these extra packages are by default added to your `ignored_packages` settings. You should
-        only enable them when you are attempting to fix their problems or test them.
-
-        For both Stable and Development versions, your Sublime Text's Package Control will be
-        uninstalled and replaced by the its forked version called `PackagesManager`. Now on, you
-        should look for the package `PackagesManager` to install and uninstalling packages. The
-        Stable Version installs all packages by PackagesManager as they normally are installed by
-        the Sublime Text's Package Control. Therefore they require smaller amount of space in your
-        file system. It should be about 60MB of data, on the last time checked.
-
-        Now the Development Version installs all your packages by `git`, therefore you need to have
-        git installed in your system in order to install the development Version. Also due this, the
-        Development Version requires much more file system space. The last time checked it required
-        about 600MB of free space. Notice also, the Development Version requires the latest
-        Development Build of Sublime Text available, as builds 3141 and 3147.
+        %s
 
         It is recommended to use both Stable and Development Versions of the %s. For example, while
         you are at home, use the Development Version as you should have free time to work on it,
@@ -321,7 +297,7 @@ def select_stable_or_developent_version():
         when you are elsewhere you have no time for fixing bugs or testing new things. Also because
         elsewhere you are, not always there will be enough free space required by the Development
         Version.
-        """ % CHANNEL_PACKAGE_NAME ),
+        """ % ( g_channel_settings['CHANNEL_VERSIONS_DESCRIPTIONS'], CHANNEL_PACKAGE_NAME ) ),
     ]
 
     user_response = sublime.yes_no_cancel_dialog(
@@ -467,9 +443,9 @@ def show_program_description():
         wrap_text( """\
         Thank you for choosing %s.
 
-        This is a small channel of packages for Sublime Text's Package Control, which replace and
-        install some of the packages by a forked version. i.e., custom modification of them. You can
-        find this list of packages to be installed on channel on the following addresses:
+        This is a channel of packages for Sublime Text's Package Control, which replace and install
+        some of the packages by a forked/alternative version. i.e., custom modification of them. You
+        can find this list of packages to be installed on channel on the following addresses:
         """ % CHANNEL_PACKAGE_NAME ),
         "",
         g_link_wrapper.fill( "<%s>" % g_channel_settings['CHANNEL_ROOT_URL'] ),
