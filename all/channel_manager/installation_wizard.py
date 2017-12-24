@@ -514,7 +514,7 @@ def install_channel():
     add_channel()
 
     clear_cache()
-    channel_installer.main( g_channel_settings )
+    channel_installer.main( g_channel_settings, True )
 
 
 def unpack_settigns(channel_settings):
