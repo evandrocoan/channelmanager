@@ -1106,8 +1106,13 @@ def check_installed_packages_alert(maximum_attempts=10):
     log( _grade(), "Looking for new tasks... %s seconds remaining." % str( maximum_attempts ) )
     maximum_attempts -= 1
 
-    if maximum_attempts > 0 and g_is_already_running:
-        sublime.set_timeout_async( lambda: check_installed_packages_alert( maximum_attempts ), 1000 )
+    if maximum_attempts > 0:
+
+        if g_is_already_running:
+            sublime.set_timeout_async( lambda: check_installed_packages_alert( maximum_attempts ), 1000 )
+
+        else:
+            log( _grade(), "Finished looking for new tasks... The installation is complete." )
 
 
 def check_installed_packages(maximum_attempts=10):
