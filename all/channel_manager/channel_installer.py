@@ -45,7 +45,7 @@ from collections import OrderedDict
 
 
 from . import settings
-g_is_already_running = False
+g_is_running = False
 
 from .channel_utilities import get_installed_packages
 from .channel_utilities import unique_list_join
@@ -90,7 +90,6 @@ except ImportError:
 
 
 # How many packages to ignore and unignore in batch to fix the ignored packages bug error
-g_is_installation_complete     = True
 PACKAGES_COUNT_TO_IGNORE_AHEAD = 8
 
 
@@ -160,7 +159,7 @@ class StartInstallChannelThread(threading.Thread):
 
             # The installation is not complete when the user cancelled the installation process or
             # there are no packages available for an upgrade.
-            if not g_is_installation_complete:
+            if g_is_running:
                 # Complete the installation process
                 save_default_settings()
 
@@ -189,8 +188,9 @@ class InstallChannelFilesThread(threading.Thread):
         except ( InstallationCancelled, NoPackagesAvailable ) as error:
             log( 1, str( error ) )
 
-            global g_is_installation_complete
-            g_is_installation_complete = True
+            # Set the flag as completed, to signalize the installation has ended
+            global g_is_running
+            g_is_running = False
 
         if not IS_UPGRADE_INSTALLATION:
             uninstall_package_control()
@@ -865,8 +865,9 @@ def uninstall_package_control():
     else:
         log( 1, "Warning: PackagesManager is was not installed on the system!" )
 
-        global g_is_installation_complete
-        g_is_installation_complete = True
+        # Clean right away the PackagesManager successful flag, was it was not installed
+        global g_is_running
+        g_is_running = False
 
 
 def complete_package_control_uninstallation(maximum_attempts=3):
@@ -941,7 +942,6 @@ def delete_package_control_settings():
         to its settings file.
     """
     log( 1, "Calling delete_package_control_settings..." )
-    global g_is_installation_complete
 
     clean_settings       = {}
     package_control_file = os.path.join( g_channel_settings['USER_FOLDER_PATH'], g_package_control_name )
@@ -956,7 +956,10 @@ def delete_package_control_settings():
         clean_settings['remove_orphaned_backup'] = get_dictionary_key( g_package_control_settings, 'remove_orphaned', True )
 
     write_data_file( package_control_file, clean_settings )
-    g_is_installation_complete = True
+
+    # Set the flag as completed, to signalize the this part of the installation was successful
+    global g_is_running
+    g_is_running = False
 
 
 def sync_package_control_and_manager():
@@ -1044,7 +1047,7 @@ def ensure_installed_packages_name(package_control_settings):
 
 
 def ask_user_for_which_packages_to_install(packages_to_install):
-    can_continue  = [False]
+    can_continue  = [False, False]
     active_window = sublime.active_window()
 
     install_message    = "Select this to not install it."
@@ -1068,10 +1071,8 @@ def ask_user_for_which_packages_to_install(packages_to_install):
     def on_done(item_index):
 
         if item_index < 1:
-            global g_is_installation_complete
-            g_is_installation_complete = False
-
             can_continue[0] = True
+            can_continue[1] = True
             return
 
         if item_index == 1:
@@ -1116,7 +1117,7 @@ def ask_user_for_which_packages_to_install(packages_to_install):
     # Show up the console, so the user can follow the process.
     sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
 
-    if g_is_installation_complete:
+    if can_continue[1]:
         log.insert_empty_line()
         raise InstallationCancelled( "The user closed the installer's packages pick up list." )
 
@@ -1137,7 +1138,7 @@ def check_installed_packages_alert(maximum_attempts=10):
 
     if maximum_attempts > 0:
 
-        if g_is_already_running:
+        if g_is_running:
             sublime.set_timeout_async( lambda: check_installed_packages_alert( maximum_attempts ), 1000 )
 
         else:
@@ -1156,7 +1157,7 @@ def check_installed_packages(maximum_attempts=10):
     log( _grade(), "Finishing installation... maximum_attempts: " + str( maximum_attempts ) )
     maximum_attempts -= 1
 
-    if g_is_installation_complete:
+    if not g_is_running:
 
         if not IS_UPGRADE_INSTALLATION:
             sublime.message_dialog( end_user_message( """\
@@ -1167,10 +1168,6 @@ def check_installed_packages(maximum_attempts=10):
 
                     Check you Sublime Text Console for more information.
                     """ % ( g_channel_settings['CHANNEL_PACKAGE_NAME'], INSTALLATION_TYPE_NAME ) ) )
-
-        else:
-            global g_is_already_running
-            g_is_already_running = False
 
         print_failed_repositories()
         return
@@ -1193,20 +1190,20 @@ def check_installed_packages(maximum_attempts=10):
 
 def end_user_message(message):
     # This is here because it is almost the last thing to be done
-    global g_is_already_running
-    g_is_already_running = False
+    global g_is_running
+    g_is_running = False
 
     return wrap_text( message )
 
 
 def is_allowed_to_run():
-    global g_is_already_running
+    global g_is_running
 
-    if g_is_already_running:
+    if g_is_running:
         print( "You are already running a command. Wait until it finishes or restart Sublime Text" )
         return False
 
-    g_is_already_running = True
+    g_is_running = True
     return True
 
 
@@ -1226,12 +1223,10 @@ def print_failed_repositories():
 def unpack_settings(channel_settings):
     global g_channel_settings
     global g_failed_repositories
-    global g_is_installation_complete
     global _uningored_packages_to_flush
 
     g_channel_settings           = channel_settings
     g_failed_repositories        = []
-    g_is_installation_complete   = False
     _uningored_packages_to_flush = []
 
     global IS_UPGRADE_INSTALLATION

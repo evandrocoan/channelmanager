@@ -37,7 +37,11 @@ import shutil
 import threading
 
 
-g_is_already_running           = False
+CLEAN_PACKAGESMANAGER_FLAG   = 1
+RESTORE_REMOVE_ORPHANED_FLAG = 2
+ALL_RUNNING_CONTROL_FLAGS    = CLEAN_PACKAGESMANAGER_FLAG | RESTORE_REMOVE_ORPHANED_FLAG
+
+g_is_running = 0
 g_is_package_control_installed = False
 
 from . import settings
@@ -171,9 +175,6 @@ class UninstallChannelFilesThread(threading.Thread):
         log( _grade(), "Entering on %s run(1)" % self.__class__.__name__ )
         load_package_manager_settings()
 
-        global g_is_installation_complete
-        g_is_installation_complete = 0
-
         try:
             packages_to_uninstall = get_packages_to_uninstall( IS_DOWNGRADE_INSTALLATION )
 
@@ -193,7 +194,10 @@ class UninstallChannelFilesThread(threading.Thread):
 
         except ( InstallationCancelled, NoPackagesAvailable ) as error:
             log( 1, str( error ) )
-            g_is_installation_complete |= 3
+
+            # Set the flag as completed, to signalize the installation has ended
+            global g_is_running
+            g_is_running = 0
 
 
 def uninstall_packages(packages_to_uninstall):
@@ -532,8 +536,9 @@ def clean_packagesmanager_settings(maximum_attempts=3):
         sublime.set_timeout_async( lambda: clean_packagesmanager_settings( maximum_attempts ), 2000 )
         return
 
-    global g_is_installation_complete
-    g_is_installation_complete |= 2
+    # Set the flag as completed, to signalize the this part of the installation was successful
+    global g_is_running
+    g_is_running &= ~CLEAN_PACKAGESMANAGER_FLAG
 
 
 def uninstall_folders():
@@ -601,7 +606,7 @@ def add_git_folder_by_file(file_relative_path, git_folders):
 
 
 def ask_user_for_which_packages_to_install(packages_names):
-    can_continue  = [False]
+    can_continue  = [False, False]
     active_window = sublime.active_window()
 
     install_message    = "Select this to not uninstall it."
@@ -625,10 +630,8 @@ def ask_user_for_which_packages_to_install(packages_names):
     def on_done(item_index):
 
         if item_index < 1:
-            global g_is_already_running
-            g_is_already_running = False
-
             can_continue[0] = True
+            can_continue[1] = True
             return
 
         if item_index == 1:
@@ -673,7 +676,7 @@ def ask_user_for_which_packages_to_install(packages_names):
     # Show up the console, so the user can follow the process.
     sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
 
-    if not g_is_already_running:
+    if can_continue[1]:
         log.insert_empty_line()
         raise InstallationCancelled( "The user closed the installer's packages pick up list." )
 
@@ -727,7 +730,7 @@ def check_uninstalled_packages_alert(maximum_attempts=10):
 
     if maximum_attempts > 0:
 
-        if g_is_already_running:
+        if g_is_running:
             sublime.set_timeout_async( lambda: check_uninstalled_packages_alert( maximum_attempts ), 1000 )
 
         else:
@@ -744,17 +747,15 @@ def check_uninstalled_packages(maximum_attempts=10):
         and warn the user.
     """
     log( _grade(), "Finishing %s... maximum_attempts: " % INSTALLATION_TYPE_NAME + str( maximum_attempts ) )
+
+    global g_is_running
     maximum_attempts -= 1
 
-    if g_is_installation_complete & 3:
+    if not g_is_running:
         unignore_user_packages( flush_everything=True )
 
         if not IS_DOWNGRADE_INSTALLATION:
             complete_channel_uninstallation()
-
-        else:
-            global g_is_already_running
-            g_is_already_running = False
 
         return
 
@@ -777,20 +778,20 @@ def check_uninstalled_packages(maximum_attempts=10):
 
 def end_user_message(message):
     # This is here because it is almost the last thing to be done
-    global g_is_already_running
-    g_is_already_running = False
+    global g_is_running
+    g_is_running = 0
 
     return wrap_text( message )
 
 
 def is_allowed_to_run():
-    global g_is_already_running
+    global g_is_running
 
-    if g_is_already_running:
+    if g_is_running:
         print( "You are already running a command. Wait until it finishes or restart Sublime Text" )
         return False
 
-    g_is_already_running = True
+    g_is_running = ALL_RUNNING_CONTROL_FLAGS
     return True
 
 
@@ -842,14 +843,15 @@ def attempt_to_uninstall_packagesmanager(packages_to_uninstall):
             install_package_control( package_manager )
 
         uninstall_packagesmanger( package_manager, installed_packages )
-        restore_the_remove_orphaned_setting()
+        restore_remove_orphaned_setting()
 
     else:
-        global g_is_installation_complete
-        g_is_installation_complete |= 3
+        # Clean right away the PackagesManager successful flag, was it was not installed
+        global g_is_running
+        g_is_running &= ~CLEAN_PACKAGESMANAGER_FLAG
 
 
-def restore_the_remove_orphaned_setting():
+def restore_remove_orphaned_setting():
 
     if g_remove_orphaned_backup:
         # By default, it is already True on `Package Control.sublime-settings`, so just remove it
@@ -860,8 +862,9 @@ def restore_the_remove_orphaned_setting():
 
     save_package_control_settings()
 
-    global g_is_installation_complete
-    g_is_installation_complete |= 1
+    # Set the flag as completed, to signalize the this part of the installation was successful
+    global g_is_running
+    g_is_running &= ~RESTORE_REMOVE_ORPHANED_FLAG
 
 
 def load_package_manager_settings():
