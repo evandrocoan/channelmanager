@@ -65,6 +65,7 @@ from .channel_utilities import NoPackagesAvailable
 from .channel_utilities import load_repository_file
 from .channel_utilities import is_channel_upgraded
 from .channel_utilities import recursively_delete_empty_folders
+from .channel_utilities import print_failed_repositories
 
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
@@ -128,7 +129,7 @@ def main(channel_settings, is_forced=False):
     if is_forced or not os.path.exists( main_git_path ) and is_channel_upgraded( channel_settings ):
         log( 1, "Entering on %s main(0)" % settings.CURRENT_PACKAGE_NAME )
 
-        installer_thread = StartUninstallChannelThread( channel_settings, is_forced )
+        installer_thread = StartUninstallChannelThread( channel_settings )
         installer_thread.start()
 
 
@@ -136,8 +137,6 @@ class StartUninstallChannelThread(threading.Thread):
 
     def __init__(self, channel_settings, is_forced):
         threading.Thread.__init__(self)
-
-        self.is_forced        = is_forced
         self.channel_settings = channel_settings
 
     def run(self):
@@ -147,7 +146,7 @@ class StartUninstallChannelThread(threading.Thread):
         """
 
         if is_allowed_to_run():
-            unpack_settings( self.channel_settings, self.is_forced )
+            unpack_settings( self.channel_settings )
 
             uninstaller_thread = UninstallChannelFilesThread()
             uninstaller_thread.start()
@@ -161,9 +160,14 @@ class StartUninstallChannelThread(threading.Thread):
 
             uninstaller_thread.join()
 
-            # Wait PackagesManager to load the found dependencies, before announcing it to the user
-            sublime.set_timeout_async( check_uninstalled_packages_alert, 1000 )
-            sublime.set_timeout_async( check_uninstalled_packages, 10000 )
+            # The installation is not complete when the user cancelled the installation process or
+            # there are no packages available for an upgrade.
+            if g_is_running:
+                save_default_settings()
+
+                # Wait PackagesManager to load the found dependencies, before announcing it to the user
+                sublime.set_timeout_async( check_uninstalled_packages_alert, 1000 )
+                sublime.set_timeout_async( check_uninstalled_packages, 10000 )
 
 
 class UninstallChannelFilesThread(threading.Thread):
@@ -173,7 +177,7 @@ class UninstallChannelFilesThread(threading.Thread):
 
     def run(self):
         log( _grade(), "Entering on %s run(1)" % self.__class__.__name__ )
-        load_package_manager_settings()
+        load_installation_settings_file()
 
         try:
             packages_to_uninstall = get_packages_to_uninstall( IS_DOWNGRADE_INSTALLATION )
@@ -237,20 +241,26 @@ def uninstall_packages(packages_to_uninstall):
         silence_error_message_box(61.0)
         ignore_next_packages( package_disabler, package_name, packages_to_uninstall )
 
-        package_manager.remove_package( package_name, is_dependency )
-        remove_packages_from_list( package_name )
+        if package_manager.remove_package( package_name, is_dependency ) is False:
+            log( 1, "Error: Failed to uninstall the repository `%s`!" % package_name )
+            g_failed_repositories.append( package_name )
+
+        else:
+            remove_packages_from_list( package_name )
+
+        # Progressively saves the installation data, in case the user closes Sublime Text
+        save_default_settings()
 
     return package_manager
 
 
 def get_packages_to_uninstall(is_downgrade):
     filtered_packages     = []
-    packages_to_uninstall = get_dictionary_key( g_channelSettings, 'packages_to_uninstall', [] )
+    packages_to_uninstall = get_dictionary_key( g_channelDetails, 'packages_to_uninstall', [] )
 
     if is_downgrade:
         packages_to_not_remove = set()
         repositories_loaded    = load_repository_file( g_channel_settings['CHANNEL_REPOSITORY_FILE'], {} )
-        packages_not_installed = get_dictionary_key( g_channelSettings, 'packages_not_installed', [] )
 
         install_exclusively    = g_channel_settings['PACKAGES_TO_INSTALL_EXCLUSIVELY']
         is_exclusively_install = not not len( install_exclusively )
@@ -262,7 +272,7 @@ def get_packages_to_uninstall(is_downgrade):
                 if package_name in install_exclusively:
                     packages_to_not_remove.add( package_name )
 
-        packages_to_uninstall = set( packages_to_uninstall + packages_not_installed ) - packages_to_not_remove
+        packages_to_uninstall = set( packages_to_uninstall + g_packages_not_installed ) - packages_to_not_remove
 
     for package_name in PACKAGES_TO_UNINSTALL_FIRST:
 
@@ -276,11 +286,12 @@ def get_packages_to_uninstall(is_downgrade):
         if package_name not in filtered_packages:
             filtered_packages.append( package_name )
 
-    # Allow to uninstall only the channel package when there is no other packages installed
-    if not g_is_forced_uninstallation and len( filtered_packages ) < 1:
-        raise NoPackagesAvailable( "There are 0 packages available to uninstall!" )
-
     if is_downgrade:
+
+        # Allow to uninstall only the channel package when there is no other packages installed
+        if len( filtered_packages ) < 1:
+            raise NoPackagesAvailable( "There are 0 packages available to uninstall!" )
+
         log( 1, "New packages packages to uninstall found... " + str( filtered_packages ) )
 
     return filtered_packages
@@ -305,7 +316,7 @@ def get_installed_repositories(package_manager):
 def uninstall_default_package():
     log( 1, "%s of `Default Package` files..." % INSTALLATION_TYPE_NAME )
 
-    files_installed       = get_dictionary_key( g_channelSettings, 'default_package_files', [] )
+    files_installed       = get_dictionary_key( g_channelDetails, 'default_package_files', [] )
     default_packages_path = os.path.join( g_channel_settings['CHANNEL_ROOT_DIRECTORY'], "Packages", "Default" )
 
     for file in files_installed:
@@ -406,6 +417,9 @@ def save_package_control_settings():
 
 def remove_packages_from_list(package_name):
     remove_if_exists( g_installed_packages, package_name )
+    remove_if_exists( g_packages_to_uninstall, package_name )
+
+    save_default_settings()
     save_package_control_settings()
 
     unignore_user_packages( package_name )
@@ -477,18 +491,21 @@ def uninstall_list_of_packages(package_manager, packages_to_uninstall):
         unloaded by Sublime Text
     """
     log( 1, "uninstall_list_of_packages, %s... " % INSTALLATION_TYPE_NAME + str( packages_to_uninstall ) )
-    packages_to_remove = []
+    add_packages_to_ignored_list( [ package_name for package_name, _ in packages_to_uninstall ] )
 
-    packages_to_remove.extend( packages_to_uninstall )
-    add_packages_to_ignored_list( [ package_name for package_name, _ in packages_to_remove ] )
-
-    for package_name, is_dependency in packages_to_remove:
+    for package_name, is_dependency in packages_to_uninstall:
         log.insert_empty_line()
         log.insert_empty_line()
+
         log( 1, "%s of: %s..." % ( INSTALLATION_TYPE_NAME, str( package_name ) ) )
-
         silence_error_message_box(62.0)
-        package_manager.remove_package( package_name, is_dependency )
+
+        if package_manager.remove_package( package_name, is_dependency ) is False:
+            log( 1, "Error: Failed to uninstall the repository `%s`!" % package_name )
+            g_failed_repositories.append( package_name )
+
+        else:
+            remove_packages_from_list( package_name )
 
 
 def remove_0_packagesmanager_loader():
@@ -507,7 +524,13 @@ def add_packages_to_ignored_list(packages_list):
         Something, somewhere is setting the ignored_packages list to `["Vintage"]`. Then ensure we
         override this.
     """
+    global g_next_packages_to_ignore
     ignored_packages = g_user_settings.get( "ignored_packages", [] )
+
+    # Progressively saves the installation data, in case the user closes Sublime Text
+    g_next_packages_to_ignore = packages_list
+    save_default_settings()
+
     unique_list_append( ignored_packages, packages_list )
 
     for interval in range( 0, 27 ):
@@ -542,27 +565,25 @@ def clean_packagesmanager_settings(maximum_attempts=3):
 
 
 def uninstall_folders():
-    folders_to_remove = get_dictionary_key( g_channelSettings, "folders_to_uninstall", [] )
-
     log.insert_empty_line()
     log.insert_empty_line()
-    log( 1, "%s of added folders: %s" % ( INSTALLATION_TYPE_NAME, str( folders_to_remove ) ) )
+    log( 1, "%s of added folders: %s" % ( INSTALLATION_TYPE_NAME, str( g_files_to_uninstall ) ) )
 
-    for folder in reversed( folders_to_remove ):
+    for folder in reversed( g_files_to_uninstall ):
         folders_not_empty = []
         log( 1, "Uninstalling folder: %s" % str( folder ) )
 
         folder_absolute_path = os.path.join( g_channel_settings['CHANNEL_ROOT_DIRECTORY'], folder )
         recursively_delete_empty_folders( folder_absolute_path, folders_not_empty )
 
-    for folder in folders_to_remove:
+    for folder in g_files_to_uninstall:
         folders_not_empty = []
         log( 1, "Uninstalling folder: %s" % str( folder ) )
 
         folder_absolute_path = os.path.join( g_channel_settings['CHANNEL_ROOT_DIRECTORY'], folder )
         recursively_delete_empty_folders( folder_absolute_path, folders_not_empty )
 
-    for folder in folders_to_remove:
+    for folder in g_files_to_uninstall:
         folders_not_empty = []
         log( 1, "Uninstalling folder: %s" % str( folder ) )
 
@@ -573,26 +594,34 @@ def uninstall_folders():
             log( 1, "The installed folder `%s` could not be removed because is it not empty." % folder_absolute_path )
             log( 1, "Its files contents are: " + str( os.listdir( folder_absolute_path ) ) )
 
+    del g_files_to_uninstall[:]
+
+    # Progressively saves the installation data, in case the user closes Sublime Text
+    save_default_settings()
+
 
 def uninstall_files():
     git_folders = []
-    files_to_remove = get_dictionary_key( g_channelSettings, "files_to_uninstall", [] )
 
     log.insert_empty_line()
     log.insert_empty_line()
-    log( 1, "%s of added files: %s" % ( INSTALLATION_TYPE_NAME, str( files_to_remove ) ) )
+    log( 1, "%s of added files: %s" % ( INSTALLATION_TYPE_NAME, str( g_files_to_uninstall ) ) )
 
-    for file in files_to_remove:
+    for file in g_files_to_uninstall:
         log( 1, "Uninstalling file: %s" % str( file ) )
         file_absolute_path = os.path.join( g_channel_settings['CHANNEL_ROOT_DIRECTORY'], file )
 
         safe_remove( file_absolute_path )
         add_git_folder_by_file( file, git_folders )
 
+    del g_files_to_uninstall[:]
     log( 1, "Removing git_folders..." )
 
     for git_folder in git_folders:
         remove_git_folder( git_folder )
+
+    # Progressively saves the installation data, in case the user closes Sublime Text
+    save_default_settings()
 
 
 def add_git_folder_by_file(file_relative_path, git_folders):
@@ -681,33 +710,19 @@ def ask_user_for_which_packages_to_install(packages_names):
         raise InstallationCancelled( "The user closed the installer's packages pick up list." )
 
     for package_name in selected_packages_to_not_install:
+        g_packages_not_installed.append( package_name )
+
         target_index = packages_names.index( package_name )
         del packages_names[target_index]
+
+    # Progressively saves the installation data, in case the user closes Sublime Text
+    save_default_settings()
 
 
 def complete_channel_uninstallation(maximum_attempts=3):
     """
         Ensure the file is deleted
     """
-
-    if maximum_attempts == 3:
-        log.insert_empty_line()
-        log.insert_empty_line()
-
-        log( 1, "Uninstalling channel settings file: %s" % str( g_channel_settings['CHANNEL_INSTALLATION_DETAILS'] ) )
-        write_data_file( g_channel_settings['CHANNEL_INSTALLATION_DETAILS'], {} )
-
-    else:
-        log( 1, "Uninstalling channel settings file, maximum_attempts: %s" % str( maximum_attempts ) )
-
-    remove_only_if_exists( g_channel_settings['CHANNEL_INSTALLATION_DETAILS'] )
-
-    if maximum_attempts > 0:
-        maximum_attempts -= 1
-
-        sublime.set_timeout_async( lambda: complete_channel_uninstallation( maximum_attempts ), 1000 )
-        return
-
     sublime.message_dialog( end_user_message( """\
             The %s %s was successfully completed.
 
@@ -795,12 +810,12 @@ def is_allowed_to_run():
     return True
 
 
-def unpack_settings(channel_settings, is_forced):
+def unpack_settings(channel_settings):
     global g_channel_settings
-    global g_is_forced_uninstallation
+    global g_failed_repositories
 
-    g_channel_settings       = channel_settings
-    g_is_forced_uninstallation = is_forced
+    g_channel_settings         = channel_settings
+    g_failed_repositories      = []
 
     global INSTALLATION_TYPE_NAME
     global IS_DOWNGRADE_INSTALLATION
@@ -867,36 +882,51 @@ def restore_remove_orphaned_setting():
     g_is_running &= ~RESTORE_REMOVE_ORPHANED_FLAG
 
 
-def load_package_manager_settings():
+def save_default_settings():
+    """
+        When uninstalling this channel we can only remove our packages, keeping the user's original
+        ignored packages intact.
+    """
+
+    if 'Default' in g_packages_to_uninstall:
+        g_channelDetails['default_package_files'] = g_channel_settings['DEFAULT_PACKAGE_FILES']
+
+    # `packages_to_uninstall` and `packages_to_unignore` are to uninstall and unignore they when uninstalling the channel
+    g_channelDetails['packages_to_uninstall']   = g_packages_to_uninstall
+    g_channelDetails['packages_to_unignore']    = g_packages_to_unignore
+    g_channelDetails['files_to_uninstall']      = g_files_to_uninstall
+    g_channelDetails['folders_to_uninstall']    = g_folders_to_uninstall
+    g_channelDetails['next_packages_to_ignore'] = g_next_packages_to_ignore
+    g_channelDetails['packages_not_installed']  = g_packages_not_installed
+
+    g_channelDetails = sort_dictionary( g_channelDetails )
+    # log( 1, "save_default_settings, g_channelDetails: " + json.dumps( g_channelDetails, indent=4 ) )
+
+    write_data_file( g_channel_settings['CHANNEL_INSTALLATION_DETAILS'], g_channelDetails )
+
+
+def load_installation_settings_file():
     global _uningored_packages_to_flush
     _uningored_packages_to_flush = []
-
-    packagesmanager_name = "PackagesManager.sublime-settings"
-    package_control_name = "Package Control.sublime-settings"
 
     global PACKAGE_CONTROL
     global PACKAGESMANAGER
 
-    global g_package_control_settings
-    global g_installed_packages
+    packagesmanager_name = "PackagesManager.sublime-settings"
+    package_control_name = "Package Control.sublime-settings"
+
+    PACKAGESMANAGER = os.path.join( g_channel_settings['USER_FOLDER_PATH'], packagesmanager_name )
+    PACKAGE_CONTROL = os.path.join( g_channel_settings['USER_FOLDER_PATH'], package_control_name )
 
     global g_user_settings
     global g_default_ignored_packages
     global g_remove_orphaned_backup
 
-    global g_packages_to_unignore
-    global g_channelSettings
-
-    g_channelSettings      = load_data_file( g_channel_settings['CHANNEL_INSTALLATION_DETAILS'] )
-    g_packages_to_unignore = get_dictionary_key( g_channelSettings, "packages_to_unignore", [] )
-
-    log( _grade(), "Loaded g_channelSettings: " + str( g_channelSettings ) )
-
-    PACKAGESMANAGER = os.path.join( g_channel_settings['USER_FOLDER_PATH'], packagesmanager_name )
-    PACKAGE_CONTROL = os.path.join( g_channel_settings['USER_FOLDER_PATH'], package_control_name )
-
     g_user_settings            = sublime.load_settings( g_channel_settings['USER_SETTINGS_FILE'] )
     g_default_ignored_packages = g_user_settings.get( "ignored_packages", [] )
+
+    global g_installed_packages
+    global g_package_control_settings
 
     # Allow to not override the Package Control file when PackagesManager does exists
     if os.path.exists( PACKAGESMANAGER ):
@@ -914,4 +944,40 @@ def load_package_manager_settings():
         # the uninstallation when Package Control is installed back
         g_package_control_settings['remove_orphaned'] = False
         save_package_control_settings()
+
+    global g_channelDetails
+    global g_packages_to_uninstall
+    global g_files_to_uninstall
+    global g_folders_to_uninstall
+    global g_packages_to_unignore
+    global g_next_packages_to_ignore
+    global g_packages_not_installed
+
+    g_channelDetails = load_data_file( g_channel_settings['CHANNEL_INSTALLATION_DETAILS'] )
+    log( _grade(), "Loaded g_channelDetails: " + str( g_channelDetails ) )
+
+    g_packages_to_uninstall   = get_dictionary_key( g_channelDetails, 'packages_to_uninstall', [] )
+    g_packages_to_unignore    = get_dictionary_key( g_channelDetails, 'packages_to_unignore', [] )
+    g_files_to_uninstall      = get_dictionary_key( g_channelDetails, 'files_to_uninstall', [] )
+    g_folders_to_uninstall    = get_dictionary_key( g_channelDetails, 'folders_to_uninstall', [] )
+    g_next_packages_to_ignore = get_dictionary_key( g_channelDetails, 'next_packages_to_ignore', [] )
+    g_packages_not_installed  = get_dictionary_key( g_channelDetails, 'packages_not_installed', [] )
+
+    unignore_installed_packages()
+
+
+def unignore_installed_packages():
+    """
+        When the installation was interrupted, there will be ignored packages which are pending to
+        uningored.
+    """
+    packages_to_unignore = []
+
+    for package_name in g_next_packages_to_ignore:
+
+        if package_name in g_packages_to_uninstall:
+            packages_to_unignore.append( package_name )
+
+    log( _grade(), "unignore_installed_packages: " + str( packages_to_unignore ) )
+    unignore_some_packages( packages_to_unignore )
 

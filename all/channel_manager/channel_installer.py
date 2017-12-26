@@ -64,6 +64,7 @@ from .channel_utilities import load_repository_file
 from .channel_utilities import InstallationCancelled
 from .channel_utilities import NoPackagesAvailable
 from .channel_utilities import is_channel_upgraded
+from .channel_utilities import print_failed_repositories
 
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
@@ -160,12 +161,11 @@ class StartInstallChannelThread(threading.Thread):
             # The installation is not complete when the user cancelled the installation process or
             # there are no packages available for an upgrade.
             if g_is_running:
-                # Complete the installation process
                 save_default_settings()
 
-            # Wait PackagesManager to load the found dependencies, before announcing it to the user
-            sublime.set_timeout_async( check_installed_packages_alert, 1000 )
-            sublime.set_timeout_async( check_installed_packages, 10000 )
+                # Wait PackagesManager to load the found dependencies, before announcing it to the user
+                sublime.set_timeout_async( check_installed_packages_alert, 1000 )
+                sublime.set_timeout_async( check_installed_packages, 10000 )
 
 
 class InstallChannelFilesThread(threading.Thread):
@@ -650,6 +650,7 @@ def install_development_packages(packages_to_install, git_executable_path, comma
         if os.path.exists( submodule_absolute_path ):
 
             if not package_manager.backup_package_dir( package_name ):
+                g_failed_repositories.append( package_name )
                 log( 1, "Error: Failed to backup and install the repository `%s`!" % package_name )
                 continue
 
@@ -660,6 +661,7 @@ def install_development_packages(packages_to_install, git_executable_path, comma
         result  = command_line_interface.execute( command, cwd=root )
 
         if result is False:
+            g_failed_repositories.append( package_name )
             log( 1, "Error: Failed to download the repository `%s`!" % package_name )
             continue
 
@@ -801,24 +803,23 @@ def save_default_settings():
         When uninstalling this channel we can only remove our packages, keeping the user's original
         ignored packages intact.
     """
-    global g_channelSettings
 
     if 'Default' in g_packages_to_uninstall:
-        g_channelSettings['default_package_files'] = g_channel_settings['DEFAULT_PACKAGE_FILES']
+        g_channelDetails['default_package_files'] = g_channel_settings['DEFAULT_PACKAGE_FILES']
 
     # `packages_to_uninstall` and `packages_to_unignore` are to uninstall and unignore they when uninstalling the channel
-    g_channelSettings['packages_to_uninstall']   = g_packages_to_uninstall
-    g_channelSettings['packages_to_unignore']    = g_packages_to_unignore
-    g_channelSettings['files_to_uninstall']      = g_files_to_uninstall
-    g_channelSettings['folders_to_uninstall']    = g_folders_to_uninstall
-    g_channelSettings['next_packages_to_ignore'] = g_next_packages_to_ignore
-    g_channelSettings['packages_not_installed']  = g_packages_not_installed
-    g_channelSettings['installation_type']       = g_installation_type
+    g_channelDetails['packages_to_uninstall']   = g_packages_to_uninstall
+    g_channelDetails['packages_to_unignore']    = g_packages_to_unignore
+    g_channelDetails['files_to_uninstall']      = g_files_to_uninstall
+    g_channelDetails['folders_to_uninstall']    = g_folders_to_uninstall
+    g_channelDetails['next_packages_to_ignore'] = g_next_packages_to_ignore
+    g_channelDetails['packages_not_installed']  = g_packages_not_installed
+    g_channelDetails['installation_type']       = g_installation_type
 
-    g_channelSettings = sort_dictionary( g_channelSettings )
-    # log( 1, "save_default_settings, g_channelSettings: " + json.dumps( g_channelSettings, indent=4 ) )
+    g_channelDetails = sort_dictionary( g_channelDetails )
+    # log( 1, "save_default_settings, g_channelDetails: " + json.dumps( g_channelDetails, indent=4 ) )
 
-    write_data_file( g_channel_settings['CHANNEL_INSTALLATION_DETAILS'], g_channelSettings )
+    write_data_file( g_channel_settings['CHANNEL_INSTALLATION_DETAILS'], g_channelDetails )
 
 
 def sort_dictionary(dictionary):
@@ -924,6 +925,7 @@ def add_packages_to_ignored_list(packages_list):
     global g_next_packages_to_ignore
     g_next_packages_to_ignore = packages_list
 
+    # Progressively saves the installation data, in case the user closes Sublime Text
     save_default_settings()
 
     ignored_packages = g_userSettings.get( "ignored_packages", [] )
@@ -1127,6 +1129,9 @@ def ask_user_for_which_packages_to_install(packages_to_install):
         target_index = packages_to_install.index( package_name )
         del packages_to_install[target_index]
 
+    # Progressively saves the installation data, in case the user closes Sublime Text
+    save_default_settings()
+
 
 def check_installed_packages_alert(maximum_attempts=10):
     """
@@ -1169,7 +1174,7 @@ def check_installed_packages(maximum_attempts=10):
                     Check you Sublime Text Console for more information.
                     """ % ( g_channel_settings['CHANNEL_PACKAGE_NAME'], INSTALLATION_TYPE_NAME ) ) )
 
-        print_failed_repositories()
+        print_failed_repositories( g_failed_repositories )
         return
 
     if maximum_attempts > 0:
@@ -1185,7 +1190,7 @@ def check_installed_packages(maximum_attempts=10):
                 so later others can see what happened try to fix it.
                 """ % ( g_channel_settings['CHANNEL_PACKAGE_NAME'], INSTALLATION_TYPE_NAME ) ) )
 
-        print_failed_repositories()
+        print_failed_repositories( g_failed_repositories )
 
 
 def end_user_message(message):
@@ -1205,19 +1210,6 @@ def is_allowed_to_run():
 
     g_is_running = True
     return True
-
-
-def print_failed_repositories():
-
-    if len( g_failed_repositories ) > 0:
-        sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
-
-        log.insert_empty_line()
-        log.insert_empty_line()
-        log( 1, "The following repositories failed their commands..." )
-
-    for package_name in g_failed_repositories:
-        log( 1, "Package: %s" % ( package_name ) )
 
 
 def unpack_settings(channel_settings):
@@ -1249,11 +1241,11 @@ def load_installation_settings_file():
     g_packagesmanager_name = "PackagesManager.sublime-settings"
 
     global g_userSettings
-    global g_channelSettings
+    global g_channelDetails
     global g_default_ignored_packages
 
-    g_userSettings    = sublime.load_settings( g_channel_settings['USER_SETTINGS_FILE'] )
-    g_channelSettings = load_data_file( g_channel_settings['CHANNEL_INSTALLATION_DETAILS'] )
+    g_userSettings   = sublime.load_settings( g_channel_settings['USER_SETTINGS_FILE'] )
+    g_channelDetails = load_data_file( g_channel_settings['CHANNEL_INSTALLATION_DETAILS'] )
 
     # `g_default_ignored_packages` contains the original user's ignored packages.
     g_default_ignored_packages = g_userSettings.get( 'ignored_packages', [] )
@@ -1266,13 +1258,13 @@ def load_installation_settings_file():
     global g_packages_not_installed
     global g_installation_type
 
-    g_packages_to_uninstall   = get_dictionary_key( g_channelSettings, 'packages_to_uninstall', [] )
-    g_packages_to_unignore    = get_dictionary_key( g_channelSettings, 'packages_to_unignore', [] )
-    g_files_to_uninstall      = get_dictionary_key( g_channelSettings, 'files_to_uninstall', [] )
-    g_folders_to_uninstall    = get_dictionary_key( g_channelSettings, 'folders_to_uninstall', [] )
-    g_next_packages_to_ignore = get_dictionary_key( g_channelSettings, 'next_packages_to_ignore', [] )
-    g_packages_not_installed  = get_dictionary_key( g_channelSettings, 'packages_not_installed', [] )
-    g_installation_type       = get_dictionary_key( g_channelSettings, 'installation_type', g_channel_settings['INSTALLATION_TYPE'] )
+    g_packages_to_uninstall   = get_dictionary_key( g_channelDetails, 'packages_to_uninstall', [] )
+    g_packages_to_unignore    = get_dictionary_key( g_channelDetails, 'packages_to_unignore', [] )
+    g_files_to_uninstall      = get_dictionary_key( g_channelDetails, 'files_to_uninstall', [] )
+    g_folders_to_uninstall    = get_dictionary_key( g_channelDetails, 'folders_to_uninstall', [] )
+    g_next_packages_to_ignore = get_dictionary_key( g_channelDetails, 'next_packages_to_ignore', [] )
+    g_packages_not_installed  = get_dictionary_key( g_channelDetails, 'packages_not_installed', [] )
+    g_installation_type       = get_dictionary_key( g_channelDetails, 'installation_type', g_channel_settings['INSTALLATION_TYPE'] )
 
     unignore_installed_packages()
 

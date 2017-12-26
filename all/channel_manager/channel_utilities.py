@@ -321,6 +321,19 @@ def print_data_file(file_path):
     log( 1, "channel_dictionary: " + json.dumps( channel_dictionary, indent=4, sort_keys=True ) )
 
 
+def print_failed_repositories(failed_repositories):
+
+    if len( failed_repositories ) > 0:
+        sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+
+        log.insert_empty_line()
+        log.insert_empty_line()
+        log( 1, "The following repositories failed their commands..." )
+
+    for package_name in failed_repositories:
+        log( 1, "Package: %s" % ( package_name ) )
+
+
 def get_dictionary_key(dictionary, key, default=None):
 
     if key in dictionary:
