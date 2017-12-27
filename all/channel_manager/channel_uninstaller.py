@@ -135,7 +135,7 @@ def main(channel_settings, is_forced=False):
 
 class StartUninstallChannelThread(threading.Thread):
 
-    def __init__(self, channel_settings, is_forced):
+    def __init__(self, channel_settings):
         threading.Thread.__init__(self)
         self.channel_settings = channel_settings
 
