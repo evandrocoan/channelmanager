@@ -628,7 +628,9 @@ def download_not_packages_submodules(command_line_interface, git_executable_path
 
 def install_development_packages(packages_to_install, git_executable_path, command_line_interface):
     root = g_channelSettings['CHANNEL_ROOT_DIRECTORY']
-    set_default_settings( packages_to_install )
+
+    packages_names = [ package_info[0] for package_info in packages_to_install ]
+    set_default_settings( packages_names, packages_to_install )
 
     current_index      = 0
     git_packages_count = len( packages_to_install )
@@ -727,7 +729,7 @@ def get_development_packages():
     return packages
 
 
-def set_default_settings(packages_to_install):
+def set_default_settings(packages_names, packages_to_install=[]):
     """
         Set some package to be enabled at last due their settings being dependent on other packages
         which need to be installed first.
@@ -737,10 +739,10 @@ def set_default_settings(packages_to_install):
         already disabled and the new packages to be installed and must be disabled before attempting
         to install them.
     """
-    set_first_and_last_packages_to_install( packages_to_install )
-    ask_user_for_which_packages_to_install( packages_to_install )
+    set_first_and_last_packages_to_install( packages_names )
+    ask_user_for_which_packages_to_install( packages_names, packages_to_install )
 
-    if "PackagesManager" in packages_to_install:
+    if "PackagesManager" in packages_names:
         sync_package_control_and_manager()
 
     else:
@@ -750,7 +752,7 @@ def set_default_settings(packages_to_install):
     # The development version does not need to ignore all installed packages before starting the
     # installation process as it is not affected by the Sublime Text bug.
     if IS_DEVELOPMENT_INSTALLATION:
-        set_development_ignored_packages( packages_to_install )
+        set_development_ignored_packages( packages_names )
 
 
 def set_development_ignored_packages(packages_to_install):
@@ -1049,7 +1051,7 @@ def ensure_installed_packages_name(package_control_settings):
         del package_control_settings['remove_orphaned_backup']
 
 
-def ask_user_for_which_packages_to_install(packages_to_install):
+def ask_user_for_which_packages_to_install(packages_names, packages_to_install=[]):
     can_continue  = [False, False]
     active_window = sublime.active_window()
 
@@ -1063,7 +1065,7 @@ def ask_user_for_which_packages_to_install(packages_to_install):
         [ "Continue the Installation Process...", "Select this when you are finished selections packages." ]
     ]
 
-    for package_name in packages_to_install:
+    for package_name in packages_names:
 
         if package_name in g_channelSettings['FORBIDDEN_PACKAGES']:
             packages_informations.append( [ package_name, "You must install it or cancel the %s." % INSTALLATION_TYPE_NAME ] )
@@ -1127,8 +1129,11 @@ def ask_user_for_which_packages_to_install(packages_to_install):
     for package_name in selected_packages_to_not_install:
         g_packages_not_installed.append( package_name )
 
-        target_index = packages_to_install.index( package_name )
-        del packages_to_install[target_index]
+        target_index = packages_names.index( package_name )
+        del packages_names[target_index]
+
+        if len( packages_to_install ):
+            del packages_to_install[target_index]
 
     # Progressively saves the installation data, in case the user closes Sublime Text
     save_default_settings()
