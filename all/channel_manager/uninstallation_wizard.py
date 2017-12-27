@@ -117,7 +117,7 @@ def run_the_installation_wizard(step=1):
 
 
 def uninstall_channel():
-    channel_uninstaller.main( g_channel_settings, True )
+    channel_uninstaller.main( g_channelSettings, True )
 
 
 def show_program_description():
@@ -156,11 +156,11 @@ def show_program_description():
 
 
 def unpack_settigns(channel_settings):
-    global g_channel_settings
+    global g_channelSettings
     global CHANNEL_PACKAGE_NAME
 
-    g_channel_settings   = channel_settings
-    CHANNEL_PACKAGE_NAME = g_channel_settings['CHANNEL_PACKAGE_NAME']
+    g_channelSettings    = channel_settings
+    CHANNEL_PACKAGE_NAME = g_channelSettings['CHANNEL_PACKAGE_NAME']
 
 
 def is_allowed_to_run():

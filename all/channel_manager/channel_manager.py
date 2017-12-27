@@ -104,10 +104,10 @@ def main(channel_settings, command="all"):
 
 
 def unpack_settings(channel_settings):
-    global g_channel_settings
-    g_channel_settings = channel_settings
+    global g_channelSettings
+    g_channelSettings = channel_settings
 
-    # log( 1, "g_channel_settings: \n\n" + dictionary_to_string_by_line( g_channel_settings ) )
+    # log( 1, "g_channelSettings: \n\n" + dictionary_to_string_by_line( g_channelSettings ) )
 
 
 class GenerateChannelThread(threading.Thread):
@@ -127,7 +127,7 @@ class GenerateChannelThread(threading.Thread):
             g_failed_repositories = []
 
             all_packages      = load_deafault_channel()
-            last_channel_file = load_repository_file( g_channel_settings['CHANNEL_REPOSITORY_FILE'] )
+            last_channel_file = load_repository_file( g_channelSettings['CHANNEL_REPOSITORY_FILE'] )
 
             # print_some_repositories( all_packages )
             if self.command == "all":
@@ -280,7 +280,7 @@ def update_repository(last_dictionary, package_name):
     log( 1, "Updating repository... %s" % ( str( package_name ) ) )
 
     command_line_interface = cmd.Cli( None, True )
-    absolute_path = os.path.join( g_channel_settings['CHANNEL_ROOT_DIRECTORY'], "Packages", package_name )
+    absolute_path = os.path.join( g_channelSettings['CHANNEL_ROOT_DIRECTORY'], "Packages", package_name )
 
     git_tag, date_tag, release_date = get_last_tag_fixed( absolute_path, last_dictionary, command_line_interface, True )
     release_data = last_dictionary['releases'][0]
@@ -324,7 +324,7 @@ def is_allowed_to_run():
 
 def load_deafault_channel():
     package_manager  = PackageManager()
-    channel_provider = ChannelProvider( g_channel_settings['DEFAULT_CHANNEL_URL'], package_manager.settings )
+    channel_provider = ChannelProvider( g_channelSettings['DEFAULT_CHANNEL_URL'], package_manager.settings )
 
     all_packages = {}
     channel_repositories = channel_provider.get_sources()
@@ -343,29 +343,29 @@ def create_repository_file(repositories, dependencies):
     repository_file['packages']     = repositories
     repository_file['dependencies'] = dependencies
 
-    # print_data_file( g_channel_settings['CHANNEL_REPOSITORY_FILE'] )
-    write_data_file( g_channel_settings['CHANNEL_REPOSITORY_FILE'], repository_file )
+    # print_data_file( g_channelSettings['CHANNEL_REPOSITORY_FILE'] )
+    write_data_file( g_channelSettings['CHANNEL_REPOSITORY_FILE'], repository_file )
 
 
 def create_channel_file(repositories, dependencies):
     channel_dictionary = OrderedDict()
 
     channel_dictionary['repositories'] = []
-    channel_dictionary['repositories'].append( g_channel_settings['CHANNEL_REPOSITORY_URL'] )
+    channel_dictionary['repositories'].append( g_channelSettings['CHANNEL_REPOSITORY_URL'] )
 
     channel_dictionary['schema_version'] = "3.0.0"
     channel_dictionary['packages_cache'] = OrderedDict()
-    channel_dictionary['packages_cache'][g_channel_settings['CHANNEL_REPOSITORY_URL']] = repositories
+    channel_dictionary['packages_cache'][g_channelSettings['CHANNEL_REPOSITORY_URL']] = repositories
 
     channel_dictionary['dependencies_cache'] = OrderedDict()
-    channel_dictionary['dependencies_cache'][g_channel_settings['CHANNEL_REPOSITORY_URL']] = dependencies
+    channel_dictionary['dependencies_cache'][g_channelSettings['CHANNEL_REPOSITORY_URL']] = dependencies
 
-    # print_data_file( g_channel_settings['CHANNEL_FILE_PATH'] )
-    write_data_file( g_channel_settings['CHANNEL_FILE_PATH'], channel_dictionary )
+    # print_data_file( g_channelSettings['CHANNEL_FILE_PATH'] )
+    write_data_file( g_channelSettings['CHANNEL_FILE_PATH'], channel_dictionary )
 
 
 def create_repositories_list(all_packages, last_channel_file):
-    gitFilePath    = os.path.join( g_channel_settings['CHANNEL_ROOT_DIRECTORY'], '.gitmodules' )
+    gitFilePath    = os.path.join( g_channelSettings['CHANNEL_ROOT_DIRECTORY'], '.gitmodules' )
     gitModulesFile = configparser.RawConfigParser()
 
     repositories = []
@@ -873,7 +873,7 @@ class Repository():
         self.name = os.path.basename( self.path )
 
         # absolute path the the repository
-        self.absolute_path = os.path.join( g_channel_settings['CHANNEL_ROOT_DIRECTORY'], self.path )
+        self.absolute_path = os.path.join( g_channelSettings['CHANNEL_ROOT_DIRECTORY'], self.path )
 
         # the dictionary with the current  information
         self._setDependenciesList()
@@ -1013,8 +1013,8 @@ class Repository():
         return tagged_releases
 
     def configureDependenciesFiles(self, repositories, dependencies):
-        dependencies_json_path  = os.path.join( g_channel_settings['CHANNEL_ROOT_DIRECTORY'], self.path, "dependencies.json" )
-        sublime_dependency_path = os.path.join( g_channel_settings['CHANNEL_ROOT_DIRECTORY'], self.path, ".sublime-dependency" )
+        dependencies_json_path  = os.path.join( g_channelSettings['CHANNEL_ROOT_DIRECTORY'], self.path, "dependencies.json" )
+        sublime_dependency_path = os.path.join( g_channelSettings['CHANNEL_ROOT_DIRECTORY'], self.path, ".sublime-dependency" )
 
         if self.isPackageDependency:
             self._addToDependenciesList( dependencies )

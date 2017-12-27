@@ -483,68 +483,68 @@ as you usually do with the default `Package Control` channel.
    CURRENT_PACKAGE_NAME           = os.path.basename( CURRENT_PACKAGE_ROOT_DIRECTORY )
 
    def plugin_loaded():
-       global g_channel_settings
+       global g_channelSettings
        CHANNEL_RAW_URL = "https://raw.githubusercontent.com/your_user_name/MyBrandNewChannel/master/"
 
-       g_channel_settings = {}
-       g_channel_settings['CHANNEL_ROOT_URL']    = "https://github.com/your_user_name/MyParentRepository"
-       g_channel_settings['DEFAULT_CHANNEL_URL'] = "https://packagecontrol.io/channel_v3.json"
+       g_channelSettings = {}
+       g_channelSettings['CHANNEL_ROOT_URL']    = "https://github.com/your_user_name/MyParentRepository"
+       g_channelSettings['DEFAULT_CHANNEL_URL'] = "https://packagecontrol.io/channel_v3.json"
 
-       g_channel_settings['CHANNEL_FILE_URL']  = clean_urljoin( CHANNEL_RAW_URL, "channel.json" )
-       g_channel_settings['CHANNEL_FILE_PATH'] = os.path.join( CURRENT_PACKAGE_ROOT_DIRECTORY, "channel.json" )
+       g_channelSettings['CHANNEL_FILE_URL']  = clean_urljoin( CHANNEL_RAW_URL, "channel.json" )
+       g_channelSettings['CHANNEL_FILE_PATH'] = os.path.join( CURRENT_PACKAGE_ROOT_DIRECTORY, "channel.json" )
 
-       g_channel_settings['CHANNEL_REPOSITORY_URL']  = clean_urljoin( CHANNEL_RAW_URL, "repository.json" )
-       g_channel_settings['CHANNEL_REPOSITORY_FILE'] = os.path.join( CURRENT_PACKAGE_ROOT_DIRECTORY, "repository.json" )
+       g_channelSettings['CHANNEL_REPOSITORY_URL']  = clean_urljoin( CHANNEL_RAW_URL, "repository.json" )
+       g_channelSettings['CHANNEL_REPOSITORY_FILE'] = os.path.join( CURRENT_PACKAGE_ROOT_DIRECTORY, "repository.json" )
 
-       g_channel_settings['PACKAGES_TO_INSTALL_FIRST'] = \
+       g_channelSettings['PACKAGES_TO_INSTALL_FIRST'] = \
        [
            "My First Package",
            "My Second Package",
            "My Third Package",
        ]
 
-       g_channel_settings['PACKAGES_TO_INSTALL_LAST'] = \
+       g_channelSettings['PACKAGES_TO_INSTALL_LAST'] = \
        [
            "My Package Penultimate Package",
            "My Package Penult Package",
            "My Package Last Package",
        ]
 
-       g_channel_settings['FORBIDDEN_PACKAGES'] = \
+       g_channelSettings['FORBIDDEN_PACKAGES'] = \
        [
            "My First Forbidden Package",
            "My Second Forbidden Package",
        ]
 
-       g_channel_settings['DEFAULT_PACKAGE_FILES'] = \
+       g_channelSettings['DEFAULT_PACKAGE_FILES'] = \
        [
            "Tab Context.sublime-menu",
            "Context.sublime-menu",
        ]
 
-       g_channel_settings['PACKAGES_TO_NOT_INSTALL_STABLE'] = \
+       g_channelSettings['PACKAGES_TO_NOT_INSTALL_STABLE'] = \
        [
            "My First Package to not Install",
            "My Second Package to not Install",
        ]
 
-       g_channel_settings['PACKAGES_TO_NOT_INSTALL_DEVELOPMENT'] = \
+       g_channelSettings['PACKAGES_TO_NOT_INSTALL_DEVELOPMENT'] = \
        [
            "My First Package to not Install",
            "My Second Package to not Install",
        ]
 
-       g_channel_settings['PACKAGES_TO_INSTALL_EXCLUSIVELY'] = \
+       g_channelSettings['PACKAGES_TO_INSTALL_EXCLUSIVELY'] = \
        [
        ]
 
-       g_channel_settings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT'] = \
+       g_channelSettings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT'] = \
        [
            "My First Package to ignore",
            "My Second Package to ignore",
        ]
 
-       g_channel_settings['CHANNEL_VERSIONS_DESCRIPTIONS'] = """\
+       g_channelSettings['CHANNEL_VERSIONS_DESCRIPTIONS'] = """\
            There are two versions of the channel. Each one of them has its proper usage depending on
            your plans. The Stable Version is the most tested and trusted set of packages to be
            installed. It contains all the packages which can be actively enabled and used on daily
@@ -572,7 +572,7 @@ as you usually do with the default `Package Control` channel.
            Development Build of Sublime Text available, as builds 3141 and 3147.
            """
 
-       run_channel_setup( g_channel_settings, CURRENT_PACKAGE_NAME, CURRENT_PACKAGE_ROOT_DIRECTORY )
+       run_channel_setup( g_channelSettings, CURRENT_PACKAGE_NAME, CURRENT_PACKAGE_ROOT_DIRECTORY )
 
        # from channel_manager.channel_utilities import print_all_variables_for_debugging
        # print_all_variables_for_debugging
@@ -588,7 +588,7 @@ as you usually do with the default `Package Control` channel.
    * Generate the files `Main.sublime-menu`, `Default.sublime-commands` and `commands.py` files
 1. CHANNEL_ROOT_DIRECTORY
    * The directory where the Sublime Text loose Packages directory IS ON/IN/INSIDE
-1. g_channel_settings
+1. g_channelSettings
    * Hold all the information for this channel, which will be used to install this channel
 1. CHANNEL_PACKAGE_NAME
    * The name of your channel

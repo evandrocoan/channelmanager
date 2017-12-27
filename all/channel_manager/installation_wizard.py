@@ -227,7 +227,7 @@ def show_goodbye_message():
                 channel_name=CHANNEL_PACKAGE_NAME ) ),
     ]
 
-    channelDetailsPath = g_channel_settings['CHANNEL_INSTALLATION_DETAILS']
+    channelDetailsPath = g_channelSettings['CHANNEL_INSTALLATION_DETAILS']
 
     channelDetails = load_data_file( channelDetailsPath )
     sublime_dialog = sublime.yes_no_cancel_dialog( "\n".join( lines ), ok_button_text, ask_later_text )
@@ -258,8 +258,8 @@ def show_program_description():
         can find this list of packages to be installed on channel on the following addresses:
         """ % CHANNEL_PACKAGE_NAME ),
         "",
-        g_link_wrapper.fill( "<%s>" % g_channel_settings['CHANNEL_ROOT_URL'] ),
-        g_link_wrapper.fill( "<%s>" % g_channel_settings['CHANNEL_FILE_URL'] ),
+        g_link_wrapper.fill( "<%s>" % g_channelSettings['CHANNEL_ROOT_URL'] ),
+        g_link_wrapper.fill( "<%s>" % g_channelSettings['CHANNEL_FILE_URL'] ),
         "",
         wrap_text( """\
         Therefore, this installer will install all Sublime Text Packages listed on the above address,
@@ -304,8 +304,8 @@ def show_license_agreement():
         license:
         """ % CHANNEL_PACKAGE_NAME ),
         "",
-        g_link_wrapper.fill( "<%s#License>" % g_channel_settings['CHANNEL_ROOT_URL'] ),
-        g_link_wrapper.fill( "<%s>" % g_channel_settings['CHANNEL_FILE_URL'] ),
+        g_link_wrapper.fill( "<%s#License>" % g_channelSettings['CHANNEL_ROOT_URL'] ),
+        g_link_wrapper.fill( "<%s>" % g_channelSettings['CHANNEL_FILE_URL'] ),
         "",
         wrap_text( """\
         Did you read and agree with these conditions for using these softwares, packages, plugins,
@@ -391,7 +391,7 @@ def select_stable_or_developent_version():
         Version, because when you are elsewhere you have no time for fixing bugs or testing new
         things. Also because elsewhere you are, not always there will be enough free space required
         by the Development Version.
-        """.format( descriptions=g_channel_settings['CHANNEL_VERSIONS_DESCRIPTIONS'],
+        """.format( descriptions=g_channelSettings['CHANNEL_VERSIONS_DESCRIPTIONS'],
                 channel_name=CHANNEL_PACKAGE_NAME ) ),
     ]
 
@@ -423,7 +423,7 @@ def select_stable_or_developent_version():
                     recorded everything which happened, and should be very helpful in finding the
                     solution for the problem.
                     """.format( channel_name=CHANNEL_PACKAGE_NAME,
-                            root_url=g_channel_settings['CHANNEL_ROOT_URL'] ) ) )
+                            root_url=g_channelSettings['CHANNEL_ROOT_URL'] ) ) )
 
     return user_response != sublime.DIALOG_CANCEL, False
 
@@ -497,7 +497,7 @@ def start_the_installation_process():
         address:
         """.format( channel_name=CHANNEL_PACKAGE_NAME, uninstallation_command=g_uninstallation_command ) ),
         "",
-        g_link_wrapper.fill( "<%s/issues>" % g_channel_settings['CHANNEL_ROOT_URL'] ),
+        g_link_wrapper.fill( "<%s/issues>" % g_channelSettings['CHANNEL_ROOT_URL'] ),
         "",
         wrap_text( """\
         Just do not forget to save your Sublime Text Console output, as it recorded everything which
@@ -510,19 +510,19 @@ def start_the_installation_process():
 
 
 def install_channel():
-    g_channel_settings['INSTALLATION_TYPE'] = g_version_to_install
+    g_channelSettings['INSTALLATION_TYPE'] = g_version_to_install
     add_channel()
 
     clear_cache()
-    channel_installer.main( g_channel_settings, True )
+    channel_installer.main( g_channelSettings, True )
 
 
 def unpack_settigns(channel_settings):
-    global g_channel_settings
+    global g_channelSettings
     global CHANNEL_PACKAGE_NAME
 
-    g_channel_settings   = channel_settings
-    CHANNEL_PACKAGE_NAME = g_channel_settings['CHANNEL_PACKAGE_NAME']
+    g_channelSettings    = channel_settings
+    CHANNEL_PACKAGE_NAME = g_channelSettings['CHANNEL_PACKAGE_NAME']
 
 
 def is_allowed_to_run():
@@ -538,7 +538,7 @@ def is_allowed_to_run():
 
 def add_channel():
     package_control    = "Package Control.sublime-settings"
-    channel_url = g_channel_settings['CHANNEL_FILE_URL']
+    channel_url = g_channelSettings['CHANNEL_FILE_URL']
 
     package_control_settings = sublime.load_settings( package_control )
     channels                 = package_control_settings.get( "channels", [] )
