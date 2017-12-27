@@ -282,7 +282,8 @@ def show_license_agreement():
     user_response = [None]
     active_window = sublime.active_window()
 
-    user_input_text = [""]
+    initial_input   = "Type Here"
+    user_input_text = [initial_input]
     agrement_text   = "i did read and agree"
 
     lines = \
@@ -332,8 +333,12 @@ def show_license_agreement():
                 """.format( input_text=user_input_text[0], channel_name=CHANNEL_PACKAGE_NAME ) ) )
 
     def show_acknowledgment_panel():
-        active_window.show_input_panel( "Did you read and agree with these conditions for using these softwares?",
+        widget_view = active_window.show_input_panel(
+                "Did you read and agree with these conditions for using these softwares?",
                 user_input_text[0], on_done, on_change, on_cancel )
+
+        if user_input_text[0] == initial_input:
+            widget_view.run_command( "select_all" )
 
     def did_the_user_agreed(answer):
         user_input_text[0] = answer
