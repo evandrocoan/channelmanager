@@ -202,17 +202,17 @@ def install_modules(command_line_interface, git_executable_path):
 
     if IS_DEVELOPMENT_INSTALLATION:
         packages_to_install = download_not_packages_submodules( command_line_interface, git_executable_path )
-        log( 2, "install_modules, packages_to_install: " + str( packages_to_install ) )
 
+        log( 2, "install_modules, packages_to_install: " + str( packages_to_install ) )
         install_development_packages( packages_to_install, git_executable_path, command_line_interface )
-        satisfy_dependencies()
 
     else:
         packages_to_install = get_stable_packages( IS_UPGRADE_INSTALLATION )
-        log( _grade(), "install_modules, packages_to_install: " + str( packages_to_install ) )
 
+        log( _grade(), "install_modules, packages_to_install: " + str( packages_to_install ) )
         install_stable_packages( packages_to_install )
-        accumulative_unignore_user_packages( flush_everything=True )
+
+    accumulative_unignore_user_packages( flush_everything=True )
 
 
 def install_stable_packages(packages_to_install):
@@ -285,8 +285,8 @@ def ignore_next_packages(package_disabler, package_name, packages_list):
     if len( _uningored_packages_to_flush ) < 1:
         global g_next_packages_to_ignore
 
-        last_ignored_packges      = packages_list.index( package_name )
-        g_next_packages_to_ignore = packages_list[ last_ignored_packges : last_ignored_packges + PACKAGES_COUNT_TO_IGNORE_AHEAD + 1 ]
+        last_ignored_packages     = packages_list.index( package_name )
+        g_next_packages_to_ignore = packages_list[ last_ignored_packages : last_ignored_packages + PACKAGES_COUNT_TO_IGNORE_AHEAD + 1 ]
 
         # We never can ignore the Default package, otherwise several errors/anomalies show up
         if "Default" in g_next_packages_to_ignore:
@@ -632,14 +632,18 @@ def install_development_packages(packages_to_install, git_executable_path, comma
     packages_names = [ package_info[0] for package_info in packages_to_install ]
     set_default_settings( packages_names, packages_to_install )
 
+    package_disabler = PackageDisabler()
+    package_manager  = PackageManager()
+
     current_index      = 0
     git_packages_count = len( packages_to_install )
 
     for package_info, pi in sequence_timer( packages_to_install, info_frequency=0 ):
         current_index += 1
+        package_name, url, path = package_info
 
         progress = progress_info( pi, set_progress )
-        package_name, url, path = package_info
+        submodule_absolute_path = os.path.join( root, path )
 
         # # For quick testing
         # if current_index > 3:
@@ -648,8 +652,8 @@ def install_development_packages(packages_to_install, git_executable_path, comma
         log.insert_empty_line()
         log.insert_empty_line()
 
-        submodule_absolute_path = os.path.join( root, path )
         log( 1, "%s Installing %d of %d: %s" % ( progress, current_index, git_packages_count, str( package_name ) ) )
+        ignore_next_packages( package_disabler, package_name, packages_names )
 
         if os.path.exists( submodule_absolute_path ):
 
@@ -674,6 +678,9 @@ def install_development_packages(packages_to_install, git_executable_path, comma
 
         log( 1, "install_development_packages, output: " + str( output ) )
         add_package_to_installation_list( package_name )
+
+        satisfy_dependencies()
+        accumulative_unignore_user_packages( package_name )
 
 
 def get_development_packages():
