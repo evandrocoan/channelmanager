@@ -268,87 +268,6 @@ def install_stable_packages(packages_to_install):
         accumulative_unignore_user_packages( package_name )
 
 
-def ignore_next_packages(package_disabler, package_name, packages_list):
-    """
-        There is a bug with the uninstalling several packages, which trigger several errors of:
-
-        "It appears a package is trying to ignore itself, causing a loop.
-        Please resolve by removing the offending ignored_packages setting."
-
-        When trying to uninstall several package at once, then here I am ignoring them all at once.
-
-        Package Control: Advanced Install Package
-        https://github.com/wbond/package_control/issues/1191
-
-        This fixes it by ignoring several next packages, then later unignoring them after uninstalled.
-    """
-    if len( _uningored_packages_to_flush ) < 1:
-        global g_next_packages_to_ignore
-
-        last_ignored_packages     = packages_list.index( package_name )
-        g_next_packages_to_ignore = packages_list[ last_ignored_packages : last_ignored_packages + PACKAGES_COUNT_TO_IGNORE_AHEAD + 1 ]
-
-        # We never can ignore the Default package, otherwise several errors/anomalies show up
-        if "Default" in g_next_packages_to_ignore:
-            g_next_packages_to_ignore.remove( "Default" )
-
-        log( 1, "Adding %d packages to be installed to the `ignored_packages` setting list." % len( g_next_packages_to_ignore ) )
-        log( 1, "g_next_packages_to_ignore: " + str( g_next_packages_to_ignore ) )
-
-        # Add them to the in_process list
-        package_disabler.disable_packages( g_next_packages_to_ignore, "remove" )
-        unique_list_append( g_default_ignored_packages, g_next_packages_to_ignore )
-
-        # Let the package be unloaded by Sublime Text while ensuring anyone is putting them back in
-        add_packages_to_ignored_list( g_next_packages_to_ignore )
-
-
-def accumulative_unignore_user_packages(package_name="", flush_everything=False):
-    """
-        There is a bug with the uninstalling several packages, which trigger several errors of:
-
-        "It appears a package is trying to ignore itself, causing a loop.
-        Please resolve by removing the offending ignored_packages setting."
-
-        When trying to uninstall several package at once, then here I am unignoring them all at once.
-
-        Package Control: Advanced Install Package
-        https://github.com/wbond/package_control/issues/1191
-
-        @param flush_everything     set all remaining packages as unignored
-    """
-
-    if flush_everything:
-        unignore_some_packages( _uningored_packages_to_flush )
-
-    else:
-        log( 1, "Adding package to unignore list: %s" % str( package_name ) )
-        _uningored_packages_to_flush.append( package_name )
-
-        if len( _uningored_packages_to_flush ) > PACKAGES_COUNT_TO_IGNORE_AHEAD:
-            unignore_some_packages( _uningored_packages_to_flush )
-            del _uningored_packages_to_flush[:]
-
-
-def unignore_some_packages(packages_list):
-    """
-        Flush just a few items each time
-    """
-    is_there_unignored_packages = False
-
-    for package_name in packages_list:
-
-        if package_name in g_default_ignored_packages:
-            is_there_unignored_packages = True
-
-            log( 1, "Unignoring the package: %s" % package_name )
-            g_default_ignored_packages.remove( package_name )
-
-    if is_there_unignored_packages:
-        g_userSettings.set( "ignored_packages", g_default_ignored_packages )
-        sublime.save_settings( g_channelSettings['USER_SETTINGS_FILE'] )
-
-
 def get_stable_packages(is_upgrade):
     """
         python ConfigParser: read configuration from string
@@ -442,138 +361,6 @@ def get_stable_packages(is_upgrade):
     return filtered_packages
 
 
-def clone_sublime_text_channel(command_line_interface, git_executable_path):
-    """
-        Clone the main repository as `https://github.com/evandrocoan/SublimeTextStudio` and install
-        it on the Sublime Text Data folder.
-    """
-    root = g_channelSettings['CHANNEL_ROOT_DIRECTORY']
-    main_git_folder = os.path.join( root, ".git" )
-
-    if os.path.exists( main_git_folder ):
-        log.insert_empty_line()
-        log.insert_empty_line()
-
-        log( 1, "Error: The folder '%s' already exists.\nYou already has some custom channel git installation." % main_git_folder )
-        log.insert_empty_line()
-
-    else:
-        channel_temporary_folder = os.path.join( root, g_channelSettings['TEMPORARY_FOLDER_TO_USE'] )
-        download_main_repository( command_line_interface, git_executable_path, channel_temporary_folder )
-
-        copy_overrides( channel_temporary_folder, root )
-        shutil.rmtree( channel_temporary_folder, onerror=_delete_read_only_file )
-
-        # Progressively saves the installation data, in case the user closes Sublime Text
-        save_default_settings()
-
-
-def copy_overrides(root_source_folder, root_destine_folder, move_files=False):
-    """
-        Python How To Copy Or Move Folders Recursively
-        http://techs.studyhorror.com/python-copy-move-sub-folders-recursively-i-92
-
-        Python script recursively rename all files in folder and subfolders
-        https://stackoverflow.com/questions/41861238/python-script-recursively-rename-all-files-in-folder-and-subfolders
-
-        Force Overwrite in Os.Rename
-        https://stackoverflow.com/questions/8107352/force-overwrite-in-os-rename
-    """
-    installed_files = []
-
-    # Call this if operation only one time, instead of calling the for every file.
-    if move_files:
-
-        def operate_file(source_file, destine_folder):
-            shutil.move( source_file, destine_folder )
-
-    else:
-
-        def operate_file(source_file, destine_folder):
-            shutil.copy( source_file, destine_folder )
-
-    for source_folder, directories, files in os.walk( root_source_folder ):
-        destine_folder = source_folder.replace( root_source_folder, root_destine_folder)
-
-        if not os.path.exists( destine_folder ):
-            os.mkdir( destine_folder )
-
-        for file in files:
-            source_file  = os.path.join( source_folder, file )
-            destine_file = os.path.join( destine_folder, file )
-
-            # print( ( "Moving" if move_files else "Coping" ), "file:", source_file, "to", destine_file )
-            if os.path.exists( destine_file ):
-                os.remove( destine_file )
-
-            # Python: Get relative path from comparing two absolute paths
-            # https://stackoverflow.com/questions/7287996/python-get-relative-path-from-comparing-two-absolute-paths
-            relative_file_path   = convert_absolute_path_to_relative( destine_file )
-            relative_folder_path = convert_absolute_path_to_relative( destine_folder )
-
-            operate_file(source_file, destine_folder)
-
-            add_path_if_not_exists( installed_files, relative_file_path )
-            add_path_if_not_exists( g_files_to_uninstall, relative_file_path )
-            add_path_if_not_exists( g_folders_to_uninstall, relative_folder_path )
-
-    log( 1, "installed_files: " + str( installed_files ) )
-
-
-def add_path_if_not_exists(list_to_add, path):
-
-    if path != "." and path != "..":
-        add_item_if_not_exists( list_to_add, path )
-
-
-def convert_absolute_path_to_relative(file_path):
-    relative_path = os.path.commonprefix( [ g_channelSettings['CHANNEL_ROOT_DIRECTORY'], file_path ] )
-    relative_path = os.path.normpath( file_path.replace( relative_path, "" ) )
-
-    return convert_to_unix_path(relative_path)
-
-
-def add_folders_and_files_for_removal(root_source_folder, relative_path):
-    add_path_if_not_exists( g_folders_to_uninstall, relative_path )
-
-    for source_folder, directories, files in os.walk( root_source_folder ):
-
-        for folder in directories:
-            source_file   = os.path.join( source_folder, folder )
-            relative_path = convert_absolute_path_to_relative( source_file )
-
-            add_path_if_not_exists( g_folders_to_uninstall, relative_path )
-
-        for file in files:
-            source_file   = os.path.join( source_folder, file )
-            relative_path = convert_absolute_path_to_relative( source_file )
-
-            add_path_if_not_exists( g_files_to_uninstall, relative_path )
-
-
-def download_main_repository(command_line_interface, git_executable_path, channel_temporary_folder):
-    log( 1, "download_main_repository..." )
-
-    url  = g_channelSettings['CHANNEL_ROOT_URL']
-    root = g_channelSettings['CHANNEL_ROOT_DIRECTORY']
-    temp = g_channelSettings['TEMPORARY_FOLDER_TO_USE']
-
-    log.insert_empty_line()
-    log.insert_empty_line()
-    log( 1, "Installing: %s" % ( str( url ) ) )
-
-    if os.path.isdir( channel_temporary_folder ):
-        shutil.rmtree( channel_temporary_folder )
-
-    command = shlex.split( '"%s" clone "%s" "%s"' % ( git_executable_path, url, temp ) )
-    output  = str( command_line_interface.execute( command, cwd=root ) )
-
-    log( 1, "download_main_repository, output: " + str( output ) )
-    channel_temporary_packages_folder = os.path.join( channel_temporary_folder, "Packages" )
-
-    shutil.rmtree( channel_temporary_packages_folder )
-
-
 def download_not_packages_submodules(command_line_interface, git_executable_path):
     log( 1, "download_not_packages_submodules" )
 
@@ -624,6 +411,73 @@ def download_not_packages_submodules(command_line_interface, git_executable_path
                 save_default_settings()
 
     return get_development_packages()
+
+
+def clone_sublime_text_channel(command_line_interface, git_executable_path):
+    """
+        Clone the main repository as `https://github.com/evandrocoan/SublimeTextStudio` and install
+        it on the Sublime Text Data folder.
+    """
+    root = g_channelSettings['CHANNEL_ROOT_DIRECTORY']
+    main_git_folder = os.path.join( root, ".git" )
+
+    if os.path.exists( main_git_folder ):
+        log.insert_empty_line()
+        log.insert_empty_line()
+
+        log( 1, "Error: The folder '%s' already exists.\nYou already has some custom channel git installation." % main_git_folder )
+        log.insert_empty_line()
+
+    else:
+        channel_temporary_folder = os.path.join( root, g_channelSettings['TEMPORARY_FOLDER_TO_USE'] )
+        download_main_repository( command_line_interface, git_executable_path, channel_temporary_folder )
+
+        copy_overrides( channel_temporary_folder, root )
+        shutil.rmtree( channel_temporary_folder, onerror=_delete_read_only_file )
+
+        # Progressively saves the installation data, in case the user closes Sublime Text
+        save_default_settings()
+
+
+def download_main_repository(command_line_interface, git_executable_path, channel_temporary_folder):
+    log( 1, "download_main_repository..." )
+
+    url  = g_channelSettings['CHANNEL_ROOT_URL']
+    root = g_channelSettings['CHANNEL_ROOT_DIRECTORY']
+    temp = g_channelSettings['TEMPORARY_FOLDER_TO_USE']
+
+    log.insert_empty_line()
+    log.insert_empty_line()
+    log( 1, "Installing: %s" % ( str( url ) ) )
+
+    if os.path.isdir( channel_temporary_folder ):
+        shutil.rmtree( channel_temporary_folder )
+
+    command = shlex.split( '"%s" clone "%s" "%s"' % ( git_executable_path, url, temp ) )
+    output  = str( command_line_interface.execute( command, cwd=root ) )
+
+    log( 1, "download_main_repository, output: " + str( output ) )
+    channel_temporary_packages_folder = os.path.join( channel_temporary_folder, "Packages" )
+
+    shutil.rmtree( channel_temporary_packages_folder )
+
+
+def add_folders_and_files_for_removal(root_source_folder, relative_path):
+    add_path_if_not_exists( g_folders_to_uninstall, relative_path )
+
+    for source_folder, directories, files in os.walk( root_source_folder ):
+
+        for folder in directories:
+            source_file   = os.path.join( source_folder, folder )
+            relative_path = convert_absolute_path_to_relative( source_file )
+
+            add_path_if_not_exists( g_folders_to_uninstall, relative_path )
+
+        for file in files:
+            source_file   = os.path.join( source_folder, file )
+            relative_path = convert_absolute_path_to_relative( source_file )
+
+            add_path_if_not_exists( g_files_to_uninstall, relative_path )
 
 
 def install_development_packages(packages_to_install, git_executable_path, command_line_interface):
@@ -736,6 +590,71 @@ def get_development_packages():
     return packages
 
 
+def copy_overrides(root_source_folder, root_destine_folder, move_files=False):
+    """
+        Python How To Copy Or Move Folders Recursively
+        http://techs.studyhorror.com/python-copy-move-sub-folders-recursively-i-92
+
+        Python script recursively rename all files in folder and subfolders
+        https://stackoverflow.com/questions/41861238/python-script-recursively-rename-all-files-in-folder-and-subfolders
+
+        Force Overwrite in Os.Rename
+        https://stackoverflow.com/questions/8107352/force-overwrite-in-os-rename
+    """
+    installed_files = []
+
+    # Call this if operation only one time, instead of calling the for every file.
+    if move_files:
+
+        def operate_file(source_file, destine_folder):
+            shutil.move( source_file, destine_folder )
+
+    else:
+
+        def operate_file(source_file, destine_folder):
+            shutil.copy( source_file, destine_folder )
+
+    for source_folder, directories, files in os.walk( root_source_folder ):
+        destine_folder = source_folder.replace( root_source_folder, root_destine_folder)
+
+        if not os.path.exists( destine_folder ):
+            os.mkdir( destine_folder )
+
+        for file in files:
+            source_file  = os.path.join( source_folder, file )
+            destine_file = os.path.join( destine_folder, file )
+
+            # print( ( "Moving" if move_files else "Coping" ), "file:", source_file, "to", destine_file )
+            if os.path.exists( destine_file ):
+                os.remove( destine_file )
+
+            # Python: Get relative path from comparing two absolute paths
+            # https://stackoverflow.com/questions/7287996/python-get-relative-path-from-comparing-two-absolute-paths
+            relative_file_path   = convert_absolute_path_to_relative( destine_file )
+            relative_folder_path = convert_absolute_path_to_relative( destine_folder )
+
+            operate_file(source_file, destine_folder)
+
+            add_path_if_not_exists( installed_files, relative_file_path )
+            add_path_if_not_exists( g_files_to_uninstall, relative_file_path )
+            add_path_if_not_exists( g_folders_to_uninstall, relative_folder_path )
+
+    log( 1, "installed_files: " + str( installed_files ) )
+
+
+def add_path_if_not_exists(list_to_add, path):
+
+    if path != "." and path != "..":
+        add_item_if_not_exists( list_to_add, path )
+
+
+def convert_absolute_path_to_relative(file_path):
+    relative_path = os.path.commonprefix( [ g_channelSettings['CHANNEL_ROOT_DIRECTORY'], file_path ] )
+    relative_path = os.path.normpath( file_path.replace( relative_path, "" ) )
+
+    return convert_to_unix_path(relative_path)
+
+
 def set_default_settings(packages_names, packages_to_install=[]):
     """
         Set some package to be enabled at last due their settings being dependent on other packages
@@ -809,6 +728,111 @@ def set_first_packages_to_install(packages_to_install):
             packages_to_install.insert( 0, first_packages[package_name] )
 
 
+def ignore_next_packages(package_disabler, package_name, packages_list):
+    """
+        There is a bug with the uninstalling several packages, which trigger several errors of:
+
+        "It appears a package is trying to ignore itself, causing a loop.
+        Please resolve by removing the offending ignored_packages setting."
+
+        When trying to uninstall several package at once, then here I am ignoring them all at once.
+
+        Package Control: Advanced Install Package
+        https://github.com/wbond/package_control/issues/1191
+
+        This fixes it by ignoring several next packages, then later unignoring them after uninstalled.
+    """
+    if len( _uningored_packages_to_flush ) < 1:
+        global g_next_packages_to_ignore
+
+        last_ignored_packages     = packages_list.index( package_name )
+        g_next_packages_to_ignore = packages_list[ last_ignored_packages : last_ignored_packages + PACKAGES_COUNT_TO_IGNORE_AHEAD + 1 ]
+
+        # We never can ignore the Default package, otherwise several errors/anomalies show up
+        if "Default" in g_next_packages_to_ignore:
+            g_next_packages_to_ignore.remove( "Default" )
+
+        log( 1, "Adding %d packages to be installed to the `ignored_packages` setting list." % len( g_next_packages_to_ignore ) )
+        log( 1, "g_next_packages_to_ignore: " + str( g_next_packages_to_ignore ) )
+
+        # Add them to the in_process list
+        package_disabler.disable_packages( g_next_packages_to_ignore, "remove" )
+        unique_list_append( g_default_ignored_packages, g_next_packages_to_ignore )
+
+        # Let the package be unloaded by Sublime Text while ensuring anyone is putting them back in
+        add_packages_to_ignored_list( g_next_packages_to_ignore )
+
+
+def accumulative_unignore_user_packages(package_name="", flush_everything=False):
+    """
+        There is a bug with the uninstalling several packages, which trigger several errors of:
+
+        "It appears a package is trying to ignore itself, causing a loop.
+        Please resolve by removing the offending ignored_packages setting."
+
+        When trying to uninstall several package at once, then here I am unignoring them all at once.
+
+        Package Control: Advanced Install Package
+        https://github.com/wbond/package_control/issues/1191
+
+        @param flush_everything     set all remaining packages as unignored
+    """
+
+    if flush_everything:
+        unignore_some_packages( _uningored_packages_to_flush )
+
+    else:
+        log( 1, "Adding package to unignore list: %s" % str( package_name ) )
+        _uningored_packages_to_flush.append( package_name )
+
+        if len( _uningored_packages_to_flush ) > PACKAGES_COUNT_TO_IGNORE_AHEAD:
+            unignore_some_packages( _uningored_packages_to_flush )
+            del _uningored_packages_to_flush[:]
+
+
+def unignore_some_packages(packages_list):
+    """
+        Flush just a few items each time
+    """
+    is_there_unignored_packages = False
+
+    for package_name in packages_list:
+
+        if package_name in g_default_ignored_packages:
+            is_there_unignored_packages = True
+
+            log( 1, "Unignoring the package: %s" % package_name )
+            g_default_ignored_packages.remove( package_name )
+
+    if is_there_unignored_packages:
+        g_userSettings.set( "ignored_packages", g_default_ignored_packages )
+        sublime.save_settings( g_channelSettings['USER_SETTINGS_FILE'] )
+
+
+def add_package_to_installation_list(package_name):
+    """
+        When the installation is going on the PackagesManager will be installed. If the user restart
+        Sublime Text after doing it, on the next time Sublime Text starts, the Package Control and
+        the PackagesManager will kill each other and probably end up uninstalling all the packages
+        installed.
+
+        So, here we try to keep things nice by syncing both `Package Control` and `PackagesManager`
+        settings files.
+    """
+
+    if g_package_control_settings and not IS_DEVELOPMENT_INSTALLATION:
+        installed_packages = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
+        add_item_if_not_exists( installed_packages, package_name )
+
+        packagesmanager = os.path.join( g_channelSettings['USER_FOLDER_PATH'], g_packagesmanager_name )
+        write_data_file( packagesmanager, sort_dictionary( g_package_control_settings ) )
+
+    add_item_if_not_exists( g_packages_to_uninstall, package_name )
+
+    # Progressively saves the installation data, in case the user closes Sublime Text
+    save_default_settings()
+
+
 def save_default_settings():
     """
         When uninstalling this channel we can only remove our packages, keeping the user's original
@@ -834,30 +858,6 @@ def save_default_settings():
     # log( 1, "save_default_settings, g_channelDetails: " + json.dumps( g_channelDetails, indent=4 ) )
 
     write_data_file( g_channelSettings['CHANNEL_INSTALLATION_DETAILS'], g_channelDetails )
-
-
-def add_package_to_installation_list(package_name):
-    """
-        When the installation is going on the PackagesManager will be installed. If the user restart
-        Sublime Text after doing it, on the next time Sublime Text starts, the Package Control and
-        the PackagesManager will kill each other and probably end up uninstalling all the packages
-        installed.
-
-        So, here we try to keep things nice by syncing both `Package Control` and `PackagesManager`
-        settings files.
-    """
-
-    if g_package_control_settings and not IS_DEVELOPMENT_INSTALLATION:
-        installed_packages = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
-        add_item_if_not_exists( installed_packages, package_name )
-
-        packagesmanager = os.path.join( g_channelSettings['USER_FOLDER_PATH'], g_packagesmanager_name )
-        write_data_file( packagesmanager, sort_dictionary( g_package_control_settings ) )
-
-    add_item_if_not_exists( g_packages_to_uninstall, package_name )
-
-    # Progressively saves the installation data, in case the user closes Sublime Text
-    save_default_settings()
 
 
 def uninstall_package_control():
