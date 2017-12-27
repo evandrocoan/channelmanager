@@ -70,9 +70,9 @@ except ImportError:
     pass
 
 
-# How to reload a Sublime Text dependency?
-# https://github.com/randy3k/AutomaticPackageReloader/issues/12
-sublime_plugin.reload_plugin( "estimated_time_left" )
+# # How to reload a Sublime Text dependency?
+# # https://github.com/randy3k/AutomaticPackageReloader/issues/12
+# sublime_plugin.reload_plugin( "estimated_time_left" )
 
 from python_debug_tools import Debugger
 from estimated_time_left import sequence_timer
