@@ -141,6 +141,9 @@ class StartInstallChannelThread(threading.Thread):
 
     def run(self):
         """
+            The installation is not complete when the user cancelled the installation process or
+            there are no packages available for an upgrade.
+
             Python thread exit code
             https://stackoverflow.com/questions/986616/python-thread-exit-code
         """
@@ -158,12 +161,9 @@ class StartInstallChannelThread(threading.Thread):
             ThreadProgress( installer_thread, set_progress, 'The %s was successfully installed.' % installation_type )
             installer_thread.join()
 
-            # The installation is not complete when the user cancelled the installation process or
-            # there are no packages available for an upgrade.
-            if g_is_running:
-                save_default_settings()
+            save_default_settings()
 
-                # Wait PackagesManager to load the found dependencies, before announcing it to the user
+            if not IS_UPGRADE_INSTALLATION:
                 sublime.set_timeout_async( check_installed_packages_alert, 1000 )
                 sublime.set_timeout_async( check_installed_packages, 10000 )
 
@@ -482,14 +482,14 @@ def copy_overrides(root_source_folder, root_destine_folder, move_files=False):
 
     # Call this if operation only one time, instead of calling the for every file.
     if move_files:
-        def copy_file(source_file, destine_folder):
+
+        def operate_file(source_file, destine_folder):
             shutil.move( source_file, destine_folder )
-            add_path_if_not_exists( installed_files, relative_file_path )
+
     else:
 
-        def copy_file(source_file, destine_folder):
+        def operate_file(source_file, destine_folder):
             shutil.copy( source_file, destine_folder )
-            add_path_if_not_exists( installed_files, relative_file_path )
 
     for source_folder, directories, files in os.walk( root_source_folder ):
         destine_folder = source_folder.replace( root_source_folder, root_destine_folder)
@@ -510,8 +510,9 @@ def copy_overrides(root_source_folder, root_destine_folder, move_files=False):
             relative_file_path   = convert_absolute_path_to_relative( destine_file )
             relative_folder_path = convert_absolute_path_to_relative( destine_folder )
 
-            copy_file(source_file, destine_folder)
+            operate_file(source_file, destine_folder)
 
+            add_path_if_not_exists( installed_files, relative_file_path )
             add_path_if_not_exists( g_files_to_uninstall, relative_file_path )
             add_path_if_not_exists( g_folders_to_uninstall, relative_folder_path )
 
@@ -803,6 +804,9 @@ def save_default_settings():
         When uninstalling this channel we can only remove our packages, keeping the user's original
         ignored packages intact.
     """
+    # https://stackoverflow.com/questions/9264763/unboundlocalerror-in-python
+    # UnboundLocalError in Python
+    global g_channelDetails
 
     if 'Default' in g_packages_to_uninstall:
         g_channelDetails['default_package_files'] = g_channel_settings['DEFAULT_PACKAGE_FILES']
@@ -1152,6 +1156,8 @@ def check_installed_packages_alert(maximum_attempts=10):
 
 def check_installed_packages(maximum_attempts=10):
     """
+        Wait PackagesManager to load the found dependencies, before announcing it to the user.
+
         Display warning when the installation process is finished or ask the user to restart
         Sublime Text to finish the installation.
 

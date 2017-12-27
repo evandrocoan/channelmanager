@@ -141,6 +141,9 @@ class StartUninstallChannelThread(threading.Thread):
 
     def run(self):
         """
+            The installation is not complete when the user cancelled the installation process or
+            there are no packages available for an upgrade.
+
             Python thread exit code
             https://stackoverflow.com/questions/986616/python-thread-exit-code
         """
@@ -148,22 +151,21 @@ class StartUninstallChannelThread(threading.Thread):
         if is_allowed_to_run():
             unpack_settings( self.channel_settings )
 
-            uninstaller_thread = UninstallChannelFilesThread()
-            uninstaller_thread.start()
+            type_name    = INSTALLATION_TYPE_NAME
+            channel_name = g_channel_settings['CHANNEL_PACKAGE_NAME']
+
+            uninstaller = UninstallChannelFilesThread()
+            uninstaller.start()
 
             global set_progress
-            set_progress = CurrentUpdateProgress( '%s of Sublime Text %s packages...'
-                    % ( INSTALLATION_TYPE_NAME, g_channel_settings['CHANNEL_PACKAGE_NAME'] ) )
+            set_progress = CurrentUpdateProgress( '%s of Sublime Text %s packages...' % ( type_name, channel_name ) )
 
-            ThreadProgress( uninstaller_thread, set_progress, 'The %s of %s was successfully completed.'
-                    % ( INSTALLATION_TYPE_NAME, g_channel_settings['CHANNEL_PACKAGE_NAME'] ) )
+            ThreadProgress( uninstaller, set_progress, 'The %s of %s was successfully completed.' % ( type_name, channel_name ) )
+            uninstaller.join()
 
-            uninstaller_thread.join()
+            save_default_settings()
 
-            # The installation is not complete when the user cancelled the installation process or
-            # there are no packages available for an upgrade.
-            if g_is_running:
-                save_default_settings()
+            if not IS_UPGRADE_INSTALLATION:
 
                 # Wait PackagesManager to load the found dependencies, before announcing it to the user
                 sublime.set_timeout_async( check_uninstalled_packages_alert, 1000 )
@@ -240,6 +242,7 @@ def uninstall_packages(packages_to_uninstall):
 
         silence_error_message_box(61.0)
         ignore_next_packages( package_disabler, package_name, packages_to_uninstall )
+
 
         if package_manager.remove_package( package_name, is_dependency ) is False:
             log( 1, "Error: Failed to uninstall the repository `%s`!" % package_name )
@@ -887,6 +890,9 @@ def save_default_settings():
         When uninstalling this channel we can only remove our packages, keeping the user's original
         ignored packages intact.
     """
+    # https://stackoverflow.com/questions/9264763/unboundlocalerror-in-python
+    # UnboundLocalError in Python
+    global g_channelDetails
 
     if 'Default' in g_packages_to_uninstall:
         g_channelDetails['default_package_files'] = g_channel_settings['DEFAULT_PACKAGE_FILES']
