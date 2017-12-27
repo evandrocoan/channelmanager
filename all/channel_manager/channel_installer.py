@@ -1185,7 +1185,7 @@ def check_installed_packages(maximum_attempts=10):
 
     else:
         sublime.error_message( end_user_message( """\
-                The %s %s could not be successfully completed.
+                The %s %s could NOT be successfully completed.
 
                 Check you Sublime Text Console for more information.
 
