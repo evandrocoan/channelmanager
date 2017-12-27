@@ -65,6 +65,7 @@ from .channel_utilities import InstallationCancelled
 from .channel_utilities import NoPackagesAvailable
 from .channel_utilities import is_channel_upgraded
 from .channel_utilities import print_failed_repositories
+from .channel_utilities import sort_dictionary
 
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
@@ -824,10 +825,6 @@ def save_default_settings():
     # log( 1, "save_default_settings, g_channelDetails: " + json.dumps( g_channelDetails, indent=4 ) )
 
     write_data_file( g_channelSettings['CHANNEL_INSTALLATION_DETAILS'], g_channelDetails )
-
-
-def sort_dictionary(dictionary):
-    return OrderedDict( sorted( dictionary.items() ) )
 
 
 def add_package_to_installation_list(package_name):

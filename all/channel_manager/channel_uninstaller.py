@@ -66,6 +66,7 @@ from .channel_utilities import load_repository_file
 from .channel_utilities import is_channel_upgraded
 from .channel_utilities import recursively_delete_empty_folders
 from .channel_utilities import print_failed_repositories
+from .channel_utilities import sort_dictionary
 
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
@@ -165,7 +166,7 @@ class StartUninstallChannelThread(threading.Thread):
 
             save_default_settings()
 
-            if not IS_UPGRADE_INSTALLATION:
+            if not IS_DOWNGRADE_INSTALLATION:
 
                 # Wait PackagesManager to load the found dependencies, before announcing it to the user
                 sublime.set_timeout_async( check_uninstalled_packages_alert, 1000 )

@@ -37,6 +37,7 @@ import time
 import datetime
 import textwrap
 
+from collections import OrderedDict
 from distutils.version import LooseVersion
 
 
@@ -340,6 +341,10 @@ def get_dictionary_key(dictionary, key, default=None):
         return dictionary[key]
 
     return default
+
+
+def sort_dictionary(dictionary):
+    return OrderedDict( sorted( dictionary.items() ) )
 
 
 def remove_if_exists(items_list, item):
