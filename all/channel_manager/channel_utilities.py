@@ -399,13 +399,16 @@ def _delete_read_only_file(action, name, exc):
     os.remove( name )
 
 
-def recursively_delete_empty_folders(root_folder, folders_not_empty):
+def recursively_delete_empty_folders(root_folder, folders_not_empty=[]):
     """
         Recursively descend the directory tree rooted at top, calling the callback function for each
         regular file.
 
         Python script: Recursively remove empty folders/directories
         https://www.jacobtomlinson.co.uk/2014/02/16/python-script-recursively-remove-empty-folders-directories/
+
+        @param root_folder           the folder to search on
+        @param folders_not_empty     a empty python list to put on the deleted folders paths
     """
 
     try:

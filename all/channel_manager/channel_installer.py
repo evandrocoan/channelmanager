@@ -67,6 +67,7 @@ from .channel_utilities import NoPackagesAvailable
 from .channel_utilities import is_channel_upgraded
 from .channel_utilities import print_failed_repositories
 from .channel_utilities import sort_dictionary
+from .channel_utilities import recursively_delete_empty_folders
 
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
@@ -197,9 +198,6 @@ class InstallChannelFilesThread(threading.Thread):
         if not IS_UPGRADE_INSTALLATION:
             uninstall_package_control()
 
-        # Flush off the remaining `g_next_packages_to_ignore` appended
-        accumulative_unignore_user_packages( flush_everything=True )
-
 
 def install_modules(command_line_interface, git_executable_path):
     log( _grade(), "install_modules_, git_executable_path: " + str( git_executable_path ) )
@@ -268,6 +266,8 @@ def install_stable_packages(packages_to_install):
             add_package_to_installation_list( package_name )
 
         accumulative_unignore_user_packages( package_name )
+
+    accumulative_unignore_user_packages( flush_everything=True )
 
 
 def get_stable_packages(is_upgrade):
@@ -457,11 +457,9 @@ def download_main_repository(root, temp, command_line_interface, git_executable_
     log( 1, "Installing: %s" % ( str( g_channelSettings['CHANNEL_ROOT_URL'] ) ) )
     download_repository_to_folder( url, root, temp, command_line_interface, git_executable_path )
 
-    # Delete the empty `Packages` folder created by git while cloning the main repository
+    # Delete the empty folders created by git while cloning the main repository
     channel_temporary_folder = os.path.join( root, temp )
-
-    channel_temporary_packages_folder = os.path.join( channel_temporary_folder, "Packages" )
-    shutil.rmtree( channel_temporary_packages_folder )
+    recursively_delete_empty_folders( channel_temporary_folder )
 
 
 def download_repository_to_folder(url, root, temp, command_line_interface, git_executable_path):
@@ -555,6 +553,7 @@ def install_development_packages(packages_to_install, git_executable_path, comma
         add_package_to_installation_list( package_name )
         accumulative_unignore_user_packages( package_name )
 
+    accumulative_unignore_user_packages( flush_everything=True )
     satisfy_dependencies()
 
     # Clean the temporary folder after the process has ended
@@ -804,7 +803,8 @@ def ignore_next_packages(package_disabler, package_name, packages_list):
 
 def accumulative_unignore_user_packages(package_name="", flush_everything=False):
     """
-        There is a bug with the uninstalling several packages, which trigger several errors of:
+        Flush off the remaining `g_next_packages_to_ignore` appended. There is a bug with the
+        uninstalling several packages, which trigger several errors of:
 
         "It appears a package is trying to ignore itself, causing a loop.
         Please resolve by removing the offending ignored_packages setting."
@@ -835,8 +835,7 @@ def accumulative_unignore_user_packages(package_name="", flush_everything=False)
 
 def unignore_some_packages(packages_list):
     """
-        Flush just a few items each time
-        ignore_next_packages( package_disabler, package_name, packages_names )
+        Flush just a few items each time.
     """
     is_there_unignored_packages = False
 
@@ -965,6 +964,7 @@ def complete_package_control_uninstallation(maximum_attempts=3):
         package_manager.remove_package( package_name, is_dependency )
         accumulative_unignore_user_packages( package_name )
 
+    accumulative_unignore_user_packages( flush_everything=True )
     delete_package_control_settings()
 
 
