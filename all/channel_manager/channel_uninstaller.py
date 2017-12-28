@@ -259,6 +259,7 @@ def uninstall_packages(packages_to_uninstall):
 
 def get_packages_to_uninstall(is_downgrade):
     filtered_packages     = []
+    last_packages         = []
     packages_to_uninstall = get_dictionary_key( g_channelDetails, 'packages_to_uninstall', [] )
 
     if is_downgrade:
@@ -283,11 +284,21 @@ def get_packages_to_uninstall(is_downgrade):
         if package_name in packages_to_uninstall:
             filtered_packages.append( package_name )
 
+    for package_name in PACKAGES_TO_UNINSTALL_LAST:
+
+        # Only merges the packages which are actually being uninstalled
+        if package_name in packages_to_uninstall:
+            last_packages.append( package_name )
+            packages_to_uninstall.remove( package_name )
+
     # Add the remaining packages after the packages to install first
     for package_name in packages_to_uninstall:
 
         if package_name not in filtered_packages:
             filtered_packages.append( package_name )
+
+    # Finally add the last packages to the full list
+    unique_list_append( filtered_packages, last_packages )
 
     if is_downgrade:
 
@@ -835,11 +846,14 @@ def setup_packages_to_uninstall_last(channel_settings):
         Remove the remaining packages to be uninstalled separately on another function call.
     """
     global PACKAGES_TO_UNINSTALL_FIRST
+    global PACKAGES_TO_UNINSTALL_LAST
+
     global PACKAGES_TO_UNINSTAL_LATER
     global PACKAGES_TO_NOT_ADD_TO_IGNORE_LIST
 
     PACKAGES_TO_UNINSTAL_LATER  = [ "PackagesManager", g_channelSettings['CHANNEL_PACKAGE_NAME'] ]
     PACKAGES_TO_UNINSTALL_FIRST = list( reversed( channel_settings['PACKAGES_TO_INSTALL_LAST'] ) )
+    PACKAGES_TO_UNINSTALL_LAST  = list( reversed( channel_settings['PACKAGES_TO_INSTALL_FIRST'] ) )
 
     # We need to remove it by last, after installing Package Control back
     for package in PACKAGES_TO_UNINSTAL_LATER:
