@@ -104,7 +104,7 @@ from estimated_time_left import CurrentUpdateProgress
 log = Debugger( 127, os.path.basename( __file__ ) )
 
 def _grade():
-    return 1 & ( not IS_DOWNGRADE_INSTALLATION )
+    return 1 & ( not IS_UPDATE_INSTALLATION )
 
 # log( 2, "..." )
 # log( 2, "..." )
@@ -166,11 +166,11 @@ class StartUninstallChannelThread(threading.Thread):
 
             save_default_settings()
 
-            if not IS_DOWNGRADE_INSTALLATION:
+            if not IS_UPDATE_INSTALLATION:
 
                 # Wait PackagesManager to load the found dependencies, before announcing it to the user
-                sublime.set_timeout_async( check_uninstalled_packages_alert, 1000 )
                 sublime.set_timeout_async( check_uninstalled_packages, 10000 )
+                sublime.set_timeout_async( check_uninstalled_packages_alert, 1000 )
 
 
 class UninstallChannelFilesThread(threading.Thread):
@@ -183,12 +183,12 @@ class UninstallChannelFilesThread(threading.Thread):
         load_installation_settings_file()
 
         try:
-            packages_to_uninstall = get_packages_to_uninstall( IS_DOWNGRADE_INSTALLATION )
+            packages_to_uninstall = get_packages_to_uninstall( IS_UPDATE_INSTALLATION )
 
             log( _grade(), "Packages to %s: " % INSTALLATION_TYPE_NAME + str( packages_to_uninstall ) )
             package_manager = uninstall_packages( packages_to_uninstall )
 
-            if not IS_DOWNGRADE_INSTALLATION:
+            if not IS_UPDATE_INSTALLATION:
                 remove_channel()
 
                 uninstall_files()
@@ -196,7 +196,7 @@ class UninstallChannelFilesThread(threading.Thread):
 
             attempt_to_uninstall_packagesmanager( packages_to_uninstall )
 
-            if not IS_DOWNGRADE_INSTALLATION:
+            if not IS_UPDATE_INSTALLATION:
                 uninstall_list_of_packages( package_manager, [(g_channelSettings['CHANNEL_PACKAGE_NAME'], False)] )
 
         except ( InstallationCancelled, NoPackagesAvailable ) as error:
@@ -772,7 +772,7 @@ def check_uninstalled_packages(maximum_attempts=10):
     if not g_is_running:
         unignore_user_packages( flush_everything=True )
 
-        if not IS_DOWNGRADE_INSTALLATION:
+        if not IS_UPDATE_INSTALLATION:
             complete_channel_uninstallation()
 
         return
@@ -821,12 +821,12 @@ def unpack_settings(channel_settings):
     g_failed_repositories = []
 
     global INSTALLATION_TYPE_NAME
-    global IS_DOWNGRADE_INSTALLATION
+    global IS_UPDATE_INSTALLATION
 
-    IS_DOWNGRADE_INSTALLATION = True if g_channelSettings['INSTALLATION_TYPE'] == "downgrade" else False
-    INSTALLATION_TYPE_NAME    = "Downgrade" if IS_DOWNGRADE_INSTALLATION else "Uninstallation"
+    IS_UPDATE_INSTALLATION = True if g_channelSettings['INSTALLATION_TYPE'] == "downgrade" else False
+    INSTALLATION_TYPE_NAME    = "Downgrade" if IS_UPDATE_INSTALLATION else "Uninstallation"
 
-    log( 1, "IS_DOWNGRADE_INSTALLATION: " + str( IS_DOWNGRADE_INSTALLATION ) )
+    log( 1, "IS_UPDATE_INSTALLATION: " + str( IS_UPDATE_INSTALLATION ) )
     setup_packages_to_uninstall_last( g_channelSettings )
 
 
@@ -944,7 +944,7 @@ def load_installation_settings_file():
     g_installed_packages     = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
     g_remove_orphaned_backup = get_dictionary_key( g_package_control_settings, 'remove_orphaned', True )
 
-    if not IS_DOWNGRADE_INSTALLATION:
+    if not IS_UPDATE_INSTALLATION:
 
         # Temporally stops Package Control from removing orphaned packages, otherwise it will scroll up
         # the uninstallation when Package Control is installed back

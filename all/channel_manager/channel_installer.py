@@ -106,7 +106,7 @@ from estimated_time_left import CurrentUpdateProgress
 log = Debugger( 127, os.path.basename( __file__ ) )
 
 def _grade():
-    return 1 & ( not IS_UPGRADE_INSTALLATION )
+    return 1 & ( not IS_UPDATE_INSTALLATION )
 
 # log( 2, "..." )
 # log( 2, "..." )
@@ -166,9 +166,9 @@ class StartInstallChannelThread(threading.Thread):
 
             save_default_settings()
 
-            if not IS_UPGRADE_INSTALLATION:
-                sublime.set_timeout_async( check_installed_packages_alert, 1000 )
+            if not IS_UPDATE_INSTALLATION:
                 sublime.set_timeout_async( check_installed_packages, 10000 )
+                sublime.set_timeout_async( check_installed_packages_alert, 1000 )
 
 
 class InstallChannelFilesThread(threading.Thread):
@@ -195,7 +195,7 @@ class InstallChannelFilesThread(threading.Thread):
             global g_is_running
             g_is_running = False
 
-        if not IS_UPGRADE_INSTALLATION:
+        if not IS_UPDATE_INSTALLATION:
             uninstall_package_control()
 
 
@@ -207,7 +207,7 @@ def install_modules(command_line_interface, git_executable_path):
         install_development_packages( packages_to_install, git_executable_path, command_line_interface )
 
     else:
-        packages_to_install = get_stable_packages( IS_UPGRADE_INSTALLATION )
+        packages_to_install = get_stable_packages( IS_UPDATE_INSTALLATION )
         install_stable_packages( packages_to_install )
 
 
@@ -1257,7 +1257,7 @@ def check_installed_packages(maximum_attempts=10):
 
     if not g_is_running:
 
-        if not IS_UPGRADE_INSTALLATION:
+        if not IS_UPDATE_INSTALLATION:
             sublime.message_dialog( end_user_message( """\
                     The %s %s was successfully completed.
 
@@ -1315,15 +1315,15 @@ def unpack_settings(channel_settings):
     global g_uningored_packages_to_flush
     g_uningored_packages_to_flush = 0
 
-    global IS_UPGRADE_INSTALLATION
+    global IS_UPDATE_INSTALLATION
     global INSTALLATION_TYPE_NAME
     global IS_DEVELOPMENT_INSTALLATION
 
-    IS_UPGRADE_INSTALLATION     = True if g_channelSettings['INSTALLATION_TYPE'] == "upgrade"     else False
+    IS_UPDATE_INSTALLATION     = True if g_channelSettings['INSTALLATION_TYPE'] == "upgrade"     else False
     IS_DEVELOPMENT_INSTALLATION = True if g_channelSettings['INSTALLATION_TYPE'] == "development" else False
-    INSTALLATION_TYPE_NAME      = "Upgrade" if IS_UPGRADE_INSTALLATION else "Installation"
+    INSTALLATION_TYPE_NAME      = "Upgrade" if IS_UPDATE_INSTALLATION else "Installation"
 
-    log( 1, "IS_UPGRADE_INSTALLATION:     " + str( IS_UPGRADE_INSTALLATION ) )
+    log( 1, "IS_UPDATE_INSTALLATION:     " + str( IS_UPDATE_INSTALLATION ) )
     log( 1, "IS_DEVELOPMENT_INSTALLATION: " + str( IS_DEVELOPMENT_INSTALLATION ) )
 
 
