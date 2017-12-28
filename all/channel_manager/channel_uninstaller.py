@@ -244,7 +244,6 @@ def uninstall_packages(packages_to_uninstall):
         silence_error_message_box(61.0)
         ignore_next_packages( package_disabler, package_name, packages_to_uninstall )
 
-
         if package_manager.remove_package( package_name, is_dependency ) is False:
             log( 1, "Error: Failed to uninstall the repository `%s`!" % package_name )
             g_failed_repositories.append( package_name )
