@@ -58,6 +58,7 @@ from .channel_utilities import load_data_file
 from .channel_utilities import remove_if_exists
 from .channel_utilities import remove_item_if_exists
 from .channel_utilities import convert_to_unix_path
+from .channel_utilities import delete_read_only_file
 from .channel_utilities import _delete_read_only_file
 from .channel_utilities import wrap_text
 from .channel_utilities import load_repository_file
@@ -429,37 +430,49 @@ def clone_sublime_text_channel(command_line_interface, git_executable_path):
         log.insert_empty_line()
 
     else:
-        channel_temporary_folder = os.path.join( root, g_channelSettings['TEMPORARY_FOLDER_TO_USE'] )
-        download_main_repository( command_line_interface, git_executable_path, channel_temporary_folder )
+        root = g_channelSettings['CHANNEL_ROOT_DIRECTORY']
+        temp = g_channelSettings['TEMPORARY_FOLDER_TO_USE']
 
-        copy_overrides( channel_temporary_folder, root )
+        channel_temporary_folder = os.path.join( root, temp )
+        download_main_repository( root, temp, command_line_interface, git_executable_path )
+
+        files, folders = copy_overrides( channel_temporary_folder, root )
         shutil.rmtree( channel_temporary_folder, onerror=_delete_read_only_file )
+
+        unique_list_append( g_files_to_uninstall, files )
+        unique_list_append( g_folders_to_uninstall, folders )
 
         # Progressively saves the installation data, in case the user closes Sublime Text
         save_default_settings()
 
 
-def download_main_repository(command_line_interface, git_executable_path, channel_temporary_folder):
+def download_main_repository(root, temp, command_line_interface, git_executable_path):
     log( 1, "download_main_repository..." )
-
-    url  = g_channelSettings['CHANNEL_ROOT_URL']
-    root = g_channelSettings['CHANNEL_ROOT_DIRECTORY']
-    temp = g_channelSettings['TEMPORARY_FOLDER_TO_USE']
+    url = g_channelSettings['CHANNEL_ROOT_URL']
 
     log.insert_empty_line()
     log.insert_empty_line()
-    log( 1, "Installing: %s" % ( str( url ) ) )
+
+    log( 1, "Installing: %s" % ( str( g_channelSettings['CHANNEL_ROOT_URL'] ) ) )
+    download_repository_to_folder( url, root, temp, command_line_interface, git_executable_path )
+
+    # Delete the empty `Packages` folder created by git while cloning the main repository
+    channel_temporary_folder = os.path.join( root, temp )
+
+    channel_temporary_packages_folder = os.path.join( channel_temporary_folder, "Packages" )
+    shutil.rmtree( channel_temporary_packages_folder )
+
+
+def download_repository_to_folder(url, root, temp, command_line_interface, git_executable_path):
+    channel_temporary_folder = os.path.join( root, temp )
 
     if os.path.isdir( channel_temporary_folder ):
-        shutil.rmtree( channel_temporary_folder )
+        shutil.rmtree( channel_temporary_folder, onerror=_delete_read_only_file )
 
     command = shlex.split( '"%s" clone "%s" "%s"' % ( git_executable_path, url, temp ) )
     output  = str( command_line_interface.execute( command, cwd=root ) )
 
-    log( 1, "download_main_repository, output: " + str( output ) )
-    channel_temporary_packages_folder = os.path.join( channel_temporary_folder, "Packages" )
-
-    shutil.rmtree( channel_temporary_packages_folder )
+    log( 1, "download_repository_to_folder, output: " + str( output ) )
 
 
 def add_folders_and_files_for_removal(root_source_folder, relative_path):
@@ -482,6 +495,8 @@ def add_folders_and_files_for_removal(root_source_folder, relative_path):
 
 def install_development_packages(packages_to_install, git_executable_path, command_line_interface):
     root = g_channelSettings['CHANNEL_ROOT_DIRECTORY']
+    temp = g_channelSettings['TEMPORARY_FOLDER_TO_USE']
+    channel_temporary_folder = os.path.join( root, temp )
 
     packages_names = [ package_info[0] for package_info in packages_to_install ]
     set_default_settings( packages_names, packages_to_install )
@@ -511,21 +526,25 @@ def install_development_packages(packages_to_install, git_executable_path, comma
 
         if os.path.exists( submodule_absolute_path ):
 
-            if not package_manager.backup_package_dir( package_name ):
+            # Add the missing packages file into the existent packages folder, including the `.git` folder.
+            if package_manager.backup_package_dir( package_name ):
+                download_repository_to_folder( url, root, temp, command_line_interface, git_executable_path )
+                copy_overrides( channel_temporary_folder, submodule_absolute_path, move_files=True, is_to_replace=False )
+
+            else:
                 g_failed_repositories.append( package_name )
+
                 log( 1, "Error: Failed to backup and install the repository `%s`!" % package_name )
                 continue
 
-            if os.path.exists( submodule_absolute_path ):
-                shutil.rmtree( submodule_absolute_path, onerror=_delete_read_only_file )
+        else:
+            command = shlex.split( '"%s" clone --recursive "%s" "%s"' % ( git_executable_path, url, path) )
+            result  = command_line_interface.execute( command, cwd=root )
 
-        command = shlex.split( '"%s" clone --recursive "%s" "%s"' % ( git_executable_path, url, path) )
-        result  = command_line_interface.execute( command, cwd=root )
-
-        if result is False:
-            g_failed_repositories.append( package_name )
-            log( 1, "Error: Failed to download the repository `%s`!" % package_name )
-            continue
+            if result is False:
+                g_failed_repositories.append( package_name )
+                log( 1, "Error: Failed to download the repository `%s`!" % package_name )
+                continue
 
         command = shlex.split( '"%s" checkout master' % ( git_executable_path ) )
         output  = str( result ) + "\n" + str( command_line_interface.execute( command, cwd=os.path.join( root, path ) ) )
@@ -535,6 +554,9 @@ def install_development_packages(packages_to_install, git_executable_path, comma
 
         satisfy_dependencies()
         accumulative_unignore_user_packages( package_name )
+
+    # Clean the temporary folder after the process has ended
+    shutil.rmtree( channel_temporary_folder, onerror=_delete_read_only_file )
 
 
 def get_development_packages():
@@ -590,7 +612,7 @@ def get_development_packages():
     return packages
 
 
-def copy_overrides(root_source_folder, root_destine_folder, move_files=False):
+def copy_overrides(root_source_folder, root_destine_folder, move_files=False, is_to_replace=True):
     """
         Python How To Copy Or Move Folders Recursively
         http://techs.studyhorror.com/python-copy-move-sub-folders-recursively-i-92
@@ -601,7 +623,8 @@ def copy_overrides(root_source_folder, root_destine_folder, move_files=False):
         Force Overwrite in Os.Rename
         https://stackoverflow.com/questions/8107352/force-overwrite-in-os-rename
     """
-    installed_files = []
+    installed_files   = []
+    installed_folders = []
 
     # Call this if operation only one time, instead of calling the for every file.
     if move_files:
@@ -626,7 +649,12 @@ def copy_overrides(root_source_folder, root_destine_folder, move_files=False):
 
             # print( ( "Moving" if move_files else "Coping" ), "file:", source_file, "to", destine_file )
             if os.path.exists( destine_file ):
-                os.remove( destine_file )
+
+                if is_to_replace:
+                    delete_read_only_file( destine_file )
+
+                else:
+                    continue
 
             # Python: Get relative path from comparing two absolute paths
             # https://stackoverflow.com/questions/7287996/python-get-relative-path-from-comparing-two-absolute-paths
@@ -636,10 +664,11 @@ def copy_overrides(root_source_folder, root_destine_folder, move_files=False):
             operate_file(source_file, destine_folder)
 
             add_path_if_not_exists( installed_files, relative_file_path )
-            add_path_if_not_exists( g_files_to_uninstall, relative_file_path )
-            add_path_if_not_exists( g_folders_to_uninstall, relative_folder_path )
+            add_path_if_not_exists( installed_folders, relative_folder_path )
 
-    log( 1, "installed_files: " + str( installed_files ) )
+    log( 1, "copy_overrides, installed_files:   " + str( installed_files ) )
+    log( 1, "copy_overrides, installed_folders: " + str( installed_folders ) )
+    return installed_files, installed_folders
 
 
 def add_path_if_not_exists(list_to_add, path):
