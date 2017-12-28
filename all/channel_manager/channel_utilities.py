@@ -229,7 +229,7 @@ def run_channel_setup(channel_settings, channel_package_name, channel_package_di
     channel_directory = get_main_directory( channel_package_directory )
 
     user_folder = os.path.join( channel_directory, "Packages", "User" )
-    channel_settings['CHANNEL_INSTALLATION_DETAILS'] = os.path.join( user_folder, channel_package_name + ".sublime-settings" )
+    channel_settings['CHANNEL_INSTALLATION_DETAILS'] = os.path.join( user_folder, channel_package_name + ".json" )
 
     channel_settings['USER_FOLDER_PATH']   = user_folder
     channel_settings['USER_SETTINGS_FILE'] = "Preferences.sublime-settings"
