@@ -197,6 +197,9 @@ class InstallChannelFilesThread(threading.Thread):
         if not IS_UPGRADE_INSTALLATION:
             uninstall_package_control()
 
+        # Flush off the remaining `g_next_packages_to_ignore` appended
+        accumulative_unignore_user_packages( flush_everything=True )
+
 
 def install_modules(command_line_interface, git_executable_path):
     log( _grade(), "install_modules_, git_executable_path: " + str( git_executable_path ) )
@@ -212,8 +215,6 @@ def install_modules(command_line_interface, git_executable_path):
 
         log( _grade(), "install_modules, packages_to_install: " + str( packages_to_install ) )
         install_stable_packages( packages_to_install )
-
-    accumulative_unignore_user_packages( flush_everything=True )
 
 
 def install_stable_packages(packages_to_install):
@@ -550,10 +551,11 @@ def install_development_packages(packages_to_install, git_executable_path, comma
         output  = str( result ) + "\n" + str( command_line_interface.execute( command, cwd=os.path.join( root, path ) ) )
 
         log( 1, "install_development_packages, output: " + str( output ) )
-        add_package_to_installation_list( package_name )
 
-        satisfy_dependencies()
+        add_package_to_installation_list( package_name )
         accumulative_unignore_user_packages( package_name )
+
+    satisfy_dependencies()
 
     # Clean the temporary folder after the process has ended
     shutil.rmtree( channel_temporary_folder, onerror=_delete_read_only_file )
@@ -771,11 +773,12 @@ def ignore_next_packages(package_disabler, package_name, packages_list):
 
         This fixes it by ignoring several next packages, then later unignoring them after uninstalled.
     """
-    if len( _uningored_packages_to_flush ) < 1:
+
+    if g_uningored_packages_to_flush < 1:
         global g_next_packages_to_ignore
 
         last_ignored_packages     = packages_list.index( package_name )
-        g_next_packages_to_ignore = packages_list[ last_ignored_packages : last_ignored_packages + PACKAGES_COUNT_TO_IGNORE_AHEAD + 1 ]
+        g_next_packages_to_ignore = packages_list[last_ignored_packages : last_ignored_packages+PACKAGES_COUNT_TO_IGNORE_AHEAD+1]
 
         # We never can ignore the Default package, otherwise several errors/anomalies show up
         if "Default" in g_next_packages_to_ignore:
@@ -784,11 +787,18 @@ def ignore_next_packages(package_disabler, package_name, packages_list):
         log( 1, "Adding %d packages to be installed to the `ignored_packages` setting list." % len( g_next_packages_to_ignore ) )
         log( 1, "g_next_packages_to_ignore: " + str( g_next_packages_to_ignore ) )
 
-        # Add them to the in_process list
-        package_disabler.disable_packages( g_next_packages_to_ignore, "remove" )
-        unique_list_append( g_default_ignored_packages, g_next_packages_to_ignore )
+        # If the package is already on the users' `ignored_packages` settings, it means either that
+        # the package was disabled by the user or the package is one of the development disabled
+        # packages. Therefore we must not unignore it later when unignoring them.
+        for package_name in g_next_packages_to_ignore:
 
-        # Let the package be unloaded by Sublime Text while ensuring anyone is putting them back in
+            if package_name in g_default_ignored_packages:
+                g_next_packages_to_ignore.remove( package_name )
+
+        # This also adds them to the `in_process` list on the Package Control.sublime-settings file
+        package_disabler.disable_packages( g_next_packages_to_ignore, "remove" )
+
+        # Let the packages be unloaded by Sublime Text while ensuring anyone is putting them back in
         add_packages_to_ignored_list( g_next_packages_to_ignore )
 
 
@@ -808,20 +818,25 @@ def accumulative_unignore_user_packages(package_name="", flush_everything=False)
     """
 
     if flush_everything:
-        unignore_some_packages( _uningored_packages_to_flush )
+        unignore_some_packages( g_next_packages_to_ignore )
 
     else:
         log( 1, "Adding package to unignore list: %s" % str( package_name ) )
-        _uningored_packages_to_flush.append( package_name )
 
-        if len( _uningored_packages_to_flush ) > PACKAGES_COUNT_TO_IGNORE_AHEAD:
-            unignore_some_packages( _uningored_packages_to_flush )
-            del _uningored_packages_to_flush[:]
+        global g_uningored_packages_to_flush
+        g_uningored_packages_to_flush += 1
+
+        if g_uningored_packages_to_flush > len( g_next_packages_to_ignore ):
+            unignore_some_packages( g_next_packages_to_ignore )
+
+            del g_next_packages_to_ignore[:]
+            g_uningored_packages_to_flush = 0
 
 
 def unignore_some_packages(packages_list):
     """
         Flush just a few items each time
+        ignore_next_packages( package_disabler, package_name, packages_names )
     """
     is_there_unignored_packages = False
 
@@ -934,24 +949,23 @@ def complete_package_control_uninstallation(maximum_attempts=3):
 
     silence_error_message_box(300.0)
 
-    package_manager    = PackageManager()
+    package_manager  = PackageManager()
+    package_disabler = PackageDisabler()
+
     packages_to_remove = [ ("Package Control", False), ("0_package_control_loader", None) ]
     packages_names     = [ package_name[0] for package_name in packages_to_remove ]
-
-    add_packages_to_ignored_list( packages_names )
-    unique_list_append( _uningored_packages_to_flush, packages_names )
 
     for package_name, is_dependency in packages_to_remove:
         log.insert_empty_line()
         log.insert_empty_line()
 
         log( 1, "Uninstalling: %s..." % str( package_name ) )
+        ignore_next_packages( package_disabler, package_name, packages_names )
+
         package_manager.remove_package( package_name, is_dependency )
+        accumulative_unignore_user_packages( package_name )
 
     delete_package_control_settings()
-
-    # Flush off the `_uningored_packages_to_flush` just appended
-    accumulative_unignore_user_packages( flush_everything=True )
 
 
 def add_packages_to_ignored_list(packages_list):
@@ -960,18 +974,13 @@ def add_packages_to_ignored_list(packages_list):
         override this.
     """
     log( 1, "add_packages_to_ignored_list, Adding packages to unignore list: %s" % str( packages_list ) )
-
-    global g_next_packages_to_ignore
-    g_next_packages_to_ignore = packages_list
+    unique_list_append( g_default_ignored_packages, packages_list )
 
     # Progressively saves the installation data, in case the user closes Sublime Text
     save_default_settings()
 
-    ignored_packages = g_userSettings.get( "ignored_packages", [] )
-    unique_list_append( ignored_packages, packages_list )
-
     for interval in range( 0, 27 ):
-        g_userSettings.set( "ignored_packages", ignored_packages )
+        g_userSettings.set( "ignored_packages", g_default_ignored_packages )
         sublime.save_settings( g_channelSettings['USER_SETTINGS_FILE'] )
 
         time.sleep(0.1)
@@ -1037,7 +1046,7 @@ def satisfy_dependencies():
 def unignore_installed_packages():
     """
         When the installation was interrupted, there will be ignored packages which are pending to
-        uningored.
+        uningored. Then these packages must to be loaded when the installer starts again.
     """
     packages_to_unignore = []
 
@@ -1259,11 +1268,12 @@ def is_allowed_to_run():
 def unpack_settings(channel_settings):
     global g_channelSettings
     global g_failed_repositories
-    global _uningored_packages_to_flush
 
-    g_channelSettings            = channel_settings
-    g_failed_repositories        = []
-    _uningored_packages_to_flush = []
+    g_channelSettings     = channel_settings
+    g_failed_repositories = []
+
+    global g_uningored_packages_to_flush
+    g_uningored_packages_to_flush = 0
 
     global IS_UPGRADE_INSTALLATION
     global INSTALLATION_TYPE_NAME
@@ -1291,7 +1301,7 @@ def load_installation_settings_file():
     g_userSettings   = sublime.load_settings( g_channelSettings['USER_SETTINGS_FILE'] )
     g_channelDetails = load_data_file( g_channelSettings['CHANNEL_INSTALLATION_DETAILS'] )
 
-    # `g_default_ignored_packages` contains the original user's ignored packages.
+    # Contains the original user's ignored packages.
     g_default_ignored_packages = g_userSettings.get( 'ignored_packages', [] )
 
     global g_packages_to_uninstall
