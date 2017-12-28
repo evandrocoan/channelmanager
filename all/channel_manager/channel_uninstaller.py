@@ -483,7 +483,7 @@ def uninstall_packagesmanger(package_manager, installed_packages):
         log.insert_empty_line()
 
         log( 1, "Finishing PackagesManager %s..." % INSTALLATION_TYPE_NAME )
-        uninstall_list_of_packages( [ ("PackagesManager", False), ("0_packagesmanager_loader", None) ] )
+        uninstall_list_of_packages( package_manager, [("PackagesManager", False), ("0_packagesmanager_loader", None)] )
 
         remove_0_packagesmanager_loader()
         clean_packagesmanager_settings()
@@ -839,8 +839,8 @@ def setup_packages_to_uninstall_last(channel_settings):
     global PACKAGES_TO_UNINSTAL_LATER
     global PACKAGES_TO_NOT_ADD_TO_IGNORE_LIST
 
-    PACKAGES_TO_UNINSTAL_LATER = [ "PackagesManager", g_channelSettings['CHANNEL_PACKAGE_NAME'] ]
-    PACKAGES_TO_UNINSTALL_FIRST       = list( reversed( channel_settings['PACKAGES_TO_INSTALL_LAST'] ) )
+    PACKAGES_TO_UNINSTAL_LATER  = [ "PackagesManager", g_channelSettings['CHANNEL_PACKAGE_NAME'] ]
+    PACKAGES_TO_UNINSTALL_FIRST = list( reversed( channel_settings['PACKAGES_TO_INSTALL_LAST'] ) )
 
     # We need to remove it by last, after installing Package Control back
     for package in PACKAGES_TO_UNINSTAL_LATER:
