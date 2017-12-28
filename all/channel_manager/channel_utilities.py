@@ -238,6 +238,11 @@ def run_channel_setup(channel_settings, channel_package_name, channel_package_di
     channel_settings['CHANNEL_ROOT_DIRECTORY']  = channel_directory
     channel_settings['TEMPORARY_FOLDER_TO_USE'] = "__channel_temporary_directory"
 
+    if os.path.exists( os.path.join( channel_package_directory, "settings.py" ) ):
+        generate_channel_files( channel_package_name, channel_package_directory )
+
+
+def generate_channel_files(channel_package_name, channel_package_directory):
     _configure_channel_menu_file( channel_package_name, channel_package_directory )
     _configure_channel_runner_file( channel_package_name, channel_package_directory )
     _configure_channel_commands_file( channel_package_name, channel_package_directory )
