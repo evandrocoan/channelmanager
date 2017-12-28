@@ -104,7 +104,7 @@ def write_data_file(file_path, channel_dictionary):
     """
     log( 1, "Writing to the data file: " + str( file_path ) )
 
-    with open(file_path, 'w', encoding='utf-8') as output_file:
+    with open( file_path, 'w', newline='\n', encoding='utf-8' ) as output_file:
         json.dump( channel_dictionary, output_file, indent=4, separators=(',', ': ') )
 
 
@@ -271,11 +271,11 @@ def _configure_channel_runner_file(channel_package_name, channel_package_directo
     pascal_case_name = convert_to_pascal_case( channel_package_name )
     base_file, destine_file = _get_base_and_destine_paths( "commands.py", "commands.py", channel_package_directory )
 
-    with open( base_file, "r" ) as file:
+    with open( base_file, "r", encoding='utf-8' ) as file:
         text = file.read()
         text = text.replace( "MyBrandNewChannel", pascal_case_name )
 
-        with open( destine_file, "w", newline='\n' ) as file:
+        with open( destine_file, "w", newline='\n', encoding='utf-8' ) as file:
             file.write( text )
 
 
@@ -286,13 +286,13 @@ def _configure_channel_menu_file(channel_package_name, channel_package_directory
     # Use the extension `.js` instead of `sublime-menu` to not allow Sublime Text load the template file
     base_file, destine_file = _get_base_and_destine_paths( "Main.js", "Main.sublime-menu", channel_package_directory )
 
-    with open( base_file, "r" ) as file:
+    with open( base_file, "r", encoding='utf-8' ) as file:
         text = file.read()
 
         text = text.replace( "MyBrandNewChannel", channel_package_name )
         text = text.replace( "my_brand_new_channel", snake_case_name )
 
-        with open( destine_file, "w", newline='\n' ) as file:
+        with open( destine_file, "w", newline='\n', encoding='utf-8' ) as file:
             file.write( text )
 
 
@@ -303,13 +303,13 @@ def _configure_channel_commands_file(channel_package_name, channel_package_direc
     # Use the extension `.js` instead of `sublime-menu` to not allow Sublime Text load the template file
     base_file, destine_file = _get_base_and_destine_paths( "Default.js", "Default.sublime-commands", channel_package_directory )
 
-    with open( base_file, "r" ) as file:
+    with open( base_file, "r", encoding='utf-8' ) as file:
         text = file.read()
 
         text = text.replace( "MyBrandNewChannel", channel_package_name )
         text = text.replace( "my_brand_new_channel", snake_case_name )
 
-        with open( destine_file, "w", newline='\n' ) as file:
+        with open( destine_file, "w", newline='\n', encoding='utf-8' ) as file:
             file.write( text )
 
 
@@ -578,7 +578,7 @@ def _open_last_session_data(session_file):
 
 def save_session_data(last_section, session_file):
 
-    with open( session_file, 'wt' ) as configfile:
+    with open( session_file, 'wt', newline='\n', encoding='utf-8' ) as configfile:
         last_section.write( configfile )
 
 
