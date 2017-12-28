@@ -827,7 +827,7 @@ def ignore_next_packages(package_disabler, package_name, packages_list):
         # If the package is already on the users' `ignored_packages` settings, it means either that
         # the package was disabled by the user or the package is one of the development disabled
         # packages. Therefore we must not unignore it later when unignoring them.
-        for package_name in g_next_packages_to_ignore:
+        for package_name in list( g_next_packages_to_ignore ):
 
             if package_name in g_default_ignored_packages:
                 g_next_packages_to_ignore.remove( package_name )
