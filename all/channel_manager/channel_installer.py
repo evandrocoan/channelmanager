@@ -553,7 +553,6 @@ def install_development_packages(packages_infos, git_executable_path, command_li
         accumulative_unignore_user_packages( package_name )
 
     accumulative_unignore_user_packages( flush_everything=True )
-    satisfy_dependencies()
 
     # Clean the temporary folder after the process has ended
     shutil.rmtree( channel_temporary_folder, onerror=_delete_read_only_file )
@@ -840,6 +839,24 @@ def ignore_next_packages(package_disabler, package_name, packages_list):
         add_packages_to_ignored_list( g_next_packages_to_ignore )
 
 
+def add_packages_to_ignored_list(packages_list):
+    """
+        Something, somewhere is setting the ignored_packages list to `["Vintage"]`. Then ensure we
+        override this.
+    """
+    log( 1, "add_packages_to_ignored_list, Adding packages to unignore list: %s" % str( packages_list ) )
+    unique_list_append( g_default_ignored_packages, packages_list )
+
+    # Progressively saves the installation data, in case the user closes Sublime Text
+    save_default_settings()
+
+    for interval in range( 0, 27 ):
+        g_userSettings.set( "ignored_packages", g_default_ignored_packages )
+        sublime.save_settings( g_channelSettings['USER_SETTINGS_FILE'] )
+
+        time.sleep(0.1)
+
+
 def accumulative_unignore_user_packages(package_name="", flush_everything=False):
     """
         Flush off the remaining `g_next_packages_to_ignore` appended. There is a bug with the
@@ -956,6 +973,7 @@ def uninstall_package_control():
         sublime.set_timeout_async( complete_package_control_uninstallation, 2000 )
 
     else:
+        satisfy_dependencies()
         log( 1, "Warning: PackagesManager is was not installed on the system!" )
 
         # Clean right away the PackagesManager successful flag, was it was not installed
@@ -1007,24 +1025,6 @@ def complete_package_control_uninstallation(maximum_attempts=3):
     delete_package_control_settings()
 
 
-def add_packages_to_ignored_list(packages_list):
-    """
-        Something, somewhere is setting the ignored_packages list to `["Vintage"]`. Then ensure we
-        override this.
-    """
-    log( 1, "add_packages_to_ignored_list, Adding packages to unignore list: %s" % str( packages_list ) )
-    unique_list_append( g_default_ignored_packages, packages_list )
-
-    # Progressively saves the installation data, in case the user closes Sublime Text
-    save_default_settings()
-
-    for interval in range( 0, 27 ):
-        g_userSettings.set( "ignored_packages", g_default_ignored_packages )
-        sublime.save_settings( g_channelSettings['USER_SETTINGS_FILE'] )
-
-        time.sleep(0.1)
-
-
 def delete_package_control_settings():
     """
         Clean it a few times because Package Control is kinda running and still flushing stuff down
@@ -1045,6 +1045,7 @@ def delete_package_control_settings():
         clean_settings['remove_orphaned_backup'] = get_dictionary_key( g_package_control_settings, 'remove_orphaned', True )
 
     write_data_file( package_control_file, clean_settings )
+    satisfy_dependencies()
 
     # Set the flag as completed, to signalize the this part of the installation was successful
     global g_is_running
@@ -1228,7 +1229,7 @@ def check_installed_packages_alert(maximum_attempts=10):
         Show a message to the user observing the Sublime Text console, so he know the process is not
         finished yet.
     """
-    log( _grade(), "Looking for new tasks... %s seconds remaining." % str( maximum_attempts ) )
+    log( 1, "Looking for new tasks... %s seconds remaining." % str( maximum_attempts ) )
     maximum_attempts -= 1
 
     if maximum_attempts > 0:
@@ -1237,7 +1238,7 @@ def check_installed_packages_alert(maximum_attempts=10):
             sublime.set_timeout_async( lambda: check_installed_packages_alert( maximum_attempts ), 1000 )
 
         else:
-            log( _grade(), "Finished looking for new tasks... The installation is complete." )
+            log( 1, "Finished looking for new tasks... The installation is complete." )
 
 
 def check_installed_packages(maximum_attempts=10):
@@ -1251,7 +1252,7 @@ def check_installed_packages(maximum_attempts=10):
         differ, attempt to install they again for some times. If not successful, stop trying and
         warn the user.
     """
-    log( _grade(), "Finishing installation... maximum_attempts: " + str( maximum_attempts ) )
+    log( 1, "Finishing installation... maximum_attempts: " + str( maximum_attempts ) )
     maximum_attempts -= 1
 
     if not g_is_running:
