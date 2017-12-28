@@ -204,18 +204,14 @@ def install_modules(command_line_interface, git_executable_path):
 
     if IS_DEVELOPMENT_INSTALLATION:
         packages_to_install = download_not_packages_submodules( command_line_interface, git_executable_path )
-
-        log( 2, "install_modules, packages_to_install: " + str( packages_to_install ) )
         install_development_packages( packages_to_install, git_executable_path, command_line_interface )
 
     else:
         packages_to_install = get_stable_packages( IS_UPGRADE_INSTALLATION )
-
-        log( _grade(), "install_modules, packages_to_install: " + str( packages_to_install ) )
         install_stable_packages( packages_to_install )
 
 
-def install_stable_packages(packages_to_install):
+def install_stable_packages(packages_names):
     """
         python multithreading wait till all threads finished
         https://stackoverflow.com/questions/11968689/python-multithreading-wait-till-all-threads-finished
@@ -227,14 +223,12 @@ def install_stable_packages(packages_to_install):
 
         When trying to install several package at once, then here I am installing them one by one.
     """
-    log( 2, "install_stable_packages, g_channelSettings['PACKAGES_TO_NOT_INSTALL_STABLE']: "
-            + str( g_channelSettings['PACKAGES_TO_NOT_INSTALL_STABLE'] ) )
-
-    set_default_settings( packages_to_install )
+    set_default_settings( packages_names )
+    log( 2, "install_stable_packages, packages_names: " + str( packages_names ) )
 
     # Package Control: Advanced Install Package
     # https://github.com/wbond/package_control/issues/1191
-    # thread = AdvancedInstallPackageThread( packages_to_install )
+    # thread = AdvancedInstallPackageThread( packages_names )
     # thread.start()
     # thread.join()
 
@@ -242,9 +236,9 @@ def install_stable_packages(packages_to_install):
     package_disabler = PackageDisabler()
 
     current_index      = 0
-    git_packages_count = len( packages_to_install )
+    git_packages_count = len( packages_names )
 
-    for package_name, pi in sequence_timer( packages_to_install, info_frequency=0 ):
+    for package_name, pi in sequence_timer( packages_names, info_frequency=0 ):
         current_index += 1
         progress = progress_info( pi, set_progress )
 
@@ -256,7 +250,7 @@ def install_stable_packages(packages_to_install):
         log.insert_empty_line()
 
         log( 1, "%s Installing %d of %d: %s" % ( progress, current_index, git_packages_count, str( package_name ) ) )
-        ignore_next_packages( package_disabler, package_name, packages_to_install )
+        ignore_next_packages( package_disabler, package_name, packages_names )
 
         if package_manager.install_package( package_name, False ) is False:
             log( 1, "Error: Failed to install the repository `%s`!" % package_name )
@@ -275,6 +269,7 @@ def get_stable_packages(is_upgrade):
         python ConfigParser: read configuration from string
         https://stackoverflow.com/questions/27744058/python-configparser-read-configuration-from-string
     """
+    log( 2, "get_stable_packages, PACKAGES_TO_NOT_INSTALL_STABLE: " + str( g_channelSettings['PACKAGES_TO_NOT_INSTALL_STABLE'] ) )
     channel_name = g_channelSettings['CHANNEL_PACKAGE_NAME']
 
     current_index     = 0
@@ -315,6 +310,8 @@ def get_stable_packages(is_upgrade):
         packages_to_install = repositories_loaded
 
     for package_name in packages_to_install:
+        log( 2, "get_stable_packages, package_name: " + package_name )
+
         # # For quick testing
         # current_index += 1
         # if current_index > 7:
@@ -492,21 +489,23 @@ def add_folders_and_files_for_removal(root_source_folder, relative_path):
             add_path_if_not_exists( g_files_to_uninstall, relative_path )
 
 
-def install_development_packages(packages_to_install, git_executable_path, command_line_interface):
+def install_development_packages(packages_infos, git_executable_path, command_line_interface):
     root = g_channelSettings['CHANNEL_ROOT_DIRECTORY']
     temp = g_channelSettings['TEMPORARY_FOLDER_TO_USE']
+
+    packages_names = [ package_info[0] for package_info in packages_infos ]
     channel_temporary_folder = os.path.join( root, temp )
 
-    packages_names = [ package_info[0] for package_info in packages_to_install ]
-    set_default_settings( packages_names, packages_to_install )
+    set_default_settings( packages_names, packages_infos )
+    log( 2, "install_development_packages, packages_infos: " + str( packages_infos ) )
 
     package_disabler = PackageDisabler()
     package_manager  = PackageManager()
 
     current_index      = 0
-    git_packages_count = len( packages_to_install )
+    git_packages_count = len( packages_infos )
 
-    for package_info, pi in sequence_timer( packages_to_install, info_frequency=0 ):
+    for package_info, pi in sequence_timer( packages_infos, info_frequency=0 ):
         current_index += 1
         package_name, url, path = package_info
 
@@ -685,7 +684,7 @@ def convert_absolute_path_to_relative(file_path):
     return convert_to_unix_path(relative_path)
 
 
-def set_default_settings(packages_names, packages_to_install=[]):
+def set_default_settings(packages_names, packages_infos=[]):
     """
         Set some package to be enabled at last due their settings being dependent on other packages
         which need to be installed first.
@@ -695,8 +694,8 @@ def set_default_settings(packages_names, packages_to_install=[]):
         already disabled and the new packages to be installed and must be disabled before attempting
         to install them.
     """
-    set_first_and_last_packages_to_install( packages_names )
-    ask_user_for_which_packages_to_install( packages_names, packages_to_install )
+    set_first_and_last_packages_to_install( packages_names, packages_infos )
+    ask_user_for_which_packages_to_install( packages_names, packages_infos )
 
     if "PackagesManager" in packages_names:
         sync_package_control_and_manager()
@@ -711,51 +710,91 @@ def set_default_settings(packages_names, packages_to_install=[]):
         set_development_ignored_packages( packages_names )
 
 
-def set_development_ignored_packages(packages_to_install):
+def set_development_ignored_packages(packages_names):
 
     for package_name in g_channelSettings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT']:
 
         # Only ignore the packages which are being installed
-        if package_name in packages_to_install and package_name not in g_default_ignored_packages:
+        if package_name in packages_names and package_name not in g_default_ignored_packages:
             g_default_ignored_packages.append( package_name )
             add_item_if_not_exists( g_packages_to_unignore, package_name )
 
     add_packages_to_ignored_list( g_default_ignored_packages )
 
 
-def set_first_and_last_packages_to_install(packages_to_install):
+def set_first_and_last_packages_to_install(packages_names, packages_infos=[]):
     """
-        Set the packages to be installed first and last. The `g_channelSettings['PACKAGES_TO_INSTALL_LAST']` has priority
-        when some package is on both lists.
+        Set the packages to be installed first and last. The `g_channelSettings['PACKAGES_TO_INSTALL_LAST']`
+        has priority when some package is on both lists.
     """
-    set_first_packages_to_install( packages_to_install )
+    set_first_packages_to_install( packages_names, packages_infos )
     last_packages = {}
 
-    for package_name in packages_to_install:
+    if len( packages_infos ):
 
-        if package_name[0] in g_channelSettings['PACKAGES_TO_INSTALL_LAST']:
-            last_packages[package_name[0]] = package_name
-            packages_to_install.remove( package_name )
+        for package_info in packages_infos:
 
+            if package_info[0] in g_channelSettings['PACKAGES_TO_INSTALL_LAST']:
+                last_packages[package_info[0]] = package_info
+
+                packages_infos.remove(package_info)
+                packages_names.remove(package_info[0])
+
+    else:
+
+        for package_name in packages_names:
+
+            if package_name in g_channelSettings['PACKAGES_TO_INSTALL_LAST']:
+                last_packages[package_name] = package_name
+
+                packages_names.remove( package_name )
+
+    # Readds the packages into the list accordingly to their respective ordering
     for package_name in g_channelSettings['PACKAGES_TO_INSTALL_LAST']:
 
         if package_name in last_packages:
-            packages_to_install.append( last_packages[package_name] )
+
+            if len( packages_infos ):
+                packages_infos.append( last_packages[package_name] )
+                packages_names.append( last_packages[package_name][0] )
+
+            else:
+                packages_names.append( last_packages[package_name] )
 
 
-def set_first_packages_to_install(packages_to_install):
+def set_first_packages_to_install(packages_names, packages_infos=[]):
     first_packages = {}
 
-    for package_name in packages_to_install:
+    if len( packages_infos ):
 
-        if package_name[0] in g_channelSettings['PACKAGES_TO_INSTALL_FIRST']:
-            first_packages[package_name[0]] = package_name
-            packages_to_install.remove( package_name )
+        for package_info in packages_infos:
 
+            if package_info[0] in g_channelSettings['PACKAGES_TO_INSTALL_FIRST']:
+                first_packages[package_info[0]] = package_info
+
+                packages_infos.remove(package_info)
+                packages_names.remove(package_info[0])
+
+    else:
+
+        for package_name in packages_names:
+
+            if package_name in g_channelSettings['PACKAGES_TO_INSTALL_FIRST']:
+                first_packages[package_name] = package_name
+
+                packages_names.remove( package_name )
+
+    # Readds the packages into the list accordingly to their respective ordering
     for package_name in reversed( g_channelSettings['PACKAGES_TO_INSTALL_FIRST'] ):
 
         if package_name in first_packages:
-            packages_to_install.insert( 0, first_packages[package_name] )
+
+            if len( packages_infos ):
+                packages_infos.insert( 0, first_packages[package_name] )
+                packages_names.insert( 0, first_packages[package_name][0] )
+
+            else:
+                packages_names.insert( 0, first_packages[package_name] )
 
 
 def ignore_next_packages(package_disabler, package_name, packages_list):
@@ -1096,7 +1135,7 @@ def ensure_installed_packages_name(package_control_settings):
         del package_control_settings['remove_orphaned_backup']
 
 
-def ask_user_for_which_packages_to_install(packages_names, packages_to_install=[]):
+def ask_user_for_which_packages_to_install(packages_names, packages_infos=[]):
     can_continue  = [False, False]
     active_window = sublime.active_window()
 
@@ -1177,8 +1216,8 @@ def ask_user_for_which_packages_to_install(packages_names, packages_to_install=[
         target_index = packages_names.index( package_name )
         del packages_names[target_index]
 
-        if len( packages_to_install ):
-            del packages_to_install[target_index]
+        if len( packages_infos ):
+            del packages_infos[target_index]
 
     # Progressively saves the installation data, in case the user closes Sublime Text
     save_default_settings()
