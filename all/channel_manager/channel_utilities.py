@@ -122,17 +122,14 @@ def load_data_file(file_path, wait_on_error=True):
                     return json.load( data_file )
 
             except ValueError as error:
-                log.insert_empty_line()
-                log.insert_empty_line()
-
-                log( 1, "Error, maximum_attempts %d, load_data_file: %s" % ( maximum_attempts, error ) )
+                log( 1, "Error: maximum_attempts %d, %s (%s)" % ( maximum_attempts, error, file_path ) )
                 maximum_attempts -= 1
 
                 if wait_on_error:
                     time.sleep( 0.1 )
 
         if maximum_attempts < 1:
-            raise ValueError( "file_path: %s, error: %s" % ( file_path, error ) )
+            raise ValueError( "file_path: %s" % ( file_path ) )
 
     else:
         if sublime:
