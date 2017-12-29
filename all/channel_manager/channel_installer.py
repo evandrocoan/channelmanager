@@ -353,6 +353,34 @@ class ChannelInstaller(threading.Thread):
             self.uninstall_package_control()
 
 
+    def uninstallerProcedements(self):
+        log( _grade(), "Entering on %s run(1)" % self.__class__.__name__ )
+
+        try:
+            packages_to_uninstall = self.get_packages_to_uninstall( IS_UPDATE_INSTALLATION )
+
+            log( _grade(), "Packages to %s: " % self.installationType + str( packages_to_uninstall ) )
+            self.uninstall_packages( packages_to_uninstall )
+
+            if not IS_UPDATE_INSTALLATION:
+                self.remove_channel()
+
+                self.uninstall_files()
+                self.uninstall_folders()
+
+            self.attempt_to_uninstall_packagesmanager( packages_to_uninstall )
+
+            if not IS_UPDATE_INSTALLATION:
+                self.uninstall_list_of_packages( [(self.channelSettings['CHANNEL_PACKAGE_NAME'], False)] )
+
+        except ( InstallationCancelled, NoPackagesAvailable ) as error:
+            log( 1, str( error ) )
+
+            # Set the flag as completed, to signalize the installation has ended
+            global g_is_running
+            g_is_running = 0
+
+
     def install_modules(self):
 
         if self.isDevelopment:
@@ -730,207 +758,6 @@ class ChannelInstaller(threading.Thread):
         shutil.rmtree( channel_temporary_folder, onerror=_delete_read_only_file )
 
 
-    def satisfy_dependencies(self):
-        thread  = SatisfyDependenciesThread( self.package_manager )
-
-        thread.start()
-        thread.join()
-
-
-    def ensure_installed_packages_name(self, package_control_settings):
-        """
-            Ensure the installed packages names are on the settings files.
-        """
-
-        if "installed_packages" in package_control_settings:
-            installed_packages = get_dictionary_key( package_control_settings, 'installed_packages', [] )
-
-            remove_item_if_exists( installed_packages, "Package Control" )
-
-            add_item_if_not_exists( installed_packages, "PackagesManager" )
-            add_item_if_not_exists( installed_packages, self.channelSettings['CHANNEL_PACKAGE_NAME'] )
-
-        else:
-            channel_name = self.channelSettings['CHANNEL_PACKAGE_NAME']
-            package_control_settings['installed_packages'] = [ "PackagesManager", channel_name ]
-
-        # The `remove_orphaned_backup` is used to save the default user value for the overridden key
-        # `remove_orphaned` by the `PackagesManager` when configuring
-        if "remove_orphaned_backup" in package_control_settings:
-            package_control_settings['remove_orphaned'] = package_control_settings['remove_orphaned_backup']
-            del package_control_settings['remove_orphaned_backup']
-
-
-    def ask_user_for_which_packages_to_install(self, packages_names, packages_infos=[]):
-        can_continue  = [False, False]
-        active_window = sublime.active_window()
-
-        selected_packages_to_not_install = []
-
-        for package_name in packages_names:
-
-            if package_name in self.channelSettings['FORBIDDEN_PACKAGES']:
-                self.packagesInformations.append( [ package_name, self.notInstallMessage ] )
-
-            else:
-                self.packagesInformations.append( [ package_name, self.install_message ] )
-
-        def on_done(item_index):
-
-            if item_index < 1:
-                can_continue[0] = True
-                can_continue[1] = True
-                return
-
-            if item_index == 1:
-                log.insert_empty_line()
-                log( 1, "Continuing the %s after the packages pick up..." % self.installationType )
-
-                can_continue[0] = True
-                return
-
-            package_information = self.packagesInformations[item_index]
-            package_name        = package_information[0]
-
-            if package_name not in self.channelSettings['FORBIDDEN_PACKAGES']:
-
-                if package_information[1] == self.install_message:
-                    log( 1, "%s the package: %s" % ( "Removing" if self.isInstaller else "Keeping", package_name ) )
-
-                    package_information[1] = self.uninstall_message
-                    selected_packages_to_not_install.append( package_name )
-
-                else:
-                    log( 1, "%s the package: %s" % ( "Adding" if self.isInstaller else "Removing", package_name ) )
-
-                    package_information[1] = self.install_message
-                    selected_packages_to_not_install.remove( package_name )
-
-            else:
-                log( 1, "The package %s must be %s. " % ( package_name, self.word_installed ) +
-                        "If you do not want to %s this package, cancel the %s process." % ( self.word_install, self.installationType ) )
-
-            show_quick_panel( item_index )
-
-        def show_quick_panel(selected_index=0):
-            active_window.show_quick_panel( self.packagesInformations, on_done, sublime.KEEP_OPEN_ON_FOCUS_LOST, selected_index )
-
-        show_quick_panel()
-
-        # show_quick_panel is a non-blocking function, but we can only continue after on_done being called
-        while not can_continue[0]:
-            time.sleep(1)
-
-        # Show up the console, so the user can follow the process.
-        sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
-
-        if can_continue[1]:
-            log.insert_empty_line()
-            raise InstallationCancelled( "The user closed the %s's packages pick up list." % self.word_installer )
-
-        for package_name in selected_packages_to_not_install:
-            g_packages_not_installed.append( package_name )
-
-            target_index = packages_names.index( package_name )
-            del packages_names[target_index]
-
-            if len( packages_infos ):
-                del packages_infos[target_index]
-
-        # Progressively saves the installation data, in case the user closes Sublime Text
-        self.save_default_settings()
-
-
-    def check_installed_packages_alert(self, maximum_attempts=10):
-        """
-            Show a message to the user observing the Sublime Text console, so he know the process is not
-            finished yet.
-        """
-        log( 1, "Looking for new tasks... %s seconds remaining." % str( maximum_attempts ) )
-        maximum_attempts -= 1
-
-        if maximum_attempts > 0:
-
-            if g_is_running:
-                sublime.set_timeout_async( lambda: self.check_installed_packages_alert( maximum_attempts ), 1000 )
-
-            else:
-                log( 1, "Finished looking for new tasks... The installation is complete." )
-
-
-    def check_installed_packages(self, maximum_attempts=10):
-        """
-            Wait PackagesManager to load the found dependencies, before announcing it to the user.
-
-            Display warning when the installation process is finished or ask the user to restart
-            Sublime Text to finish the installation.
-
-            Compare the current installed packages list with required packages to install, and if they
-            differ, attempt to install they again for some times. If not successful, stop trying and
-            warn the user.
-        """
-        log( 1, "Finishing installation... maximum_attempts: " + str( maximum_attempts ) )
-        maximum_attempts -= 1
-
-        if not g_is_running:
-
-            if not self.isUpdate:
-                sublime.message_dialog( end_user_message( """\
-                        The %s %s was successfully completed.
-
-                        You need to restart Sublime Text to load the installed packages and finish
-                        installing their missing dependencies.
-
-                        Check you Sublime Text Console for more information.
-                        """ % ( self.channelSettings['CHANNEL_PACKAGE_NAME'], self.installationType ) ) )
-
-            print_failed_repositories( self.failedRepositories )
-            return
-
-        if maximum_attempts > 0:
-            sublime.set_timeout_async( lambda: self.check_installed_packages( maximum_attempts ), 2000 )
-
-        else:
-            sublime.error_message( end_user_message( """\
-                    The %s %s could NOT be successfully completed.
-
-                    Check you Sublime Text Console for more information.
-
-                    If you want help fixing the problem, please, save your Sublime Text Console output
-                    so later others can see what happened try to fix it.
-                    """ % ( self.channelSettings['CHANNEL_PACKAGE_NAME'], self.installationType ) ) )
-
-            print_failed_repositories( self.failedRepositories )
-
-
-    def uninstallerProcedements(self):
-        log( _grade(), "Entering on %s run(1)" % self.__class__.__name__ )
-
-        try:
-            packages_to_uninstall = self.get_packages_to_uninstall( IS_UPDATE_INSTALLATION )
-
-            log( _grade(), "Packages to %s: " % self.installationType + str( packages_to_uninstall ) )
-            self.uninstall_packages( packages_to_uninstall )
-
-            if not IS_UPDATE_INSTALLATION:
-                self.remove_channel()
-
-                self.uninstall_files()
-                self.uninstall_folders()
-
-            self.attempt_to_uninstall_packagesmanager( packages_to_uninstall )
-
-            if not IS_UPDATE_INSTALLATION:
-                self.uninstall_list_of_packages( [(self.channelSettings['CHANNEL_PACKAGE_NAME'], False)] )
-
-        except ( InstallationCancelled, NoPackagesAvailable ) as error:
-            log( 1, str( error ) )
-
-            # Set the flag as completed, to signalize the installation has ended
-            global g_is_running
-            g_is_running = 0
-
-
     def get_packages_to_uninstall(self, is_downgrade):
         filtered_packages     = []
         last_packages         = []
@@ -1160,7 +987,7 @@ class ChannelInstaller(threading.Thread):
             sublime.set_timeout_async( self.complete_package_control_uninstallation, 2000 )
 
         else:
-            satisfy_dependencies()
+            satisfy_dependencies( package_manager )
             log( 1, "Warning: PackagesManager is was not installed on the system!" )
 
             # Clean right away the PackagesManager successful flag, was it was not installed
@@ -1205,6 +1032,8 @@ class ChannelInstaller(threading.Thread):
             self.package_manager.remove_package( package_name, is_dependency )
             self.accumulative_unignore_user_packages( package_name )
 
+        remove_0_package_dependency_loader( "0_package_control_loader" )
+
         self.accumulative_unignore_user_packages( flush_everything=True )
         self.delete_package_control_settings()
 
@@ -1229,7 +1058,7 @@ class ChannelInstaller(threading.Thread):
             clean_settings['remove_orphaned_backup'] = get_dictionary_key( g_package_control_settings, 'remove_orphaned', True )
 
         write_data_file( package_control_file, clean_settings )
-        self.satisfy_dependencies()
+        satisfy_dependencies( package_manager )
 
         # Set the flag as completed, to signalize the this part of the installation was successful
         global g_is_running
@@ -1257,6 +1086,30 @@ class ChannelInstaller(threading.Thread):
 
         packagesmanager = os.path.join( self.channelSettings['USER_FOLDER_PATH'], g_packagesmanager_name )
         write_data_file( packagesmanager, g_package_control_settings )
+
+
+    def ensure_installed_packages_name(self, package_control_settings):
+        """
+            Ensure the installed packages names are on the settings files.
+        """
+
+        if "installed_packages" in package_control_settings:
+            installed_packages = get_dictionary_key( package_control_settings, 'installed_packages', [] )
+
+            remove_item_if_exists( installed_packages, "Package Control" )
+
+            add_item_if_not_exists( installed_packages, "PackagesManager" )
+            add_item_if_not_exists( installed_packages, self.channelSettings['CHANNEL_PACKAGE_NAME'] )
+
+        else:
+            channel_name = self.channelSettings['CHANNEL_PACKAGE_NAME']
+            package_control_settings['installed_packages'] = [ "PackagesManager", channel_name ]
+
+        # The `remove_orphaned_backup` is used to save the default user value for the overridden key
+        # `remove_orphaned` by the `PackagesManager` when configuring
+        if "remove_orphaned_backup" in package_control_settings:
+            package_control_settings['remove_orphaned'] = package_control_settings['remove_orphaned_backup']
+            del package_control_settings['remove_orphaned_backup']
 
 
     def attempt_to_uninstall_packagesmanager(self, packages_to_uninstall):
@@ -1302,7 +1155,7 @@ class ChannelInstaller(threading.Thread):
             log( 1, "Finishing PackagesManager %s..." % self.installationType )
             self.uninstall_list_of_packages( [("PackagesManager", False), ("0_packagesmanager_loader", None)] )
 
-            self.remove_0_packagesmanager_loader( "0_packagesmanager_loader" )
+            self.remove_0_package_dependency_loader( "0_packagesmanager_loader" )
             self.clean_packagesmanager_settings()
 
 
@@ -1335,7 +1188,7 @@ class ChannelInstaller(threading.Thread):
         self.accumulative_unignore_user_packages( flush_everything=True )
 
 
-    def remove_0_packagesmanager_loader(self, loader_name):
+    def remove_0_package_dependency_loader(self, loader_name):
         """
             Most times the 0_packagesmanager_loader is not being deleted/removed, then try again.
         """
@@ -1747,25 +1600,107 @@ class ChannelInstaller(threading.Thread):
         return convert_to_unix_path(relative_path)
 
 
-    def check_uninstalled_packages_alert(self, maximum_attempts=10):
+    def ask_user_for_which_packages_to_install(self, packages_names, packages_infos=[]):
+        can_continue  = [False, False]
+        active_window = sublime.active_window()
+
+        selected_packages_to_not_install = []
+
+        for package_name in packages_names:
+
+            if package_name in self.channelSettings['FORBIDDEN_PACKAGES']:
+                self.packagesInformations.append( [ package_name, self.notInstallMessage ] )
+
+            else:
+                self.packagesInformations.append( [ package_name, self.install_message ] )
+
+        def on_done(item_index):
+
+            if item_index < 1:
+                can_continue[0] = True
+                can_continue[1] = True
+                return
+
+            if item_index == 1:
+                log.insert_empty_line()
+                log( 1, "Continuing the %s after the packages pick up..." % self.installationType )
+
+                can_continue[0] = True
+                return
+
+            package_information = self.packagesInformations[item_index]
+            package_name        = package_information[0]
+
+            if package_name not in self.channelSettings['FORBIDDEN_PACKAGES']:
+
+                if package_information[1] == self.install_message:
+                    log( 1, "%s the package: %s" % ( "Removing" if self.isInstaller else "Keeping", package_name ) )
+
+                    package_information[1] = self.uninstall_message
+                    selected_packages_to_not_install.append( package_name )
+
+                else:
+                    log( 1, "%s the package: %s" % ( "Adding" if self.isInstaller else "Removing", package_name ) )
+
+                    package_information[1] = self.install_message
+                    selected_packages_to_not_install.remove( package_name )
+
+            else:
+                log( 1, "The package %s must be %s. " % ( package_name, self.word_installed ) +
+                        "If you do not want to %s this package, cancel the %s process." % ( self.word_install, self.installationType ) )
+
+            show_quick_panel( item_index )
+
+        def show_quick_panel(selected_index=0):
+            active_window.show_quick_panel( self.packagesInformations, on_done, sublime.KEEP_OPEN_ON_FOCUS_LOST, selected_index )
+
+        show_quick_panel()
+
+        # show_quick_panel is a non-blocking function, but we can only continue after on_done being called
+        while not can_continue[0]:
+            time.sleep(1)
+
+        # Show up the console, so the user can follow the process.
+        sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+
+        if can_continue[1]:
+            log.insert_empty_line()
+            raise InstallationCancelled( "The user closed the %s's packages pick up list." % self.word_installer )
+
+        for package_name in selected_packages_to_not_install:
+            g_packages_not_installed.append( package_name )
+
+            target_index = packages_names.index( package_name )
+            del packages_names[target_index]
+
+            if len( packages_infos ):
+                del packages_infos[target_index]
+
+        # Progressively saves the installation data, in case the user closes Sublime Text
+        self.save_default_settings()
+
+
+    def check_installed_packages_alert(self, maximum_attempts=10):
         """
             Show a message to the user observing the Sublime Text console, so he know the process is not
             finished yet.
         """
-        log( _grade(), "Looking for new tasks... %s seconds remaining." % str( maximum_attempts ) )
+        log( 1, "Looking for new tasks... %s seconds remaining." % str( maximum_attempts ) )
         maximum_attempts -= 1
 
         if maximum_attempts > 0:
 
             if g_is_running:
-                sublime.set_timeout_async( lambda: self.check_uninstalled_packages_alert( maximum_attempts ), 1000 )
+                sublime.set_timeout_async( lambda: self.check_installed_packages_alert( maximum_attempts ), 1000 )
 
             else:
-                log( _grade(), "Finished looking for new tasks... The installation is complete." )
+                log( 1, "Finished looking for new tasks... The installation is complete." )
 
 
-    def check_uninstalled_packages(self, maximum_attempts=10):
+    def check_installed_packages(self, maximum_attempts=10):
         """
+            Wait PackagesManager to load the found dependencies, before announcing it to the user.
+
             Display warning when the uninstallation process is finished or ask the user to restart
             Sublime Text to finish the uninstallation.
 
@@ -1774,20 +1709,28 @@ class ChannelInstaller(threading.Thread):
             and warn the user.
         """
         log( _grade(), "Finishing %s... maximum_attempts: " % self.installationType + str( maximum_attempts ) )
-
-        global g_is_running
         maximum_attempts -= 1
 
         if not g_is_running:
             self.accumulative_unignore_user_packages( flush_everything=True )
 
             if not IS_UPDATE_INSTALLATION:
-                self.complete_channel_uninstallation()
+                sublime.message_dialog( end_user_message( """\
+                        The %s %s was successfully completed.
 
+                        You need to restart Sublime Text to unload the uninstalled packages and finish
+                        uninstalling the unused dependencies.
+
+                        Check you Sublime Text Console for more information.
+                        """ % ( self.channelSettings['CHANNEL_PACKAGE_NAME'], self.installationType ) ) )
+
+                sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
+
+            print_failed_repositories( self.failedRepositories )
             return
 
         if maximum_attempts > 0:
-            sublime.set_timeout_async( lambda: self.check_uninstalled_packages( maximum_attempts ), 2000 )
+            sublime.set_timeout_async( lambda: self.check_installed_packages( maximum_attempts ), 2000 )
 
         else:
             sublime.error_message( end_user_message( """\
@@ -1800,23 +1743,9 @@ class ChannelInstaller(threading.Thread):
                     """ % ( self.channelSettings['CHANNEL_PACKAGE_NAME'], self.installationType ) ) )
 
             self.accumulative_unignore_user_packages( flush_everything=True )
+
+            print_failed_repositories( self.failedRepositories )
             sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
-
-
-    def complete_channel_uninstallation(self, maximum_attempts=3):
-        """
-            Ensure the file is deleted
-        """
-        sublime.message_dialog( end_user_message( """\
-                The %s %s was successfully completed.
-
-                You need to restart Sublime Text to unload the uninstalled packages and finish
-                uninstalling the unused dependencies.
-
-                Check you Sublime Text Console for more information.
-                """ % ( self.channelSettings['CHANNEL_PACKAGE_NAME'], self.installationType ) ) )
-
-        sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
 
 
 def end_user_message(message):
@@ -1837,6 +1766,13 @@ def is_allowed_to_run():
 
     g_is_running = True
     return True
+
+
+def satisfy_dependencies(package_manager):
+    thread = SatisfyDependenciesThread( package_manager )
+
+    thread.start()
+    thread.join()
 
 
 def load_installation_settings_file(channel_settings, is_update):
