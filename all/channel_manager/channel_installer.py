@@ -173,19 +173,27 @@ class ChannelInstaller(threading.Thread):
         self.uningoredPackagesToFlush = 0
 
         if self.channelSettings['INSTALLER_TYPE'] == 'installation':
+            self.isUpdate = self.channelSettings['INSTALLATION_TYPE'] == "upgrade"
             self.setupInstaller()
 
         else:
+            self.isUpdate = self.channelSettings['INSTALLATION_TYPE'] == "downgrade"
             self.setupUninstaller()
+
+        global IS_UPDATE_INSTALLATION
+        IS_UPDATE_INSTALLATION = self.isUpdate
+
+        load_installation_settings_file( self.channelSettings )
+        self.unignore_installed_packages()
+
+        if not self.isInstaller:
+            self.load_package_control_settings()
+            self.setup_packages_to_uninstall_last()
 
         self.package_manager  = PackageManager()
         self.package_disabler = PackageDisabler()
 
-        load_installation_settings_file( self.channelSettings, self.isUpdate )
-        self.unignore_installed_packages()
-
         log( 1, "self.isUpdate:         " + str( self.isUpdate ) )
-        log( 1, "self.installationType: " + str( self.installationType ) )
         log( 1, "INSTALLER_TYPE:        " + str( self.channelSettings['INSTALLER_TYPE'] ) )
         log( 1, "INSTALLATION_TYPE:     " + str( self.channelSettings['INSTALLATION_TYPE'] ) )
 
@@ -206,10 +214,8 @@ class ChannelInstaller(threading.Thread):
         self.install_message    = "Select this to not install it."
         self.uninstall_message  = "Select this to install it."
 
-        self.isInstaller      = True
-        self.isUpdate         = self.channelSettings['INSTALLATION_TYPE'] == "upgrade"
-        self.installationType = "Upgrade" if self.isUpdate else "Installation"
-
+        self.isInstaller       = True
+        self.installationType  = "Upgrade" if self.isUpdate else "Installation"
         self.installerMessage  = "The %s was successfully installed." % self.installationType
         self.notInstallMessage = "You must install it or cancel the %s." % self.installationType
         self.setProgress       = CurrentUpdateProgress( 'Installing the %s packages...' % self.installationType )
@@ -240,10 +246,8 @@ class ChannelInstaller(threading.Thread):
         self.install_message    = "Select this to not uninstall it."
         self.uninstall_message  = "Select this to uninstall it."
 
-        self.isInstaller      = False
-        self.isUpdate         = self.channelSettings['INSTALLATION_TYPE'] == "downgrade"
-        self.installationType = "Downgrade" if self.isUpdate else "Uninstallation"
-
+        self.isInstaller       = False
+        self.installationType  = "Downgrade" if self.isUpdate else "Uninstallation"
         self.installerMessage  = "The %s of %s was successfully completed." % ( self.installationType, self.channelName )
         self.notInstallMessage = "You must uninstall it or cancel the %s." % self.installationType
         self.setProgress       = CurrentUpdateProgress( '%s of Sublime Text %s packages...' % ( self.installationType, self.channelName ) )
@@ -256,9 +260,6 @@ class ChannelInstaller(threading.Thread):
             ]
 
         self.packagesInformations = packagesInformations
-
-        self.load_package_control_settings()
-        self.setup_packages_to_uninstall_last()
 
 
     def load_package_control_settings(self):
@@ -830,7 +831,7 @@ class ChannelInstaller(threading.Thread):
 
         for package_name, pi in sequence_timer( packages_names, info_frequency=0 ):
             current_index += 1
-            progress       = progress_info( pi, set_progress )
+            progress       = progress_info( pi, self.setProgress )
             is_dependency  = is_package_dependency( package_name, dependencies, all_packages )
 
             log.insert_empty_line()
@@ -1433,12 +1434,12 @@ class ChannelInstaller(threading.Thread):
                 if package_name in g_default_ignored_packages:
                     g_next_packages_to_ignore.remove( package_name )
 
-            # This also adds them to the `in_process` list on the Package Control.sublime-settings file
+            # This adds them to the `in_process` list on the Package Control.sublime-settings file
             self.package_disabler.disable_packages( g_next_packages_to_ignore, "install" if self.isInstaller else "remove" )
             time.sleep( 1.7 )
 
-            # # Let the packages be unloaded by Sublime Text while ensuring anyone is putting them back in
-            # self.add_packages_to_ignored_list( g_next_packages_to_ignore )
+            # Let the packages be unloaded by Sublime Text while ensuring anyone is putting them back in
+            self.add_packages_to_ignored_list( g_next_packages_to_ignore )
 
 
     def add_packages_to_ignored_list(self, packages_list):
@@ -1515,12 +1516,12 @@ class ChannelInstaller(threading.Thread):
                 g_default_ignored_packages.remove( package_name )
 
         if is_there_unignored_packages:
-            # This also adds them to the `in_process` list on the Package Control.sublime-settings file
+            # This should remove them from the `in_process` list on the Package Control.sublime-settings file
             self.package_disabler.reenable_package( packages_list, "install" if self.isInstaller else "remove" )
             time.sleep( 1.7 )
 
-            # # Let the packages be unloaded by Sublime Text while ensuring anyone is putting them back in
-            # self.add_packages_to_ignored_list( [] )
+            # Let the packages be unloaded by Sublime Text while ensuring anyone is putting them back in
+            self.add_packages_to_ignored_list( [] )
 
 
     def unignore_installed_packages(self):
@@ -1825,10 +1826,7 @@ def satisfy_dependencies(package_manager):
     thread.join()
 
 
-def load_installation_settings_file(channel_settings, is_update):
-    global IS_UPDATE_INSTALLATION
-    IS_UPDATE_INSTALLATION = is_update
-
+def load_installation_settings_file(channel_settings):
     global PACKAGE_CONTROL
     global PACKAGESMANAGER
 
