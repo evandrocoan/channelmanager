@@ -169,6 +169,21 @@ def is_dependency(package_name, repositories_dictionary):
     return True
 
 
+def is_package_dependency(package_name, dependencies, packages):
+    """
+        Return by default True to stop the uninstallation as the package not was not found on the
+        `channel.json` repository file
+    """
+    if package_name in dependencies:
+        return True
+
+    if package_name in packages:
+        return False
+
+    log( 1, "Warning: The package name `%s` could not be found on the repositories_dictionary!" % package_name )
+    return True
+
+
 def load_repository_file(channel_repository_file, load_dependencies=True):
     repositories_dictionary = load_data_file( channel_repository_file )
 

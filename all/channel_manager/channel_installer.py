@@ -89,6 +89,7 @@ from .channel_utilities import print_failed_repositories
 from .channel_utilities import sort_dictionary
 from .channel_utilities import add_path_if_not_exists
 from .channel_utilities import is_dependency
+from .channel_utilities import is_package_dependency
 
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
@@ -200,7 +201,31 @@ class ChannelInstaller(threading.Thread):
         self.installerMessage = 'The %s of %s was successfully completed.' % ( self.installationType, self.channelName )
         self.setProgress      = CurrentUpdateProgress( '%s of Sublime Text %s packages...' % ( self.installationType, self.channelName ) )
 
+        self.load_package_control_settings()
         self.setup_packages_to_uninstall_last()
+
+
+    def load_package_control_settings(self):
+        global g_package_control_settings
+
+        # Allow to not override the Package Control file when PackagesManager does exists
+        if os.path.exists( PACKAGESMANAGER ):
+            g_package_control_settings = load_data_file( PACKAGESMANAGER )
+
+        else:
+            g_package_control_settings = load_data_file( PACKAGE_CONTROL )
+
+        global g_installed_packages
+        global g_remove_orphaned_backup
+
+        g_installed_packages     = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
+        g_remove_orphaned_backup = get_dictionary_key( g_package_control_settings, 'remove_orphaned', True )
+
+        if not IS_UPDATE_INSTALLATION:
+            # Temporally stops Package Control from removing orphaned packages, otherwise it will scroll up
+            # the uninstallation when Package Control is installed back
+            g_package_control_settings['remove_orphaned'] = False
+            self.save_package_control_settings()
 
 
     def setup_packages_to_uninstall_last(self):
@@ -1460,119 +1485,6 @@ class ChannelInstaller(threading.Thread):
         return all_packages, dependencies
 
 
-    def is_package_dependency(package_name, dependencies, packages):
-        """
-            Return by default True to stop the uninstallation as the package not was not found on the
-            `channel.json` repository file
-        """
-        if package_name in dependencies:
-            return True
-
-        if package_name in packages:
-            return False
-
-        log( 1, "Warning: The package name `%s` could not be found on the repositories_dictionary!" % package_name )
-        return True
-
-
-    def ignore_next_packages(package_disabler, package_name, packages_list):
-        """
-            There is a bug with the uninstalling several packages, which trigger several errors of:
-
-            "It appears a package is trying to ignore itself, causing a loop.
-            Please resolve by removing the offending ignored_packages setting."
-
-            When trying to uninstall several package at once, then here I am ignoring them all at once.
-
-            Package Control: Advanced Install Package
-            https://github.com/wbond/package_control/issues/1191
-
-            This fixes it by ignoring several next packages, then later unignoring them after uninstalled.
-        """
-        if len( _uningored_packages_to_flush ) < 1:
-            last_ignored_packges    = packages_list.index( package_name )
-            next_packages_to_ignore = packages_list[ last_ignored_packges : last_ignored_packges + PACKAGES_COUNT_TO_IGNORE_AHEAD + 1 ]
-
-            # We never can ignore the Default package, otherwise several errors/anomalies show up
-            intersection_set = PACKAGES_TO_NOT_ADD_TO_IGNORE_LIST.intersection( next_packages_to_ignore )
-
-            if len( intersection_set ) > 0:
-                next_packages_to_ignore = list( set( next_packages_to_ignore ) - intersection_set )
-
-            log( 1, "Adding %d packages to the `ignored_packages` setting list." % len( next_packages_to_ignore ) )
-            log( 1, "next_packages_to_ignore: " + str( next_packages_to_ignore ) )
-
-            # Add them to the in_process list
-            package_disabler.disable_packages( next_packages_to_ignore, "remove" )
-            unique_list_append( g_default_ignored_packages, next_packages_to_ignore )
-
-            # Let the package be unloaded by Sublime Text while ensuring anyone is putting them back in
-            add_packages_to_ignored_list( next_packages_to_ignore )
-
-
-    def add_packages_to_ignored_list(packages_list):
-        """
-            Something, somewhere is setting the ignored_packages list to `["Vintage"]`. Then ensure we
-            override this.
-        """
-        global g_next_packages_to_ignore
-        ignored_packages = g_user_settings.get( "ignored_packages", [] )
-
-        # Progressively saves the installation data, in case the user closes Sublime Text
-        g_next_packages_to_ignore = packages_list
-        save_default_settings()
-
-        unique_list_append( ignored_packages, packages_list )
-
-        for interval in range( 0, 27 ):
-            g_user_settings.set( "ignored_packages", ignored_packages )
-            sublime.save_settings( self.channelSettings['USER_SETTINGS_FILE'] )
-
-            time.sleep(0.1)
-
-
-    def accumulative_unignore_user_packages(package_name="", flush_everything=False):
-        """
-            There is a bug with the uninstalling several packages, which trigger several errors of:
-            "It appears a package is trying to ignore itself, causing a loop.
-            Please resolve by removing the offending ignored_packages setting."
-            * Package Control: Advanced Install Package https://github.com/wbond/package_control/issues/1191
-
-            When trying to uninstall several package at once, then here I am unignoring them all at once.
-            @param flush_everything     set all remaining packages as unignored
-        """
-
-        if flush_everything:
-            unignore_some_packages( g_packages_to_unignore + _uningored_packages_to_flush )
-
-        else:
-            log( 1, "Adding package to unignore list: %s" % str( package_name ) )
-            _uningored_packages_to_flush.append( package_name )
-
-            if len( _uningored_packages_to_flush ) > PACKAGES_COUNT_TO_IGNORE_AHEAD:
-                unignore_some_packages( _uningored_packages_to_flush )
-                del _uningored_packages_to_flush[:]
-
-
-    def unignore_some_packages(packages_list):
-        """
-            Flush just a few items each time
-        """
-        is_there_unignored_packages = False
-
-        for package_name in packages_list:
-
-            if package_name in g_default_ignored_packages:
-                is_there_unignored_packages = True
-
-                log( 1, "Unignoring the package: %s" % package_name )
-                g_default_ignored_packages.remove( package_name )
-
-        if is_there_unignored_packages:
-            g_user_settings.set( "ignored_packages", g_default_ignored_packages )
-            sublime.save_settings( self.channelSettings['USER_SETTINGS_FILE'] )
-
-
     def uninstall_default_package():
         log( 1, "%s of `Default Package` files..." % self.installationType )
 
@@ -2029,20 +1941,27 @@ def load_installation_settings_file(channel_settings, is_update):
     global IS_UPDATE_INSTALLATION
     IS_UPDATE_INSTALLATION = is_update
 
+    global PACKAGE_CONTROL
+    global PACKAGESMANAGER
+
     global g_package_control_name
     global g_packagesmanager_name
 
     g_package_control_name = "Package Control.sublime-settings"
     g_packagesmanager_name = "PackagesManager.sublime-settings"
 
+    PACKAGESMANAGER = os.path.join( g_channelSettings['USER_FOLDER_PATH'], g_packagesmanager_name )
+    PACKAGE_CONTROL = os.path.join( g_channelSettings['USER_FOLDER_PATH'], g_package_control_name )
+
     global g_userSettings
     global g_channelDetails
     global g_default_ignored_packages
 
     g_userSettings   = sublime.load_settings( channel_settings['USER_SETTINGS_FILE'] )
-    g_channelDetails = load_data_file( channel_settings['CHANNEL_INSTALLATION_DETAILS'] )
+    g_channelDetails = load_data_file( g_channelSettings['CHANNEL_INSTALLATION_DETAILS'] )
 
     # Contains the original user's ignored packages.
+    log( _grade(), "Loaded g_channelDetails: " + str( g_channelDetails ) )
     g_default_ignored_packages = g_userSettings.get( 'ignored_packages', [] )
 
     global g_packages_to_uninstall
