@@ -810,6 +810,7 @@ def end_user_message(message):
     global g_is_running
     g_is_running = 0
 
+    log( 1, message )
     return wrap_text( message )
 
 

@@ -1291,6 +1291,7 @@ def end_user_message(message):
     global g_is_running
     g_is_running = False
 
+    log( 1, message )
     return wrap_text( message )
 
 
