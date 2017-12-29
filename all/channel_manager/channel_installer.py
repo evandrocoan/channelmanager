@@ -1434,10 +1434,11 @@ class ChannelInstaller(threading.Thread):
                     g_next_packages_to_ignore.remove( package_name )
 
             # This also adds them to the `in_process` list on the Package Control.sublime-settings file
-            self.package_disabler.disable_packages( g_next_packages_to_ignore, "remove" )
+            self.package_disabler.disable_packages( g_next_packages_to_ignore, "install" if self.isInstaller else "remove" )
+            time.sleep( 1.7 )
 
-            # Let the packages be unloaded by Sublime Text while ensuring anyone is putting them back in
-            self.add_packages_to_ignored_list( g_next_packages_to_ignore )
+            # # Let the packages be unloaded by Sublime Text while ensuring anyone is putting them back in
+            # self.add_packages_to_ignored_list( g_next_packages_to_ignore )
 
 
     def add_packages_to_ignored_list(self, packages_list):
@@ -1456,7 +1457,7 @@ class ChannelInstaller(threading.Thread):
             g_userSettings.set( "ignored_packages", g_default_ignored_packages )
             sublime.save_settings( self.channelSettings['USER_SETTINGS_FILE'] )
 
-            time.sleep( 0.7 )
+            time.sleep( 1.7 )
 
             currentlyIgnored = g_userSettings.get( "ignored_packages", [] )
             log( 1, "Attempting to ignore packages... " + str( currentlyIgnored ) )
@@ -1514,8 +1515,12 @@ class ChannelInstaller(threading.Thread):
                 g_default_ignored_packages.remove( package_name )
 
         if is_there_unignored_packages:
-            g_userSettings.set( "ignored_packages", g_default_ignored_packages.sort() )
-            sublime.save_settings( self.channelSettings['USER_SETTINGS_FILE'] )
+            # This also adds them to the `in_process` list on the Package Control.sublime-settings file
+            self.package_disabler.reenable_package( packages_list, "install" if self.isInstaller else "remove" )
+            time.sleep( 1.7 )
+
+            # # Let the packages be unloaded by Sublime Text while ensuring anyone is putting them back in
+            # self.add_packages_to_ignored_list( [] )
 
 
     def unignore_installed_packages(self):
