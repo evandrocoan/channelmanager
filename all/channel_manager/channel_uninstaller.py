@@ -167,7 +167,6 @@ class StartUninstallChannelThread(threading.Thread):
             save_default_settings()
 
             if not IS_UPDATE_INSTALLATION:
-
                 # Wait PackagesManager to load the found dependencies, before announcing it to the user
                 sublime.set_timeout_async( check_uninstalled_packages, 10000 )
                 sublime.set_timeout_async( check_uninstalled_packages_alert, 1000 )
@@ -186,7 +185,7 @@ class UninstallChannelFilesThread(threading.Thread):
             packages_to_uninstall = get_packages_to_uninstall( IS_UPDATE_INSTALLATION )
 
             log( _grade(), "Packages to %s: " % INSTALLATION_TYPE_NAME + str( packages_to_uninstall ) )
-            package_manager = uninstall_packages( packages_to_uninstall )
+            package_manager, package_disabler = uninstall_packages( packages_to_uninstall )
 
             if not IS_UPDATE_INSTALLATION:
                 remove_channel()
@@ -194,10 +193,10 @@ class UninstallChannelFilesThread(threading.Thread):
                 uninstall_files()
                 uninstall_folders()
 
-            attempt_to_uninstall_packagesmanager( packages_to_uninstall )
+            attempt_to_uninstall_packagesmanager( package_manager, package_disabler, packages_to_uninstall )
 
             if not IS_UPDATE_INSTALLATION:
-                uninstall_list_of_packages( package_manager, [(g_channelSettings['CHANNEL_PACKAGE_NAME'], False)] )
+                uninstall_list_of_packages( package_manager, package_disabler, [(g_channelSettings['CHANNEL_PACKAGE_NAME'], False)] )
 
         except ( InstallationCancelled, NoPackagesAvailable ) as error:
             log( 1, str( error ) )
@@ -261,17 +260,17 @@ def get_packages_to_uninstall(is_downgrade):
     return filtered_packages
 
 
-def uninstall_packages(packages_to_uninstall):
+def uninstall_packages(packages_names):
     package_manager  = PackageManager()
     package_disabler = PackageDisabler()
 
-    ask_user_for_which_packages_to_install( packages_to_uninstall )
+    ask_user_for_which_packages_to_install( packages_names )
     all_packages, dependencies = get_installed_repositories( package_manager )
 
     current_index  = 0
-    packages_count = len( packages_to_uninstall )
+    packages_count = len( packages_names )
 
-    for package_name, pi in sequence_timer( packages_to_uninstall, info_frequency=0 ):
+    for package_name, pi in sequence_timer( packages_names, info_frequency=0 ):
         current_index += 1
         progress       = progress_info( pi, set_progress )
         is_dependency  = is_package_dependency( package_name, dependencies, all_packages )
@@ -281,6 +280,9 @@ def uninstall_packages(packages_to_uninstall):
 
         log( 1, "%s %s of %d of %d: %s (%s)" % ( progress, INSTALLATION_TYPE_NAME,
                 current_index, packages_count, str( package_name ), str( is_dependency ) ) )
+
+        silence_error_message_box( 61.0 )
+        ignore_next_packages( package_disabler, package_name, packages_names )
 
         if is_dependency:
             log( 1, "Skipping the dependency as they are automatically uninstalled..." )
@@ -295,9 +297,6 @@ def uninstall_packages(packages_to_uninstall):
             log( 1, "This package will be handled later." )
             continue
 
-        silence_error_message_box(61.0)
-        ignore_next_packages( package_disabler, package_name, packages_to_uninstall )
-
         if package_manager.remove_package( package_name, is_dependency ) is False:
             log( 1, "Error: Failed to uninstall the repository `%s`!" % package_name )
             g_failed_repositories.append( package_name )
@@ -305,10 +304,10 @@ def uninstall_packages(packages_to_uninstall):
         else:
             remove_packages_from_list( package_name )
 
-        # Progressively saves the installation data, in case the user closes Sublime Text
-        save_default_settings()
+        accumulative_unignore_user_packages( package_name )
 
-    return package_manager
+    accumulative_unignore_user_packages( flush_everything=True )
+    return package_manager, package_disabler
 
 
 def get_installed_repositories(package_manager):
@@ -366,7 +365,7 @@ def ignore_next_packages(package_disabler, package_name, packages_list):
         if len( intersection_set ) > 0:
             next_packages_to_ignore = list( set( next_packages_to_ignore ) - intersection_set )
 
-        log( 1, "Adding %d packages to be uninstalled to the `ignored_packages` setting list." % len( next_packages_to_ignore ) )
+        log( 1, "Adding %d packages to the `ignored_packages` setting list." % len( next_packages_to_ignore ) )
         log( 1, "next_packages_to_ignore: " + str( next_packages_to_ignore ) )
 
         # Add them to the in_process list
@@ -474,10 +473,9 @@ def remove_packages_from_list(package_name):
     remove_if_exists( g_installed_packages, package_name )
     remove_if_exists( g_packages_to_uninstall, package_name )
 
+    # Progressively saves the installation data, in case the user closes Sublime Text
     save_default_settings()
     save_package_control_settings()
-
-    accumulative_unignore_user_packages( package_name )
 
 
 def uninstall_files():
@@ -563,16 +561,15 @@ def uninstall_folders():
     save_default_settings()
 
 
-def attempt_to_uninstall_packagesmanager(packages_to_uninstall):
+def attempt_to_uninstall_packagesmanager(package_manager, package_disabler, packages_to_uninstall):
 
     if "PackagesManager" in packages_to_uninstall:
-        package_manager    = PackageManager()
         installed_packages = package_manager.list_packages()
 
         if "Package Control" not in installed_packages:
-            install_package_control( package_manager )
+            install_package_control( package_manager, package_disabler)
 
-        uninstall_packagesmanger( package_manager, installed_packages )
+        uninstall_packagesmanger( package_manager, package_disabler, installed_packages )
         restore_remove_orphaned_setting()
 
     else:
@@ -581,16 +578,19 @@ def attempt_to_uninstall_packagesmanager(packages_to_uninstall):
         g_is_running &= ~CLEAN_PACKAGESMANAGER_FLAG
 
 
-def install_package_control(package_manager):
+def install_package_control(package_manager, package_disabler):
     package_name = "Package Control"
     log.insert_empty_line()
     log.insert_empty_line()
 
     log( 1, "Installing: %s" % str( package_name ) )
+    ignore_next_packages( package_disabler, package_name, [package_name] )
+
     package_manager.install_package( package_name, False )
+    accumulative_unignore_user_packages( flush_everything=True )
 
 
-def uninstall_packagesmanger(package_manager, installed_packages):
+def uninstall_packagesmanger(package_manager, package_disabler, installed_packages):
     """
         Uninstals PackagesManager only if Control was installed, otherwise the user will end up with
         no package manager.
@@ -602,26 +602,28 @@ def uninstall_packagesmanger(package_manager, installed_packages):
         log.insert_empty_line()
 
         log( 1, "Finishing PackagesManager %s..." % INSTALLATION_TYPE_NAME )
-        uninstall_list_of_packages( package_manager, [("PackagesManager", False), ("0_packagesmanager_loader", None)] )
+        uninstall_list_of_packages( package_manager, package_disabler, [("PackagesManager", False), ("0_packagesmanager_loader", None)] )
 
         remove_0_packagesmanager_loader()
         clean_packagesmanager_settings()
 
 
-def uninstall_list_of_packages(package_manager, packages_to_uninstall):
+def uninstall_list_of_packages(package_manager, package_disabler, packages_infos):
     """
         By last uninstall itself `g_channelSettings['CHANNEL_PACKAGE_NAME']` and let the package be
         unloaded by Sublime Text
     """
-    log( 1, "uninstall_list_of_packages, %s... " % INSTALLATION_TYPE_NAME + str( packages_to_uninstall ) )
-    add_packages_to_ignored_list( [ package_name for package_name, _ in packages_to_uninstall ] )
+    log( 1, "uninstall_list_of_packages, %s... " % INSTALLATION_TYPE_NAME + str( packages_infos ) )
+    packages_names = [ package_name for package_name, _ in packages_infos ]
 
-    for package_name, is_dependency in packages_to_uninstall:
+    for package_name, is_dependency in packages_infos:
         log.insert_empty_line()
         log.insert_empty_line()
 
         log( 1, "%s of: %s..." % ( INSTALLATION_TYPE_NAME, str( package_name ) ) )
-        silence_error_message_box(62.0)
+
+        silence_error_message_box( 62.0 )
+        ignore_next_packages( package_disabler, package_name, packages_names )
 
         if package_manager.remove_package( package_name, is_dependency ) is False:
             log( 1, "Error: Failed to uninstall the repository `%s`!" % package_name )
@@ -629,6 +631,10 @@ def uninstall_list_of_packages(package_manager, packages_to_uninstall):
 
         else:
             remove_packages_from_list( package_name )
+
+        accumulative_unignore_user_packages( package_name )
+
+    accumulative_unignore_user_packages( flush_everything=True )
 
 
 def remove_0_packagesmanager_loader():

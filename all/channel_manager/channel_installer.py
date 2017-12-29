@@ -168,6 +168,7 @@ class StartInstallChannelThread(threading.Thread):
             save_default_settings()
 
             if not IS_UPDATE_INSTALLATION:
+                # Wait PackagesManager to load the found dependencies, before announcing it to the user
                 sublime.set_timeout_async( check_installed_packages, 10000 )
                 sublime.set_timeout_async( check_installed_packages_alert, 1000 )
 
@@ -812,7 +813,7 @@ def ignore_next_packages(package_disabler, package_name, packages_list):
         if "Default" in g_next_packages_to_ignore:
             g_next_packages_to_ignore.remove( "Default" )
 
-        log( 1, "Adding %d packages to be installed to the `ignored_packages` setting list." % len( g_next_packages_to_ignore ) )
+        log( 1, "Adding %d packages to the `ignored_packages` setting list." % len( g_next_packages_to_ignore ) )
         log( 1, "g_next_packages_to_ignore: " + str( g_next_packages_to_ignore ) )
 
         # If the package is already on the users' `ignored_packages` settings, it means either that
