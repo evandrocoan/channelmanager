@@ -1262,13 +1262,20 @@ class ChannelInstaller(threading.Thread):
         if 'Default' in g_packages_to_uninstall:
             g_channelDetails['default_package_files'] = self.channelSettings['DEFAULT_PACKAGE_FILES']
 
+        g_packages_to_uninstall.sort()
+        g_packages_to_unignore.sort()
+        g_files_to_uninstall.sort()
+        g_folders_to_uninstall.sort()
+        g_next_packages_to_ignore.sort()
+        g_packages_not_installed.sort()
+
         # `packages_to_uninstall` and `packages_to_unignore` are to uninstall and unignore they when uninstalling the channel
-        g_channelDetails['packages_to_uninstall']   = g_packages_to_uninstall.sort()
-        g_channelDetails['packages_to_unignore']    = g_packages_to_unignore.sort()
-        g_channelDetails['files_to_uninstall']      = g_files_to_uninstall.sort()
-        g_channelDetails['folders_to_uninstall']    = g_folders_to_uninstall.sort()
-        g_channelDetails['next_packages_to_ignore'] = g_next_packages_to_ignore.sort()
-        g_channelDetails['packages_not_installed']  = g_packages_not_installed.sort()
+        g_channelDetails['packages_to_uninstall']   = g_packages_to_uninstall
+        g_channelDetails['packages_to_unignore']    = g_packages_to_unignore
+        g_channelDetails['files_to_uninstall']      = g_files_to_uninstall
+        g_channelDetails['folders_to_uninstall']    = g_folders_to_uninstall
+        g_channelDetails['next_packages_to_ignore'] = g_next_packages_to_ignore
+        g_channelDetails['packages_not_installed']  = g_packages_not_installed
 
         g_channelDetails['installation_type'] = g_installation_type
         g_channelDetails = sort_dictionary( g_channelDetails )
