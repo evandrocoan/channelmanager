@@ -36,7 +36,7 @@ import threading
 g_is_already_running = False
 from . import settings as g_settings
 
-from channel_manager import channel_uninstaller
+from channel_manager import channel_installer
 from channel_manager.channel_utilities import wrap_text
 
 
@@ -117,7 +117,9 @@ def run_the_installation_wizard(step=1):
 
 
 def uninstall_channel():
-    channel_uninstaller.main( g_channelSettings, True )
+    g_channelSettings['INSTALLER_TYPE']    = "uninstallation"
+    g_channelSettings['INSTALLATION_TYPE'] = "stable"
+    channel_installer.main( g_channelSettings, True )
 
 
 def show_program_description():

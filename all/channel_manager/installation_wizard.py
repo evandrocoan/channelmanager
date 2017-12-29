@@ -515,10 +515,12 @@ def start_the_installation_process():
 
 
 def install_channel():
+    g_channelSettings['INSTALLER_TYPE']    = "installation"
     g_channelSettings['INSTALLATION_TYPE'] = g_version_to_install
-    add_channel()
 
+    add_channel()
     clear_cache()
+
     channel_installer.main( g_channelSettings, True )
 
 

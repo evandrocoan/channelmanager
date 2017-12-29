@@ -475,6 +475,11 @@ as you usually do with the default `Package Control` channel.
    import os
    import sublime
 
+   # from channel_manager.channel_utilities import print_all_variables_for_debugging
+   # print_all_variables_for_debugging( g_channelSettings )
+   # import sublime_plugin
+   # sublime_plugin.reload_plugin( "channel_manager.channel_utilities" )
+
    from channel_manager.channel_utilities import clean_urljoin
    from channel_manager.channel_utilities import get_main_directory
    from channel_manager.channel_utilities import run_channel_setup
@@ -573,11 +578,6 @@ as you usually do with the default `Package Control` channel.
            """
 
        run_channel_setup( g_channelSettings, CURRENT_PACKAGE_NAME, CURRENT_PACKAGE_ROOT_DIRECTORY )
-
-       # from channel_manager.channel_utilities import print_all_variables_for_debugging
-       # print_all_variables_for_debugging( g_channelSettings )
-       # import sublime_plugin
-       # sublime_plugin.reload_plugin( "channel_manager.channel_utilities" )
    ```
 
 1. CURRENT_PACKAGE_ROOT_DIRECTORY/CURRENT_PACKAGE_NAME

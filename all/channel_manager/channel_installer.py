@@ -164,8 +164,9 @@ class ChannelInstaller(threading.Thread):
     def __init__(self, channel_settings):
         threading.Thread.__init__(self)
         self.channelSettings = channel_settings
-        self.channelName     = self.channelSettings['CHANNEL_PACKAGE_NAME']
-        self.isDevelopment   = self.channelSettings['INSTALLATION_TYPE'] == "development"
+
+        self.channelName   = self.channelSettings['CHANNEL_PACKAGE_NAME']
+        self.isDevelopment = self.channelSettings['INSTALLATION_TYPE'] == "development"
 
         self.failedRepositories       = []
         self.uningoredPackagesToFlush = 0
@@ -1510,7 +1511,7 @@ class ChannelInstaller(threading.Thread):
                 add_path_if_not_exists( g_files_to_uninstall, relative_path )
 
 
-    def add_package_to_installation_list(self. package_name):
+    def add_package_to_installation_list(self, package_name):
         """
             When the installation is going on the PackagesManager will be installed. If the user restart
             Sublime Text after doing it, on the next time Sublime Text starts, the Package Control and
