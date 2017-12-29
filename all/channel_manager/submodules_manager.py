@@ -123,8 +123,8 @@ def print_python_envinronment():
 
 
 # print_python_envinronment()
-CHANNEL_SESSION_FILE = os.path.join( settings.CURRENT_PACKAGE_ROOT_DIRECTORY, "all", "last_session.channel-manager" )
-FIND_FORKS_PATH      = os.path.join( settings.CURRENT_PACKAGE_ROOT_DIRECTORY, "find_forks" )
+CHANNEL_SESSION_FILE = os.path.join( g_settings.CURRENT_PACKAGE_ROOT_DIRECTORY, "all", "last_session.channel-manager" )
+FIND_FORKS_PATH      = os.path.join( g_settings.CURRENT_PACKAGE_ROOT_DIRECTORY, "find_forks" )
 
 # How many errors are acceptable when the GitHub API request fails
 MAXIMUM_REQUEST_ERRORS = 10
@@ -254,35 +254,35 @@ class RunBackstrokeThread(threading.Thread):
         if is_allowed_to_run():
 
             if self.command == "find_forks":
-                settings = \
+                typeSettings = \
                 {
                     'section_name': "last_find_forks_session",
                     'git_file_path': os.path.join( CHANNEL_ROOT_DIRECTORY, '.gitmodules' ),
                 }
 
-                self.run_general_command( CHANNEL_ROOT_DIRECTORY, settings, self.command )
+                self.run_general_command( CHANNEL_ROOT_DIRECTORY, typeSettings, self.command )
 
             elif self.command == "backstroke":
-                settings = \
+                typeSettings = \
                 {
                     'section_name': "last_backstroke_session",
                     'git_file_path': os.path.join( CHANNEL_ROOT_DIRECTORY, 'Local', 'Backstroke.gitmodules' ),
                 }
 
-                self.run_general_command( CHANNEL_ROOT_DIRECTORY, settings, self.command )
+                self.run_general_command( CHANNEL_ROOT_DIRECTORY, typeSettings, self.command )
 
             elif self.command == "create_upstreams" \
                     or self.command == "delete_remotes" \
                     or self.command == "fetch_origins" \
                     or self.command == "pull_origins":
 
-                settings = \
+                typeSettings = \
                 {
                     'section_name': "last_create_upstreams_session",
                     'git_file_path': os.path.join( CHANNEL_ROOT_DIRECTORY, '.gitmodules' ),
                 }
 
-                self.run_general_command( CHANNEL_ROOT_DIRECTORY, settings, self.command )
+                self.run_general_command( CHANNEL_ROOT_DIRECTORY, typeSettings, self.command )
 
             else:
                 log( 1, "RunBackstrokeThread::run, Invalid command: " + str( self.command ) )
@@ -352,7 +352,7 @@ class RunBackstrokeThread(threading.Thread):
     #     log( 1, str( current_url ) )
         # curl -X POST current_url
 
-    def run_general_command(self, base_root_directory, settings, command):
+    def run_general_command(self, base_root_directory, typeSettings, command):
         """
             @param function_command   a function pointer to be called on each `.gitmodules` section.
         """
@@ -361,12 +361,12 @@ class RunBackstrokeThread(threading.Thread):
 
         # https://pymotw.com/3/configparser/
         lastSection = self.open_last_session_data()
-        start_index = lastSection.getint( settings['section_name'], 'index' )
+        start_index = lastSection.getint( typeSettings['section_name'], 'index' )
 
         request_index        = 0
         successful_resquests = 0
 
-        gitFilePath            = settings['git_file_path']
+        gitFilePath            = typeSettings['git_file_path']
         generalSettingsConfigs = configparser.RawConfigParser()
 
         # https://stackoverflow.com/questions/45415684/how-to-stop-tabs-on-python-2-7-rawconfigparser-throwing-parsingerror/
@@ -470,7 +470,7 @@ class RunBackstrokeThread(threading.Thread):
 
                         # Save only where the first error happened
                         if maximum_errors == MAXIMUM_REQUEST_ERRORS - 1:
-                            lastSection.set( settings['section_name'], 'index', str( request_index - 1 ) )
+                            lastSection.set( typeSettings['section_name'], 'index', str( request_index - 1 ) )
 
                         if maximum_errors < 1:
                             break
@@ -543,7 +543,7 @@ class RunBackstrokeThread(threading.Thread):
                     os.path.join( base_root_directory, forkPath )
                 )
 
-                self.recursiveily_process_submodules( base_root_directory, command, settings, forkPath )
+                self.recursiveily_process_submodules( base_root_directory, command, typeSettings, forkPath )
 
             elif command == "fetch_origins":
                 successful_resquests += 1
@@ -555,24 +555,24 @@ class RunBackstrokeThread(threading.Thread):
                     os.path.join( base_root_directory, forkPath )
                 )
 
-                self.recursiveily_process_submodules( base_root_directory, command, settings, forkPath )
+                self.recursiveily_process_submodules( base_root_directory, command, typeSettings, forkPath )
 
             else:
                 log( 1, "RunBackstrokeThread::run_general_command, Invalid command: " + str( command ) )
 
         # Only save the session file when finishing the main thread
         if base_root_directory == CHANNEL_ROOT_DIRECTORY:
-            self.save_session_data( maximum_errors, settings['section_name'], lastSection )
+            self.save_session_data( maximum_errors, typeSettings['section_name'], lastSection )
 
         return True
 
-    def recursiveily_process_submodules(self, base_root_directory, command, settings, forkPath):
+    def recursiveily_process_submodules(self, base_root_directory, command, typeSettings, forkPath):
         base_root_directory    = os.path.join( base_root_directory, forkPath )
         nested_submodules_file = os.path.join( base_root_directory, ".gitmodules" )
 
         if os.path.exists( nested_submodules_file ):
-            settings['git_file_path'] = nested_submodules_file
-            self.run_general_command( base_root_directory, settings, command )
+            typeSettings['git_file_path'] = nested_submodules_file
+            self.run_general_command( base_root_directory, typeSettings, command )
 
 
 def run_command_line(command_line_interface, commad, initial_folder):
