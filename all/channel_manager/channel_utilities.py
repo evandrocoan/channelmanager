@@ -228,6 +228,13 @@ def get_main_directory(current_directory):
 def run_channel_setup(channel_settings, channel_package_name, channel_package_directory):
     channel_directory = get_main_directory( channel_package_directory )
 
+    g_channelSettings['FORBIDDEN_PACKAGES'].sort()
+    g_channelSettings['DEFAULT_PACKAGE_FILES'].sort()
+    g_channelSettings['PACKAGES_TO_INSTALL_EXCLUSIVELY'].sort()
+    g_channelSettings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT'].sort()
+    g_channelSettings['PACKAGES_TO_NOT_INSTALL_STABLE'].sort()
+    g_channelSettings['PACKAGES_TO_NOT_INSTALL_DEVELOPMENT'].sort()
+
     user_folder = os.path.join( channel_directory, "Packages", "User" )
     channel_settings['CHANNEL_INSTALLATION_DETAILS'] = os.path.join( user_folder, channel_package_name + ".json" )
 
