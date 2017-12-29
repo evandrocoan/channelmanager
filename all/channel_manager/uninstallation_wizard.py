@@ -34,7 +34,7 @@ import threading
 
 
 g_is_already_running = False
-from . import settings
+from . import settings as g_settings
 
 from channel_manager import channel_uninstaller
 from channel_manager.channel_utilities import wrap_text
@@ -57,7 +57,7 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 # log( 2, "..." )
 # log( 2, "..." )
 # log( 2, "Debugging" )
-# log( 2, "CURRENT_PACKAGE_ROOT_DIRECTORY: " + settings.CURRENT_PACKAGE_ROOT_DIRECTORY )
+# log( 2, "CURRENT_PACKAGE_ROOT_DIRECTORY: " + g_settings.CURRENT_PACKAGE_ROOT_DIRECTORY )
 
 
 def main(channel_settings):
@@ -68,7 +68,7 @@ def main(channel_settings):
         Also the current `Package Control` cache must be cleaned, ensuring it is downloading and
         using the Studio Channel repositories/channel list.
     """
-    log( 2, "Entering on %s main(0)" % settings.CURRENT_PACKAGE_NAME )
+    log( 2, "Entering on %s main(0)" % g_settings.CURRENT_PACKAGE_NAME )
 
     wizard_thread = StartInstallationWizardThread( channel_settings )
     wizard_thread.start()

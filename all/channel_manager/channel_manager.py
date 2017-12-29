@@ -44,7 +44,7 @@ from collections import OrderedDict
 from distutils.version import LooseVersion
 
 
-from . import settings
+from . import settings as g_settings
 g_is_already_running = False
 
 from .channel_utilities import write_data_file
@@ -89,7 +89,7 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 # log( 2, "..." )
 # log( 2, "..." )
 # log( 2, "Debugging" )
-# log( 2, "CURRENT_PACKAGE_ROOT_DIRECTORY: " + settings.CURRENT_PACKAGE_ROOT_DIRECTORY )
+# log( 2, "CURRENT_PACKAGE_ROOT_DIRECTORY: " + g_settings.CURRENT_PACKAGE_ROOT_DIRECTORY )
 
 
 def main(channel_settings, command="all"):

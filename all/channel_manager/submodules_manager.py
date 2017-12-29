@@ -45,13 +45,13 @@ import subprocess
 # Relative imports in Python 3
 # https://stackoverflow.com/questions/16981921/relative-imports-in-python-3
 try:
-    from . import settings
+    from . import settings as g_settings
 
     from .channel_utilities import get_main_directory
     from .channel_utilities import assert_path
 
 except( ImportError, ValueError ):
-    import settings
+    import settings as g_settings
 
     from channel_utilities import get_main_directory
     from channel_utilities import assert_path
@@ -85,11 +85,11 @@ except( ImportError, ValueError ):
     # Import the debugger. It will fail when `PythonDebugTools` is inside a `.sublime-package`,
     # however, this is only meant to be used on the Development version, `PythonDebugTools` is
     # unpacked at the loose packages folder as a git submodule.
-    assert_path( os.path.join( os.path.dirname( settings.CURRENT_PACKAGE_ROOT_DIRECTORY ), 'PythonDebugTools/all' ) )
-    assert_path( os.path.join( os.path.dirname( settings.CURRENT_PACKAGE_ROOT_DIRECTORY ), 'PackagesManager' ) )
-    assert_path( os.path.join( os.path.dirname( settings.CURRENT_PACKAGE_ROOT_DIRECTORY ), 'EstimatedTimeLeft/all' ) )
-    assert_path( os.path.join( settings.CURRENT_PACKAGE_ROOT_DIRECTORY, 'six' ) )
-    assert_path( os.path.join( settings.CURRENT_PACKAGE_ROOT_DIRECTORY, 'all' ) )
+    assert_path( os.path.join( os.path.dirname( g_settings.CURRENT_PACKAGE_ROOT_DIRECTORY ), 'PythonDebugTools/all' ) )
+    assert_path( os.path.join( os.path.dirname( g_settings.CURRENT_PACKAGE_ROOT_DIRECTORY ), 'PackagesManager' ) )
+    assert_path( os.path.join( os.path.dirname( g_settings.CURRENT_PACKAGE_ROOT_DIRECTORY ), 'EstimatedTimeLeft/all' ) )
+    assert_path( os.path.join( g_settings.CURRENT_PACKAGE_ROOT_DIRECTORY, 'six' ) )
+    assert_path( os.path.join( g_settings.CURRENT_PACKAGE_ROOT_DIRECTORY, 'all' ) )
 
     from six.moves import configparser
     from packagesmanager import cmd
@@ -141,7 +141,7 @@ if Debugger:
     # log( 1, "..." )
     # log( 1, "..." )
     # log( 1, "Debugging" )
-    # log( 1, "CURRENT_PACKAGE_ROOT_DIRECTORY: " + settings.CURRENT_PACKAGE_ROOT_DIRECTORY )
+    # log( 1, "CURRENT_PACKAGE_ROOT_DIRECTORY: " + g_settings.CURRENT_PACKAGE_ROOT_DIRECTORY )
 
 
 def main(command=None):
@@ -149,7 +149,7 @@ def main(command=None):
     global CHANNEL_ROOT_DIRECTORY
 
     argumentsNamespace     = None
-    CHANNEL_ROOT_DIRECTORY = get_main_directory( settings.CURRENT_PACKAGE_ROOT_DIRECTORY )
+    CHANNEL_ROOT_DIRECTORY = get_main_directory( g_settings.CURRENT_PACKAGE_ROOT_DIRECTORY )
 
     # https://stackoverflow.com/questions/6382804/how-to-use-getopt-optarg-in-python-how-to-shift
     if not command:

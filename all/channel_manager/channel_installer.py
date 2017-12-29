@@ -58,7 +58,7 @@ from estimated_time_left import sequence_timer
 from estimated_time_left import progress_info
 from estimated_time_left import CurrentUpdateProgress
 
-from . import settings
+from . import settings as g_settings
 
 from .channel_utilities import add_item_if_not_exists
 from .channel_utilities import remove_item_if_exists
@@ -133,7 +133,7 @@ def _grade():
 # log( 2, "..." )
 # log( 2, "..." )
 # log( 2, "Debugging" )
-# log( 2, "CURRENT_PACKAGE_ROOT_DIRECTORY:     " + settings.CURRENT_PACKAGE_ROOT_DIRECTORY )
+# log( 2, "CURRENT_PACKAGE_ROOT_DIRECTORY:     " + g_settings.CURRENT_PACKAGE_ROOT_DIRECTORY )
 
 
 def main(channel_settings, is_forced=False):
@@ -146,13 +146,13 @@ def main(channel_settings, is_forced=False):
     """
     # We can only run this when we are using the stable version of the channel. And when there is
     # not a `.git` folder, we are running the `Development Version` of the channel.
-    main_git_path = os.path.join( settings.CURRENT_PACKAGE_ROOT_DIRECTORY, ".git" )
+    main_git_path = os.path.join( g_settings.CURRENT_PACKAGE_ROOT_DIRECTORY, ".git" )
 
     # Not attempt to run when we are running from outside a `.sublime-package` as the upgrader is
     # only available for the `Stable Version` of the channel. The `Development Version` must use
     # git itself to install or remove packages.
     if is_forced or not os.path.exists( main_git_path ) and is_channel_upgraded( channel_settings ):
-        log( 1, "Entering on %s main(0)" % settings.CURRENT_PACKAGE_NAME )
+        log( 1, "Entering on %s main(0)" % g_settings.CURRENT_PACKAGE_NAME )
         global g_installer_thread
 
         g_installer_thread = ChannelInstaller( channel_settings )
@@ -170,7 +170,7 @@ class ChannelInstaller(threading.Thread):
         self.failedRepositories       = []
         self.uningoredPackagesToFlush = 0
 
-        if self.settings['installer_type'] == 'installation':
+        if self.channelSettings['INSTALLER_TYPE'] == 'installation':
             self.setupInstaller()
 
         else:
@@ -407,7 +407,7 @@ class ChannelInstaller(threading.Thread):
         log( _grade(), "get_stable_packages, installed_packages: " + str( installed_packages ) )
 
         # Do not try to install this own package and the Package Control, as they are currently running
-        currently_running = [ "Package Control", settings.CURRENT_PACKAGE_NAME, channel_name ]
+        currently_running = [ "Package Control", g_settings.CURRENT_PACKAGE_NAME, channel_name ]
 
         packages_tonot_install = unique_list_join \
         (
