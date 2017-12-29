@@ -179,6 +179,7 @@ class ChannelInstaller(threading.Thread):
         self.package_manager  = PackageManager()
         self.package_disabler = PackageDisabler()
 
+        self.command_line_interface = cmd.Cli( None, True )
         load_installation_settings_file( self.channelSettings, self.isUpdate )
 
         log( 1, "self.isUpdate:         " + str( self.isUpdate ) )
@@ -334,7 +335,6 @@ class ChannelInstaller(threading.Thread):
 
     def installerProcedements(self):
         log( _grade(), "Entering on %s run(1)" % self.__class__.__name__ )
-        self.command_line_interface = cmd.Cli( None, True )
 
         self.git_executable_path = self.command_line_interface.find_binary( "git.exe" if os.name == 'nt' else "git" )
         log( _grade(), "run, git_executable_path: " + str( self.git_executable_path ) )
@@ -362,56 +362,6 @@ class ChannelInstaller(threading.Thread):
         else:
             packages_to_install = self.get_stable_packages()
             self.install_stable_packages( packages_to_install )
-
-
-    def install_stable_packages(self, packages_names):
-        """
-            python multithreading wait till all threads finished
-            https://stackoverflow.com/questions/11968689/python-multithreading-wait-till-all-threads-finished
-
-            There is a bug with the AdvancedInstallPackageThread thread which trigger several errors of:
-
-            "It appears a package is trying to ignore itself, causing a loop.
-            Please resolve by removing the offending ignored_packages setting."
-
-            When trying to install several package at once, then here I am installing them one by one.
-        """
-        self.set_default_settings( packages_names )
-        log( 2, "install_stable_packages, packages_names: " + str( packages_names ) )
-
-        # Package Control: Advanced Install Package
-        # https://github.com/wbond/package_control/issues/1191
-        # thread = AdvancedInstallPackageThread( packages_names )
-        # thread.start()
-        # thread.join()
-
-        current_index      = 0
-        git_packages_count = len( packages_names )
-
-        for package_name, pi in sequence_timer( packages_names, info_frequency=0 ):
-            current_index += 1
-            progress = progress_info( pi, self.setProgress )
-
-            # # For quick testing
-            # if current_index > 3:
-            #     break
-
-            log.insert_empty_line()
-            log.insert_empty_line()
-
-            log( 1, "%s Installing %d of %d: %s" % ( progress, current_index, git_packages_count, str( package_name ) ) )
-            self.ignore_next_packages( package_disabler, package_name, packages_names )
-
-            if self.package_manager.install_package( package_name, False ) is False:
-                log( 1, "Error: Failed to install the repository `%s`!" % package_name )
-                self.failedRepositories.append( package_name )
-
-            else:
-                self.add_package_to_installation_list( package_name )
-
-            self.accumulative_unignore_user_packages( package_name )
-
-        self.accumulative_unignore_user_packages( flush_everything=True )
 
 
     def get_stable_packages(self):
@@ -510,6 +460,56 @@ class ChannelInstaller(threading.Thread):
         return filtered_packages
 
 
+    def install_stable_packages(self, packages_names):
+        """
+            python multithreading wait till all threads finished
+            https://stackoverflow.com/questions/11968689/python-multithreading-wait-till-all-threads-finished
+
+            There is a bug with the AdvancedInstallPackageThread thread which trigger several errors of:
+
+            "It appears a package is trying to ignore itself, causing a loop.
+            Please resolve by removing the offending ignored_packages setting."
+
+            When trying to install several package at once, then here I am installing them one by one.
+        """
+        self.set_default_settings( packages_names )
+        log( 2, "install_stable_packages, packages_names: " + str( packages_names ) )
+
+        # Package Control: Advanced Install Package
+        # https://github.com/wbond/package_control/issues/1191
+        # thread = AdvancedInstallPackageThread( packages_names )
+        # thread.start()
+        # thread.join()
+
+        current_index      = 0
+        git_packages_count = len( packages_names )
+
+        for package_name, pi in sequence_timer( packages_names, info_frequency=0 ):
+            current_index += 1
+            progress = progress_info( pi, self.setProgress )
+
+            # # For quick testing
+            # if current_index > 3:
+            #     break
+
+            log.insert_empty_line()
+            log.insert_empty_line()
+
+            log( 1, "%s Installing %d of %d: %s" % ( progress, current_index, git_packages_count, str( package_name ) ) )
+            self.ignore_next_packages( package_disabler, package_name, packages_names )
+
+            if self.package_manager.install_package( package_name, False ) is False:
+                log( 1, "Error: Failed to install the repository `%s`!" % package_name )
+                self.failedRepositories.append( package_name )
+
+            else:
+                self.add_package_to_installation_list( package_name )
+
+            self.accumulative_unignore_user_packages( package_name )
+
+        self.accumulative_unignore_user_packages( flush_everything=True )
+
+
     def download_not_packages_submodules(self):
         log( 1, "download_not_packages_submodules" )
 
@@ -550,6 +550,59 @@ class ChannelInstaller(threading.Thread):
                     self.save_default_settings()
 
         return self.get_development_packages()
+
+
+    def get_development_packages(self):
+        development_ignored = self.channelSettings['PACKAGES_TO_NOT_INSTALL_DEVELOPMENT']
+        log( 2, "install_submodules_packages, PACKAGES_TO_NOT_INSTALL_DEVELOPMENT: " + str( development_ignored ) )
+
+        gitFilePath    = os.path.join( self.channelSettings['CHANNEL_ROOT_DIRECTORY'], '.gitmodules' )
+        gitModulesFile = configparser.RawConfigParser()
+
+        current_index      = 0
+        installed_packages = self.get_installed_packages()
+
+        # Do not try to install `Package Control` as they are currently running, and must be uninstalled
+        # on the end, if `PackagesManager` was installed.
+        currently_running = [ "Package Control" ]
+
+        packages_tonot_install = unique_list_join( development_ignored, installed_packages, currently_running )
+        log( 2, "get_development_packages, packages_tonot_install: " + str( packages_tonot_install ) )
+
+        packages = []
+        gitModulesFile.read( gitFilePath )
+
+        for section in gitModulesFile.sections():
+            # # For quick testing
+            # current_index += 1
+            # if current_index > 3:
+            #     break
+
+            url  = gitModulesFile.get( section, "url" )
+            path = gitModulesFile.get( section, "path" )
+
+            log( 2, "get_development_packages, path: " + path )
+
+            if 'Packages' == path[0:8]:
+                package_name = os.path.basename( path )
+
+                if package_name not in packages_tonot_install :
+                    packages.append( ( package_name, url, path ) )
+
+        # return \
+        # [
+        #     ('Active View Jump Back', 'https://github.com/evandrocoan/SublimeActiveViewJumpBack', 'Packages/Active View Jump Back'),
+        #     ('amxmodx', 'https://github.com/evandrocoan/SublimeAMXX_Editor', 'Packages/amxmodx'),
+        #     ('All Autocomplete', 'https://github.com/evandrocoan/SublimeAllAutocomplete', 'Packages/All Autocomplete'),
+        #     ('Amxx Pawn', 'https://github.com/evandrocoan/SublimeAmxxPawn', 'Packages/Amxx Pawn'),
+        #     ('Clear Cursors Carets', 'https://github.com/evandrocoan/ClearCursorsCarets', 'Packages/Clear Cursors Carets'),
+        #     ('Notepad++ Color Scheme', 'https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme', 'Packages/Notepad++ Color Scheme'),
+        #     ('PackagesManager', 'https://github.com/evandrocoan/package_control', 'Packages/PackagesManager'),
+        #     ('Toggle Words', 'https://github.com/evandrocoan/ToggleWords', 'Packages/Toggle Words'),
+        #     ('Default', 'https://github.com/evandrocoan/SublimeDefault', 'Packages/Default'),
+        # ]
+
+        return packages
 
 
     def clone_sublime_text_channel(self):
@@ -609,24 +662,6 @@ class ChannelInstaller(threading.Thread):
         output  = str( self.command_line_interface.execute( command, cwd=root ) )
 
         log( 1, "download_repository_to_folder, output: " + str( output ) )
-
-
-    def add_folders_and_files_for_removal(self, root_source_folder, relative_path):
-        add_path_if_not_exists( g_folders_to_uninstall, relative_path )
-
-        for source_folder, directories, files in os.walk( root_source_folder ):
-
-            for folder in directories:
-                source_file   = os.path.join( source_folder, folder )
-                relative_path = convert_absolute_path_to_relative( source_file )
-
-                add_path_if_not_exists( g_folders_to_uninstall, relative_path )
-
-            for file in files:
-                source_file   = os.path.join( source_folder, file )
-                relative_path = convert_absolute_path_to_relative( source_file )
-
-                add_path_if_not_exists( g_files_to_uninstall, relative_path )
 
 
     def install_development_packages(self, packages_infos):
@@ -693,486 +728,6 @@ class ChannelInstaller(threading.Thread):
 
         # Clean the temporary folder after the process has ended
         shutil.rmtree( channel_temporary_folder, onerror=_delete_read_only_file )
-
-
-    def get_development_packages(self):
-        development_ignored = self.channelSettings['PACKAGES_TO_NOT_INSTALL_DEVELOPMENT']
-        log( 2, "install_submodules_packages, PACKAGES_TO_NOT_INSTALL_DEVELOPMENT: " + str( development_ignored ) )
-
-        gitFilePath    = os.path.join( self.channelSettings['CHANNEL_ROOT_DIRECTORY'], '.gitmodules' )
-        gitModulesFile = configparser.RawConfigParser()
-
-        current_index      = 0
-        installed_packages = self.get_installed_packages()
-
-        # Do not try to install `Package Control` as they are currently running, and must be uninstalled
-        # on the end, if `PackagesManager` was installed.
-        currently_running = [ "Package Control" ]
-
-        packages_tonot_install = unique_list_join( development_ignored, installed_packages, currently_running )
-        log( 2, "get_development_packages, packages_tonot_install: " + str( packages_tonot_install ) )
-
-        packages = []
-        gitModulesFile.read( gitFilePath )
-
-        for section in gitModulesFile.sections():
-            # # For quick testing
-            # current_index += 1
-            # if current_index > 3:
-            #     break
-
-            url  = gitModulesFile.get( section, "url" )
-            path = gitModulesFile.get( section, "path" )
-
-            log( 2, "get_development_packages, path: " + path )
-
-            if 'Packages' == path[0:8]:
-                package_name = os.path.basename( path )
-
-                if package_name not in packages_tonot_install :
-                    packages.append( ( package_name, url, path ) )
-
-        # return \
-        # [
-        #     ('Active View Jump Back', 'https://github.com/evandrocoan/SublimeActiveViewJumpBack', 'Packages/Active View Jump Back'),
-        #     ('amxmodx', 'https://github.com/evandrocoan/SublimeAMXX_Editor', 'Packages/amxmodx'),
-        #     ('All Autocomplete', 'https://github.com/evandrocoan/SublimeAllAutocomplete', 'Packages/All Autocomplete'),
-        #     ('Amxx Pawn', 'https://github.com/evandrocoan/SublimeAmxxPawn', 'Packages/Amxx Pawn'),
-        #     ('Clear Cursors Carets', 'https://github.com/evandrocoan/ClearCursorsCarets', 'Packages/Clear Cursors Carets'),
-        #     ('Notepad++ Color Scheme', 'https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme', 'Packages/Notepad++ Color Scheme'),
-        #     ('PackagesManager', 'https://github.com/evandrocoan/package_control', 'Packages/PackagesManager'),
-        #     ('Toggle Words', 'https://github.com/evandrocoan/ToggleWords', 'Packages/Toggle Words'),
-        #     ('Default', 'https://github.com/evandrocoan/SublimeDefault', 'Packages/Default'),
-        # ]
-
-        return packages
-
-
-    def copy_overrides(self, root_source_folder, root_destine_folder, move_files=False, is_to_replace=True):
-        """
-            Python How To Copy Or Move Folders Recursively
-            http://techs.studyhorror.com/python-copy-move-sub-folders-recursively-i-92
-
-            Python script recursively rename all files in folder and subfolders
-            https://stackoverflow.com/questions/41861238/python-script-recursively-rename-all-files-in-folder-and-subfolders
-
-            Force Overwrite in Os.Rename
-            https://stackoverflow.com/questions/8107352/force-overwrite-in-os-rename
-        """
-        installed_files   = []
-        installed_folders = []
-
-        # Call this if operation only one time, instead of calling the for every file.
-        if move_files:
-
-            def operate_file(source_file, destine_folder):
-                shutil.move( source_file, destine_folder )
-
-        else:
-
-            def operate_file(source_file, destine_folder):
-                shutil.copy( source_file, destine_folder )
-
-        for source_folder, directories, files in os.walk( root_source_folder ):
-            destine_folder = source_folder.replace( root_source_folder, root_destine_folder)
-
-            if not os.path.exists( destine_folder ):
-                os.mkdir( destine_folder )
-
-            for file in files:
-                source_file  = os.path.join( source_folder, file )
-                destine_file = os.path.join( destine_folder, file )
-
-                # print( ( "Moving" if move_files else "Coping" ), "file:", source_file, "to", destine_file )
-                if os.path.exists( destine_file ):
-
-                    if is_to_replace:
-                        delete_read_only_file( destine_file )
-
-                    else:
-                        continue
-
-                # Python: Get relative path from comparing two absolute paths
-                # https://stackoverflow.com/questions/7287996/python-get-relative-path-from-comparing-two-absolute-paths
-                relative_file_path   = self.convert_absolute_path_to_relative( destine_file )
-                relative_folder_path = self.convert_absolute_path_to_relative( destine_folder )
-
-                operate_file(source_file, destine_folder)
-
-                add_path_if_not_exists( installed_files, relative_file_path )
-                add_path_if_not_exists( installed_folders, relative_folder_path )
-
-        log( 1, "copy_overrides, installed_files:   " + str( installed_files ) )
-        log( 1, "copy_overrides, installed_folders: " + str( installed_folders ) )
-        return installed_files, installed_folders
-
-
-    def convert_absolute_path_to_relative(self, file_path):
-        relative_path = os.path.commonprefix( [ self.channelSettings['CHANNEL_ROOT_DIRECTORY'], file_path ] )
-        relative_path = os.path.normpath( file_path.replace( relative_path, "" ) )
-
-        return convert_to_unix_path(relative_path)
-
-
-    def set_default_settings(self, packages_names, packages_infos=[]):
-        """
-            Set some package to be enabled at last due their settings being dependent on other packages
-            which need to be installed first.
-
-            This also disables all development disabled packages, when installing the development
-            version. It sets the current user's `ignored_packages` settings including all packages
-            already disabled and the new packages to be installed and must be disabled before attempting
-            to install them.
-        """
-        self.set_first_and_last_packages_to_install( packages_names, packages_infos )
-        self.ask_user_for_which_packages_to_install( packages_names, packages_infos )
-
-        if "PackagesManager" in packages_names:
-            self.sync_package_control_and_manager()
-
-        else:
-            global g_package_control_settings
-            g_package_control_settings = None
-
-        # The development version does not need to ignore all installed packages before starting the
-        # installation process as it is not affected by the Sublime Text bug.
-        if self.isDevelopment:
-            self.set_development_ignored_packages( packages_names )
-
-
-    def set_development_ignored_packages(self, packages_names):
-
-        for package_name in self.channelSettings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT']:
-
-            # Only ignore the packages which are being installed
-            if package_name in packages_names and package_name not in g_default_ignored_packages:
-                g_default_ignored_packages.append( package_name )
-                add_item_if_not_exists( g_packages_to_unignore, package_name )
-
-        self.add_packages_to_ignored_list( g_default_ignored_packages )
-
-
-    def set_first_and_last_packages_to_install(self, packages_names, packages_infos=[]):
-        """
-            Set the packages to be installed first and last. The `self.channelSettings['PACKAGES_TO_INSTALL_LAST']`
-            has priority when some package is on both lists.
-        """
-        self.set_first_packages_to_install( packages_names, packages_infos )
-        last_packages = {}
-
-        if len( packages_infos ):
-
-            for package_info in packages_infos:
-
-                if package_info[0] in self.channelSettings['PACKAGES_TO_INSTALL_LAST']:
-                    last_packages[package_info[0]] = package_info
-
-                    packages_infos.remove(package_info)
-                    packages_names.remove(package_info[0])
-
-        else:
-
-            for package_name in packages_names:
-
-                if package_name in self.channelSettings['PACKAGES_TO_INSTALL_LAST']:
-                    last_packages[package_name] = package_name
-
-                    packages_names.remove( package_name )
-
-        # Readds the packages into the list accordingly to their respective ordering
-        for package_name in self.channelSettings['PACKAGES_TO_INSTALL_LAST']:
-
-            if package_name in last_packages:
-
-                if len( packages_infos ):
-                    packages_infos.append( last_packages[package_name] )
-                    packages_names.append( last_packages[package_name][0] )
-
-                else:
-                    packages_names.append( last_packages[package_name] )
-
-
-    def set_first_packages_to_install(self, packages_names, packages_infos=[]):
-        first_packages = {}
-
-        if len( packages_infos ):
-
-            for package_info in packages_infos:
-
-                if package_info[0] in self.channelSettings['PACKAGES_TO_INSTALL_FIRST']:
-                    first_packages[package_info[0]] = package_info
-
-                    packages_infos.remove(package_info)
-                    packages_names.remove(package_info[0])
-
-        else:
-
-            for package_name in packages_names:
-
-                if package_name in self.channelSettings['PACKAGES_TO_INSTALL_FIRST']:
-                    first_packages[package_name] = package_name
-
-                    packages_names.remove( package_name )
-
-        # Readds the packages into the list accordingly to their respective ordering
-        for package_name in reversed( self.channelSettings['PACKAGES_TO_INSTALL_FIRST'] ):
-
-            if package_name in first_packages:
-
-                if len( packages_infos ):
-                    packages_infos.insert( 0, first_packages[package_name] )
-                    packages_names.insert( 0, first_packages[package_name][0] )
-
-                else:
-                    packages_names.insert( 0, first_packages[package_name] )
-
-
-    def ignore_next_packages(self, package_disabler, package_name, packages_list):
-        """
-            There is a bug with the uninstalling several packages, which trigger several errors of:
-
-            "It appears a package is trying to ignore itself, causing a loop.
-            Please resolve by removing the offending ignored_packages setting."
-
-            When trying to uninstall several package at once, then here I am ignoring them all at once.
-
-            Package Control: Advanced Install Package
-            https://github.com/wbond/package_control/issues/1191
-
-            This fixes it by ignoring several next packages, then later unignoring them after uninstalled.
-        """
-
-        if self.uningoredPackagesToFlush < 1:
-            global g_next_packages_to_ignore
-
-            last_ignored_packages     = packages_list.index( package_name )
-            g_next_packages_to_ignore = packages_list[last_ignored_packages : last_ignored_packages+PACKAGES_COUNT_TO_IGNORE_AHEAD+1]
-
-            # We never can ignore the Default package, otherwise several errors/anomalies show up
-            if "Default" in g_next_packages_to_ignore:
-                g_next_packages_to_ignore.remove( "Default" )
-
-            log( 1, "Adding %d packages to the `ignored_packages` setting list." % len( g_next_packages_to_ignore ) )
-            log( 1, "g_next_packages_to_ignore: " + str( g_next_packages_to_ignore ) )
-
-            # If the package is already on the users' `ignored_packages` settings, it means either that
-            # the package was disabled by the user or the package is one of the development disabled
-            # packages. Therefore we must not unignore it later when unignoring them.
-            for package_name in list( g_next_packages_to_ignore ):
-
-                if package_name in g_default_ignored_packages:
-                    g_next_packages_to_ignore.remove( package_name )
-
-            # This also adds them to the `in_process` list on the Package Control.sublime-settings file
-            package_disabler.disable_packages( g_next_packages_to_ignore, "remove" )
-
-            # Let the packages be unloaded by Sublime Text while ensuring anyone is putting them back in
-            self.add_packages_to_ignored_list( g_next_packages_to_ignore )
-
-
-    def add_packages_to_ignored_list(self, packages_list):
-        """
-            Something, somewhere is setting the ignored_packages list to `["Vintage"]`. Then ensure we
-            override this.
-        """
-        log( 1, "add_packages_to_ignored_list, Adding packages to unignore list: %s" % str( packages_list ) )
-        unique_list_append( g_default_ignored_packages, packages_list )
-
-        # Progressively saves the installation data, in case the user closes Sublime Text
-        self.save_default_settings()
-
-        for interval in range( 0, 27 ):
-            g_userSettings.set( "ignored_packages", g_default_ignored_packages )
-            sublime.save_settings( self.channelSettings['USER_SETTINGS_FILE'] )
-
-            time.sleep(0.1)
-
-
-    def accumulative_unignore_user_packages(self, package_name="", flush_everything=False):
-        """
-            Flush off the remaining `g_next_packages_to_ignore` appended. There is a bug with the
-            uninstalling several packages, which trigger several errors of:
-
-            "It appears a package is trying to ignore itself, causing a loop.
-            Please resolve by removing the offending ignored_packages setting."
-
-            When trying to uninstall several package at once, then here I am unignoring them all at once.
-
-            Package Control: Advanced Install Package
-            https://github.com/wbond/package_control/issues/1191
-
-            @param flush_everything     set all remaining packages as unignored
-        """
-
-        if flush_everything:
-            self.uningoredPackagesToFlush = 0
-            unignore_some_packages( g_next_packages_to_ignore )
-
-        else:
-            log( 1, "Adding package to unignore list: %s" % str( package_name ) )
-            self.uningoredPackagesToFlush += 1
-
-            if self.uningoredPackagesToFlush > len( g_next_packages_to_ignore ):
-                self.unignore_some_packages( g_next_packages_to_ignore )
-
-                del g_next_packages_to_ignore[:]
-                self.uningoredPackagesToFlush = 0
-
-
-    def unignore_some_packages(self, packages_list):
-        """
-            Flush just a few items each time.
-        """
-        is_there_unignored_packages = False
-
-        for package_name in packages_list:
-
-            if package_name in g_default_ignored_packages:
-                is_there_unignored_packages = True
-
-                log( 1, "Unignoring the package: %s" % package_name )
-                g_default_ignored_packages.remove( package_name )
-
-        if is_there_unignored_packages:
-            g_userSettings.set( "ignored_packages", g_default_ignored_packages )
-            sublime.save_settings( self.channelSettings['USER_SETTINGS_FILE'] )
-
-
-    def add_package_to_installation_list(self. package_name):
-        """
-            When the installation is going on the PackagesManager will be installed. If the user restart
-            Sublime Text after doing it, on the next time Sublime Text starts, the Package Control and
-            the PackagesManager will kill each other and probably end up uninstalling all the packages
-            installed.
-
-            So, here we try to keep things nice by syncing both `Package Control` and `PackagesManager`
-            settings files.
-        """
-
-        if g_package_control_settings and not self.isDevelopment:
-            installed_packages = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
-            add_item_if_not_exists( installed_packages, package_name )
-
-            packagesmanager = os.path.join( self.channelSettings['USER_FOLDER_PATH'], g_packagesmanager_name )
-            write_data_file( packagesmanager, sort_dictionary( g_package_control_settings ) )
-
-        add_item_if_not_exists( g_packages_to_uninstall, package_name )
-
-        # Progressively saves the installation data, in case the user closes Sublime Text
-        self.save_default_settings()
-
-
-    def uninstall_package_control(self):
-        """
-            Uninstals package control only if PackagesManager was installed, otherwise the user will end
-            up with no package manager.
-        """
-        log( 2, "uninstall_package_control, g_packages_to_uninstall: " + str( g_packages_to_uninstall ) )
-
-        # Only uninstall it, when `PackagesManager` was also installed
-        if "PackagesManager" in g_packages_to_uninstall:
-            # Sublime Text is waiting the current thread to finish before loading the just installed
-            # PackagesManager, therefore run a new thread delayed which finishes the job
-            sublime.set_timeout_async( self.complete_package_control_uninstallation, 2000 )
-
-        else:
-            satisfy_dependencies()
-            log( 1, "Warning: PackagesManager is was not installed on the system!" )
-
-            # Clean right away the PackagesManager successful flag, was it was not installed
-            global g_is_running
-            g_is_running = False
-
-
-    def complete_package_control_uninstallation(self, maximum_attempts=3):
-        log.insert_empty_line()
-        log.insert_empty_line()
-        log( 1, "Finishing Package Control Uninstallation... maximum_attempts: " + str( maximum_attempts ) )
-
-        # Import the recent installed PackagesManager
-        try:
-            from PackagesManager.packagesmanager.show_error import silence_error_message_box
-            from PackagesManager.packagesmanager.package_manager import PackageManager
-            from PackagesManager.packagesmanager.package_disabler import PackageDisabler
-
-        except ImportError:
-
-            if maximum_attempts > 0:
-                maximum_attempts -= 1
-
-                sublime.set_timeout_async( lambda: self.complete_package_control_uninstallation( maximum_attempts ), 2000 )
-                return
-
-            else:
-                log( 1, "Error! Could not complete the Package Control uninstalling, missing import for `PackagesManager`." )
-
-        silence_error_message_box(300.0)
-
-        packages_to_remove = [ ("Package Control", False), ("0_package_control_loader", None) ]
-        packages_names     = [ package_name[0] for package_name in packages_to_remove ]
-
-        for package_name, is_dependency in packages_to_remove:
-            log.insert_empty_line()
-            log.insert_empty_line()
-
-            log( 1, "Uninstalling: %s..." % str( package_name ) )
-            ignore_next_packages( self.package_disabler, package_name, packages_names )
-
-            self.package_manager.remove_package( package_name, is_dependency )
-            self.accumulative_unignore_user_packages( package_name )
-
-        self.accumulative_unignore_user_packages( flush_everything=True )
-        self.delete_package_control_settings()
-
-
-    def delete_package_control_settings(self):
-        """
-            Clean it a few times because Package Control is kinda running and still flushing stuff down
-            to its settings file.
-        """
-        log( 1, "Calling delete_package_control_settings..." )
-
-        clean_settings       = {}
-        package_control_file = os.path.join( self.channelSettings['USER_FOLDER_PATH'], g_package_control_name )
-
-        clean_settings['bootstrapped']    = False
-        clean_settings['remove_orphaned'] = False
-
-        if "remove_orphaned_backup" in g_package_control_settings:
-            clean_settings['remove_orphaned_backup'] = get_dictionary_key( g_package_control_settings, 'remove_orphaned_backup', True )
-
-        else:
-            clean_settings['remove_orphaned_backup'] = get_dictionary_key( g_package_control_settings, 'remove_orphaned', True )
-
-        write_data_file( package_control_file, clean_settings )
-        self.satisfy_dependencies()
-
-        # Set the flag as completed, to signalize the this part of the installation was successful
-        global g_is_running
-        g_is_running = False
-
-
-    def sync_package_control_and_manager(self):
-        """
-            When the installation is going on the PackagesManager will be installed. If the user restart
-            Sublime Text after doing it, on the next time Sublime Text starts, the Package Control and
-            the PackagesManager will kill each other and probably end up uninstalling all the packages
-            installed.
-
-            This happens due their configurations files list different sets of packages. So to fix this
-            we need to keep both files synced while the installation process is going on.
-        """
-        log( 1, "Calling sync_package_control_and_manager..." )
-        global g_package_control_settings
-
-        package_control_file       = os.path.join( self.channelSettings['USER_FOLDER_PATH'], g_package_control_name )
-        g_package_control_settings = load_data_file( package_control_file )
-
-        log( 2, "sync_package_control_and_manager, package_control: " + str( g_package_control_settings ) )
-        self.ensure_installed_packages_name( g_package_control_settings )
-
-        packagesmanager = os.path.join( self.channelSettings['USER_FOLDER_PATH'], g_packagesmanager_name )
-        write_data_file( packagesmanager, g_package_control_settings )
 
 
     def satisfy_dependencies(self):
@@ -1591,6 +1146,119 @@ class ChannelInstaller(threading.Thread):
         self.save_default_settings()
 
 
+    def uninstall_package_control(self):
+        """
+            Uninstals package control only if PackagesManager was installed, otherwise the user will end
+            up with no package manager.
+        """
+        log( 2, "uninstall_package_control, g_packages_to_uninstall: " + str( g_packages_to_uninstall ) )
+
+        # Only uninstall it, when `PackagesManager` was also installed
+        if "PackagesManager" in g_packages_to_uninstall:
+            # Sublime Text is waiting the current thread to finish before loading the just installed
+            # PackagesManager, therefore run a new thread delayed which finishes the job
+            sublime.set_timeout_async( self.complete_package_control_uninstallation, 2000 )
+
+        else:
+            satisfy_dependencies()
+            log( 1, "Warning: PackagesManager is was not installed on the system!" )
+
+            # Clean right away the PackagesManager successful flag, was it was not installed
+            global g_is_running
+            g_is_running = False
+
+
+    def complete_package_control_uninstallation(self, maximum_attempts=3):
+        log.insert_empty_line()
+        log.insert_empty_line()
+        log( 1, "Finishing Package Control Uninstallation... maximum_attempts: " + str( maximum_attempts ) )
+
+        # Import the recent installed PackagesManager
+        try:
+            from PackagesManager.packagesmanager.show_error import silence_error_message_box
+            from PackagesManager.packagesmanager.package_manager import PackageManager
+            from PackagesManager.packagesmanager.package_disabler import PackageDisabler
+
+        except ImportError:
+
+            if maximum_attempts > 0:
+                maximum_attempts -= 1
+
+                sublime.set_timeout_async( lambda: self.complete_package_control_uninstallation( maximum_attempts ), 2000 )
+                return
+
+            else:
+                log( 1, "Error! Could not complete the Package Control uninstalling, missing import for `PackagesManager`." )
+
+        silence_error_message_box(300.0)
+
+        packages_to_remove = [ ("Package Control", False), ("0_package_control_loader", None) ]
+        packages_names     = [ package_name[0] for package_name in packages_to_remove ]
+
+        for package_name, is_dependency in packages_to_remove:
+            log.insert_empty_line()
+            log.insert_empty_line()
+
+            log( 1, "Uninstalling: %s..." % str( package_name ) )
+            ignore_next_packages( self.package_disabler, package_name, packages_names )
+
+            self.package_manager.remove_package( package_name, is_dependency )
+            self.accumulative_unignore_user_packages( package_name )
+
+        self.accumulative_unignore_user_packages( flush_everything=True )
+        self.delete_package_control_settings()
+
+
+    def delete_package_control_settings(self):
+        """
+            Clean it a few times because Package Control is kinda running and still flushing stuff down
+            to its settings file.
+        """
+        log( 1, "Calling delete_package_control_settings..." )
+
+        clean_settings       = {}
+        package_control_file = os.path.join( self.channelSettings['USER_FOLDER_PATH'], g_package_control_name )
+
+        clean_settings['bootstrapped']    = False
+        clean_settings['remove_orphaned'] = False
+
+        if "remove_orphaned_backup" in g_package_control_settings:
+            clean_settings['remove_orphaned_backup'] = get_dictionary_key( g_package_control_settings, 'remove_orphaned_backup', True )
+
+        else:
+            clean_settings['remove_orphaned_backup'] = get_dictionary_key( g_package_control_settings, 'remove_orphaned', True )
+
+        write_data_file( package_control_file, clean_settings )
+        self.satisfy_dependencies()
+
+        # Set the flag as completed, to signalize the this part of the installation was successful
+        global g_is_running
+        g_is_running = False
+
+
+    def sync_package_control_and_manager(self):
+        """
+            When the installation is going on the PackagesManager will be installed. If the user restart
+            Sublime Text after doing it, on the next time Sublime Text starts, the Package Control and
+            the PackagesManager will kill each other and probably end up uninstalling all the packages
+            installed.
+
+            This happens due their configurations files list different sets of packages. So to fix this
+            we need to keep both files synced while the installation process is going on.
+        """
+        log( 1, "Calling sync_package_control_and_manager..." )
+        global g_package_control_settings
+
+        package_control_file       = os.path.join( self.channelSettings['USER_FOLDER_PATH'], g_package_control_name )
+        g_package_control_settings = load_data_file( package_control_file )
+
+        log( 2, "sync_package_control_and_manager, package_control: " + str( g_package_control_settings ) )
+        self.ensure_installed_packages_name( g_package_control_settings )
+
+        packagesmanager = os.path.join( self.channelSettings['USER_FOLDER_PATH'], g_packagesmanager_name )
+        write_data_file( packagesmanager, g_package_control_settings )
+
+
     def attempt_to_uninstall_packagesmanager(self, packages_to_uninstall):
 
         if "PackagesManager" in packages_to_uninstall:
@@ -1634,7 +1302,7 @@ class ChannelInstaller(threading.Thread):
             log( 1, "Finishing PackagesManager %s..." % self.installationType )
             self.uninstall_list_of_packages( [("PackagesManager", False), ("0_packagesmanager_loader", None)] )
 
-            self.remove_0_packagesmanager_loader()
+            self.remove_0_packagesmanager_loader( "0_packagesmanager_loader" )
             self.clean_packagesmanager_settings()
 
 
@@ -1667,15 +1335,18 @@ class ChannelInstaller(threading.Thread):
         self.accumulative_unignore_user_packages( flush_everything=True )
 
 
-    def remove_0_packagesmanager_loader(self):
+    def remove_0_packagesmanager_loader(self, loader_name):
         """
             Most times the 0_packagesmanager_loader is not being deleted/removed, then try again.
         """
-        _packagesmanager_loader_path     = os.path.join( self.channelSettings['CHANNEL_ROOT_DIRECTORY'], "Installed Packages", "0_packagesmanager_loader.sublime-package" )
-        _packagesmanager_loader_path_new = os.path.join( self.channelSettings['CHANNEL_ROOT_DIRECTORY'], "Installed Packages", "0_packagesmanager_loader.sublime-package-new" )
+        packagesmanager_loader_path     = os.path.join(
+                self.channelSettings['CHANNEL_ROOT_DIRECTORY'], "Installed Packages", "%s.sublime-package" % loader_name )
 
-        remove_only_if_exists( _packagesmanager_loader_path )
-        remove_only_if_exists( _packagesmanager_loader_path_new )
+        packagesmanager_loader_path_new = os.path.join(
+                self.channelSettings['CHANNEL_ROOT_DIRECTORY'], "Installed Packages", "%s.sublime-package-new" % loader_name )
+
+        remove_only_if_exists( packagesmanager_loader_path )
+        remove_only_if_exists( packagesmanager_loader_path_new )
 
 
     def clean_packagesmanager_settings(self,maximum_attempts=3):
@@ -1742,6 +1413,338 @@ class ChannelInstaller(threading.Thread):
         # log( 1, "self.save_default_settings, g_channelDetails: " + json.dumps( g_channelDetails, indent=4 ) )
 
         write_data_file( self.channelSettings['CHANNEL_INSTALLATION_DETAILS'], g_channelDetails )
+
+
+    def set_default_settings(self, packages_names, packages_infos=[]):
+        """
+            Set some package to be enabled at last due their settings being dependent on other packages
+            which need to be installed first.
+
+            This also disables all development disabled packages, when installing the development
+            version. It sets the current user's `ignored_packages` settings including all packages
+            already disabled and the new packages to be installed and must be disabled before attempting
+            to install them.
+        """
+        self.set_first_and_last_packages_to_install( packages_names, packages_infos )
+        self.ask_user_for_which_packages_to_install( packages_names, packages_infos )
+
+        if "PackagesManager" in packages_names:
+            self.sync_package_control_and_manager()
+
+        else:
+            global g_package_control_settings
+            g_package_control_settings = None
+
+        # The development version does not need to ignore all installed packages before starting the
+        # installation process as it is not affected by the Sublime Text bug.
+        if self.isDevelopment:
+            self.set_development_ignored_packages( packages_names )
+
+
+    def set_development_ignored_packages(self, packages_names):
+
+        for package_name in self.channelSettings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT']:
+
+            # Only ignore the packages which are being installed
+            if package_name in packages_names and package_name not in g_default_ignored_packages:
+                g_default_ignored_packages.append( package_name )
+                add_item_if_not_exists( g_packages_to_unignore, package_name )
+
+        self.add_packages_to_ignored_list( g_default_ignored_packages )
+
+
+    def set_first_and_last_packages_to_install(self, packages_names, packages_infos=[]):
+        """
+            Set the packages to be installed first and last. The `self.channelSettings['PACKAGES_TO_INSTALL_LAST']`
+            has priority when some package is on both lists.
+        """
+        self.set_first_packages_to_install( packages_names, packages_infos )
+        last_packages = {}
+
+        if len( packages_infos ):
+
+            for package_info in packages_infos:
+
+                if package_info[0] in self.channelSettings['PACKAGES_TO_INSTALL_LAST']:
+                    last_packages[package_info[0]] = package_info
+
+                    packages_infos.remove(package_info)
+                    packages_names.remove(package_info[0])
+
+        else:
+
+            for package_name in packages_names:
+
+                if package_name in self.channelSettings['PACKAGES_TO_INSTALL_LAST']:
+                    last_packages[package_name] = package_name
+
+                    packages_names.remove( package_name )
+
+        # Readds the packages into the list accordingly to their respective ordering
+        for package_name in self.channelSettings['PACKAGES_TO_INSTALL_LAST']:
+
+            if package_name in last_packages:
+
+                if len( packages_infos ):
+                    packages_infos.append( last_packages[package_name] )
+                    packages_names.append( last_packages[package_name][0] )
+
+                else:
+                    packages_names.append( last_packages[package_name] )
+
+
+    def set_first_packages_to_install(self, packages_names, packages_infos=[]):
+        first_packages = {}
+
+        if len( packages_infos ):
+
+            for package_info in packages_infos:
+
+                if package_info[0] in self.channelSettings['PACKAGES_TO_INSTALL_FIRST']:
+                    first_packages[package_info[0]] = package_info
+
+                    packages_infos.remove(package_info)
+                    packages_names.remove(package_info[0])
+
+        else:
+
+            for package_name in packages_names:
+
+                if package_name in self.channelSettings['PACKAGES_TO_INSTALL_FIRST']:
+                    first_packages[package_name] = package_name
+
+                    packages_names.remove( package_name )
+
+        # Readds the packages into the list accordingly to their respective ordering
+        for package_name in reversed( self.channelSettings['PACKAGES_TO_INSTALL_FIRST'] ):
+
+            if package_name in first_packages:
+
+                if len( packages_infos ):
+                    packages_infos.insert( 0, first_packages[package_name] )
+                    packages_names.insert( 0, first_packages[package_name][0] )
+
+                else:
+                    packages_names.insert( 0, first_packages[package_name] )
+
+
+    def ignore_next_packages(self, package_disabler, package_name, packages_list):
+        """
+            There is a bug with the uninstalling several packages, which trigger several errors of:
+
+            "It appears a package is trying to ignore itself, causing a loop.
+            Please resolve by removing the offending ignored_packages setting."
+
+            When trying to uninstall several package at once, then here I am ignoring them all at once.
+
+            Package Control: Advanced Install Package
+            https://github.com/wbond/package_control/issues/1191
+
+            This fixes it by ignoring several next packages, then later unignoring them after uninstalled.
+        """
+
+        if self.uningoredPackagesToFlush < 1:
+            global g_next_packages_to_ignore
+
+            last_ignored_packages     = packages_list.index( package_name )
+            g_next_packages_to_ignore = packages_list[last_ignored_packages : last_ignored_packages+PACKAGES_COUNT_TO_IGNORE_AHEAD+1]
+
+            # We never can ignore the Default package, otherwise several errors/anomalies show up
+            if "Default" in g_next_packages_to_ignore:
+                g_next_packages_to_ignore.remove( "Default" )
+
+            log( 1, "Adding %d packages to the `ignored_packages` setting list." % len( g_next_packages_to_ignore ) )
+            log( 1, "g_next_packages_to_ignore: " + str( g_next_packages_to_ignore ) )
+
+            # If the package is already on the users' `ignored_packages` settings, it means either that
+            # the package was disabled by the user or the package is one of the development disabled
+            # packages. Therefore we must not unignore it later when unignoring them.
+            for package_name in list( g_next_packages_to_ignore ):
+
+                if package_name in g_default_ignored_packages:
+                    g_next_packages_to_ignore.remove( package_name )
+
+            # This also adds them to the `in_process` list on the Package Control.sublime-settings file
+            package_disabler.disable_packages( g_next_packages_to_ignore, "remove" )
+
+            # Let the packages be unloaded by Sublime Text while ensuring anyone is putting them back in
+            self.add_packages_to_ignored_list( g_next_packages_to_ignore )
+
+
+    def add_packages_to_ignored_list(self, packages_list):
+        """
+            Something, somewhere is setting the ignored_packages list to `["Vintage"]`. Then ensure we
+            override this.
+        """
+        log( 1, "add_packages_to_ignored_list, Adding packages to unignore list: %s" % str( packages_list ) )
+        unique_list_append( g_default_ignored_packages, packages_list )
+
+        # Progressively saves the installation data, in case the user closes Sublime Text
+        self.save_default_settings()
+
+        for interval in range( 0, 27 ):
+            g_userSettings.set( "ignored_packages", g_default_ignored_packages )
+            sublime.save_settings( self.channelSettings['USER_SETTINGS_FILE'] )
+
+            time.sleep(0.1)
+
+
+    def accumulative_unignore_user_packages(self, package_name="", flush_everything=False):
+        """
+            Flush off the remaining `g_next_packages_to_ignore` appended. There is a bug with the
+            uninstalling several packages, which trigger several errors of:
+
+            "It appears a package is trying to ignore itself, causing a loop.
+            Please resolve by removing the offending ignored_packages setting."
+
+            When trying to uninstall several package at once, then here I am unignoring them all at once.
+
+            Package Control: Advanced Install Package
+            https://github.com/wbond/package_control/issues/1191
+
+            @param flush_everything     set all remaining packages as unignored
+        """
+
+        if flush_everything:
+            self.uningoredPackagesToFlush = 0
+            unignore_some_packages( g_next_packages_to_ignore )
+
+        else:
+            log( 1, "Adding package to unignore list: %s" % str( package_name ) )
+            self.uningoredPackagesToFlush += 1
+
+            if self.uningoredPackagesToFlush > len( g_next_packages_to_ignore ):
+                self.unignore_some_packages( g_next_packages_to_ignore )
+
+                del g_next_packages_to_ignore[:]
+                self.uningoredPackagesToFlush = 0
+
+
+    def unignore_some_packages(self, packages_list):
+        """
+            Flush just a few items each time.
+        """
+        is_there_unignored_packages = False
+
+        for package_name in packages_list:
+
+            if package_name in g_default_ignored_packages:
+                is_there_unignored_packages = True
+
+                log( 1, "Unignoring the package: %s" % package_name )
+                g_default_ignored_packages.remove( package_name )
+
+        if is_there_unignored_packages:
+            g_userSettings.set( "ignored_packages", g_default_ignored_packages )
+            sublime.save_settings( self.channelSettings['USER_SETTINGS_FILE'] )
+
+
+    def add_folders_and_files_for_removal(self, root_source_folder, relative_path):
+        add_path_if_not_exists( g_folders_to_uninstall, relative_path )
+
+        for source_folder, directories, files in os.walk( root_source_folder ):
+
+            for folder in directories:
+                source_file   = os.path.join( source_folder, folder )
+                relative_path = convert_absolute_path_to_relative( source_file )
+
+                add_path_if_not_exists( g_folders_to_uninstall, relative_path )
+
+            for file in files:
+                source_file   = os.path.join( source_folder, file )
+                relative_path = convert_absolute_path_to_relative( source_file )
+
+                add_path_if_not_exists( g_files_to_uninstall, relative_path )
+
+
+    def add_package_to_installation_list(self. package_name):
+        """
+            When the installation is going on the PackagesManager will be installed. If the user restart
+            Sublime Text after doing it, on the next time Sublime Text starts, the Package Control and
+            the PackagesManager will kill each other and probably end up uninstalling all the packages
+            installed.
+
+            So, here we try to keep things nice by syncing both `Package Control` and `PackagesManager`
+            settings files.
+        """
+
+        if g_package_control_settings and not self.isDevelopment:
+            installed_packages = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
+            add_item_if_not_exists( installed_packages, package_name )
+
+            packagesmanager = os.path.join( self.channelSettings['USER_FOLDER_PATH'], g_packagesmanager_name )
+            write_data_file( packagesmanager, sort_dictionary( g_package_control_settings ) )
+
+        add_item_if_not_exists( g_packages_to_uninstall, package_name )
+
+        # Progressively saves the installation data, in case the user closes Sublime Text
+        self.save_default_settings()
+
+
+    def copy_overrides(self, root_source_folder, root_destine_folder, move_files=False, is_to_replace=True):
+        """
+            Python How To Copy Or Move Folders Recursively
+            http://techs.studyhorror.com/python-copy-move-sub-folders-recursively-i-92
+
+            Python script recursively rename all files in folder and subfolders
+            https://stackoverflow.com/questions/41861238/python-script-recursively-rename-all-files-in-folder-and-subfolders
+
+            Force Overwrite in Os.Rename
+            https://stackoverflow.com/questions/8107352/force-overwrite-in-os-rename
+        """
+        installed_files   = []
+        installed_folders = []
+
+        # Call this if operation only one time, instead of calling the for every file.
+        if move_files:
+
+            def operate_file(source_file, destine_folder):
+                shutil.move( source_file, destine_folder )
+
+        else:
+
+            def operate_file(source_file, destine_folder):
+                shutil.copy( source_file, destine_folder )
+
+        for source_folder, directories, files in os.walk( root_source_folder ):
+            destine_folder = source_folder.replace( root_source_folder, root_destine_folder)
+
+            if not os.path.exists( destine_folder ):
+                os.mkdir( destine_folder )
+
+            for file in files:
+                source_file  = os.path.join( source_folder, file )
+                destine_file = os.path.join( destine_folder, file )
+
+                # print( ( "Moving" if move_files else "Coping" ), "file:", source_file, "to", destine_file )
+                if os.path.exists( destine_file ):
+
+                    if is_to_replace:
+                        delete_read_only_file( destine_file )
+
+                    else:
+                        continue
+
+                # Python: Get relative path from comparing two absolute paths
+                # https://stackoverflow.com/questions/7287996/python-get-relative-path-from-comparing-two-absolute-paths
+                relative_file_path   = self.convert_absolute_path_to_relative( destine_file )
+                relative_folder_path = self.convert_absolute_path_to_relative( destine_folder )
+
+                operate_file(source_file, destine_folder)
+
+                add_path_if_not_exists( installed_files, relative_file_path )
+                add_path_if_not_exists( installed_folders, relative_folder_path )
+
+        log( 1, "copy_overrides, installed_files:   " + str( installed_files ) )
+        log( 1, "copy_overrides, installed_folders: " + str( installed_folders ) )
+        return installed_files, installed_folders
+
+
+    def convert_absolute_path_to_relative(self, file_path):
+        relative_path = os.path.commonprefix( [ self.channelSettings['CHANNEL_ROOT_DIRECTORY'], file_path ] )
+        relative_path = os.path.normpath( file_path.replace( relative_path, "" ) )
+
+        return convert_to_unix_path(relative_path)
 
 
     def check_uninstalled_packages_alert(self, maximum_attempts=10):
