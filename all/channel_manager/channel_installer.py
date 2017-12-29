@@ -872,14 +872,14 @@ def accumulative_unignore_user_packages(package_name="", flush_everything=False)
 
         @param flush_everything     set all remaining packages as unignored
     """
+    global g_uningored_packages_to_flush
 
     if flush_everything:
+        g_uningored_packages_to_flush = 0
         unignore_some_packages( g_next_packages_to_ignore )
 
     else:
         log( 1, "Adding package to unignore list: %s" % str( package_name ) )
-
-        global g_uningored_packages_to_flush
         g_uningored_packages_to_flush += 1
 
         if g_uningored_packages_to_flush > len( g_next_packages_to_ignore ):
