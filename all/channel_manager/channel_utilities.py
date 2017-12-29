@@ -396,6 +396,16 @@ def add_path_if_not_exists(list_to_add, path):
         add_item_if_not_exists( list_to_add, path )
 
 
+def add_git_folder_by_file(file_relative_path, git_folders):
+    match = re.search( "\.git", file_relative_path )
+
+    if match:
+        git_folder_relative = file_relative_path[:match.end(0)]
+
+        if git_folder_relative not in git_folders:
+            git_folders.append( git_folder_relative )
+
+
 def sort_dictionary(dictionary):
     return OrderedDict( sorted( dictionary.items() ) )
 
@@ -460,6 +470,19 @@ def _delete_read_only_file(action, name, exc):
     """
     os.chmod( name, stat.S_IWRITE )
     os.remove( name )
+
+
+def remove_git_folder(default_git_folder, parent_folder=None):
+    log( 1, "%s of default_git_folder: %s" % ( self.installationType, str( default_git_folder ) ) )
+    shutil.rmtree( default_git_folder, ignore_errors=True, onerror=_delete_read_only_file )
+
+    if parent_folder:
+        folders_not_empty = []
+        recursively_delete_empty_folders( parent_folder, folders_not_empty )
+
+        if len( folders_not_empty ) > 0:
+            log( 1, "The installed default_git_folder `%s` could not be removed because is it not empty." % default_git_folder )
+            log( 1, "Its files contents are: " + str( os.listdir( default_git_folder ) ) )
 
 
 def recursively_delete_empty_folders(root_folder, folders_not_empty=[]):
