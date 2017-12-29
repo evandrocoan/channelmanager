@@ -5,45 +5,6 @@
 
 
 
-def unpack_settings(channel_settings):
-    global g_channelSettings
-    global g_failed_repositories
-
-    g_channelSettings     = channel_settings
-    g_failed_repositories = []
-
-    global INSTALLATION_TYPE_NAME
-    global IS_UPDATE_INSTALLATION
-
-    IS_UPDATE_INSTALLATION = True if g_channelSettings['INSTALLATION_TYPE'] == "downgrade" else False
-    INSTALLATION_TYPE_NAME    = "Downgrade" if IS_UPDATE_INSTALLATION else "Uninstallation"
-
-    log( 1, "IS_UPDATE_INSTALLATION: " + str( IS_UPDATE_INSTALLATION ) )
-    setup_packages_to_uninstall_last( g_channelSettings )
-
-
-def setup_packages_to_uninstall_last(channel_settings):
-    """
-        Remove the remaining packages to be uninstalled separately on another function call.
-    """
-    global PACKAGES_TO_UNINSTALL_FIRST
-    global PACKAGES_TO_UNINSTALL_LAST
-
-    global PACKAGES_TO_UNINSTAL_LATER
-    global PACKAGES_TO_NOT_ADD_TO_IGNORE_LIST
-
-    PACKAGES_TO_UNINSTAL_LATER  = [ "PackagesManager", g_channelSettings['CHANNEL_PACKAGE_NAME'] ]
-    PACKAGES_TO_UNINSTALL_FIRST = list( reversed( channel_settings['PACKAGES_TO_INSTALL_LAST'] ) )
-    PACKAGES_TO_UNINSTALL_LAST  = list( reversed( channel_settings['PACKAGES_TO_INSTALL_FIRST'] ) )
-
-    # We need to remove it by last, after installing Package Control back
-    for package in PACKAGES_TO_UNINSTAL_LATER:
-
-        if package in PACKAGES_TO_UNINSTALL_FIRST:
-            PACKAGES_TO_UNINSTALL_FIRST.remove( package )
-
-    PACKAGES_TO_NOT_ADD_TO_IGNORE_LIST = set( PACKAGES_TO_UNINSTAL_LATER )
-    PACKAGES_TO_NOT_ADD_TO_IGNORE_LIST.add( "Default" )
 
 
 def load_installation_settings_file():
@@ -106,19 +67,4 @@ def load_installation_settings_file():
 
     unignore_installed_packages()
 
-
-def unignore_installed_packages():
-    """
-        When the installation was interrupted, there will be ignored packages which are pending to
-        uningored.
-    """
-    packages_to_unignore = []
-
-    for package_name in g_next_packages_to_ignore:
-
-        if package_name in g_packages_to_uninstall:
-            packages_to_unignore.append( package_name )
-
-    log( _grade(), "unignore_installed_packages: " + str( packages_to_unignore ) )
-    unignore_some_packages( packages_to_unignore )
 
