@@ -156,6 +156,19 @@ def load_data_file(file_path, wait_on_error=True):
     return channel_dictionary
 
 
+def is_dependency(package_name, repositories_dictionary):
+    """
+        Return by default True to stop the installation as the package not was not found on the
+        `channel.json` repository file
+    """
+    if package_name in repositories_dictionary:
+        package_dicitonary = repositories_dictionary[package_name]
+        return "load_order" in package_dicitonary
+
+    log( 1, "Warning: The package name `%s` could not be found on the repositories_dictionary!" % package_name )
+    return True
+
+
 def load_repository_file(channel_repository_file, load_dependencies=True):
     repositories_dictionary = load_data_file( channel_repository_file )
 
@@ -360,6 +373,12 @@ def add_item_if_not_exists(list_to_append, item):
 
     if item not in list_to_append:
         list_to_append.append( item )
+
+
+def add_path_if_not_exists(list_to_add, path):
+
+    if path != "." and path != "..":
+        add_item_if_not_exists( list_to_add, path )
 
 
 def sort_dictionary(dictionary):
