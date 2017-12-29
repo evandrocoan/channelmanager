@@ -68,6 +68,7 @@ from .channel_utilities import is_channel_upgraded
 from .channel_utilities import print_failed_repositories
 from .channel_utilities import sort_dictionary
 from .channel_utilities import recursively_delete_empty_folders
+from .channel_utilities import is_directory_empty
 
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
@@ -385,17 +386,7 @@ def download_not_packages_submodules(command_line_interface, git_executable_path
             package_name            = os.path.basename( path )
             submodule_absolute_path = os.path.join( root, path )
 
-            # How to check to see if a folder contains files using python 3
-            # https://stackoverflow.com/questions/25675352/how-to-check-to-see-if-a-folder-contains-files-using-python-3
-            try:
-                os.rmdir( submodule_absolute_path )
-                is_empty = True
-
-            except OSError:
-                is_empty = False
-
-            if is_empty:
-                log( 1, "download_not_packages_submodules..." )
+            if is_directory_empty( submodule_absolute_path ):
                 log.insert_empty_line()
                 log.insert_empty_line()
                 log( 1, "Installing: %s" % ( str( url ) ) )

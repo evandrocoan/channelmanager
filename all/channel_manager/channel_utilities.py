@@ -356,20 +356,36 @@ def get_dictionary_key(dictionary, key, default=None):
     return default
 
 
+def add_item_if_not_exists(list_to_append, item):
+
+    if item not in list_to_append:
+        list_to_append.append( item )
+
+
 def sort_dictionary(dictionary):
     return OrderedDict( sorted( dictionary.items() ) )
+
+
+def is_directory_empty(directory_path):
+    """
+        How to check to see if a folder contains files using python 3
+        https://stackoverflow.com/questions/25675352/how-to-check-to-see-if-a-folder-contains-files-using-python-3
+    """
+    is_empty = True
+
+    try:
+        os.rmdir( directory_path )
+
+    except OSError:
+        is_empty = False
+
+    return is_empty
 
 
 def remove_if_exists(items_list, item):
 
     if item in items_list:
         items_list.remove( item )
-
-
-def add_item_if_not_exists(list_to_append, item):
-
-    if item not in list_to_append:
-        list_to_append.append( item )
 
 
 def remove_item_if_exists(list_to_remove, item):
