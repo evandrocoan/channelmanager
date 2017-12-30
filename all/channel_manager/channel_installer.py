@@ -1454,7 +1454,9 @@ class ChannelInstaller(threading.Thread):
             Something, somewhere is setting the ignored_packages list to `["Vintage"]`. Then ensure we
             override this.
         """
+        packages_list.sort()
         log( 1, "add_packages_to_ignored_list, Adding packages to unignore list: %s" % str( packages_list ) )
+
         unique_list_append( g_default_ignored_packages, packages_list )
         g_default_ignored_packages.sort()
 
@@ -1470,11 +1472,12 @@ class ChannelInstaller(threading.Thread):
             currentlyIgnored = g_userSettings.get( "ignored_packages", [] )
             log( 1, "Attempting to ignore packages... " + str( currentlyIgnored ) )
 
-            if currentlyIgnored \
-                    and len( currentlyIgnored ) == len( g_default_ignored_packages ) \
-                    and currentlyIgnored.sort() == g_default_ignored_packages:
+            if currentlyIgnored:
 
-                break
+                if len( currentlyIgnored ) == len( g_default_ignored_packages ) \
+                        and currentlyIgnored == g_default_ignored_packages:
+
+                    break
 
 
     def accumulative_unignore_user_packages(self, package_name="", flush_everything=False):
