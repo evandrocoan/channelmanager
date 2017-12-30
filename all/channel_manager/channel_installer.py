@@ -916,7 +916,12 @@ class ChannelInstaller(threading.Thread):
 
 
     def save_package_control_settings(self):
+        global g_package_control_settings
+        g_installed_packages.sort()
+
         g_package_control_settings['installed_packages'] = g_installed_packages
+        g_package_control_settings = sort_dictionary( g_package_control_settings )
+
         write_data_file( PACKAGE_CONTROL, g_package_control_settings )
 
 

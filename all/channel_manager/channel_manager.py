@@ -55,6 +55,8 @@ from .channel_utilities import get_dictionary_key
 from .channel_utilities import dictionary_to_string_by_line
 from .channel_utilities import remove_only_if_exists
 from .channel_utilities import load_repository_file
+from .channel_utilities import sort_dictionaries_on_list
+from .channel_utilities import sort_list_of_dictionaries
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
 # or vice-versa. Which means we cannot do nothing as this is only compatible with PackagesManager.
@@ -273,7 +275,7 @@ def split_repositories_and_depencies(repositories_dictionary):
         else:
             packages_list.append( package_dicitonary )
 
-    return sort_list_of_dictionary( packages_list), sort_list_of_dictionary( dependencies_list )
+    return sort_list_of_dictionaries( packages_list), sort_list_of_dictionaries( dependencies_list )
 
 
 def update_repository(last_dictionary, package_name):
@@ -420,7 +422,7 @@ def create_repositories_list(all_packages, last_channel_file):
             repository.info['name']     = repository.name
             repository.info['releases'] = tagged_releases
 
-    return sort_list_of_dictionary( repositories), sort_list_of_dictionary( dependencies )
+    return sort_list_of_dictionaries( repositories), sort_list_of_dictionaries( dependencies )
 
 
 def get_last_tag_fixed(absolute_path, last_dictionary, command_line_interface, force_tag_update=False):
@@ -644,34 +646,6 @@ def is_compatible_version(release_version, acceptable_version):
         return False
 
     return True
-
-
-def sort_dictionaries_on_list(list_of_dictionaries):
-    sorted_dictionaries = []
-
-    for dictionary in list_of_dictionaries:
-        sorted_dictionaries.append( sort_dictionary( dictionary ) )
-
-    return sorted_dictionaries
-
-def sort_dictionary(dictionary):
-    return OrderedDict( sorted( dictionary.items() ) )
-
-
-def sort_list_of_dictionary(list_of_dictionaries):
-    """
-        How do I sort a list of dictionaries by values of the dictionary in Python?
-        https://stackoverflow.com/questions/72899/how-do-i-sort-a-list-of-dictionaries-by-values-of-the-dictionary-in-python
-
-        case-insensitive list sorting, without lowercasing the result?
-        https://stackoverflow.com/questions/10269701/case-insensitive-list-sorting-without-lowercasing-the-result
-    """
-    sorted_list = []
-
-    for dictionary in list_of_dictionaries:
-        sorted_list.append( sort_dictionary( dictionary ) )
-
-    return sorted( sorted_list, key=lambda k: k['name'].lower() )
 
 
 def get_user_name(url, regular_expression="github\.com\/(.+)/(.+)", allow_recursion=True):

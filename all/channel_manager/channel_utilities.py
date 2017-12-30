@@ -413,6 +413,27 @@ def sort_dictionary(dictionary):
     return OrderedDict( sorted( dictionary.items() ) )
 
 
+def sort_dictionaries_on_list(list_of_dictionaries):
+    sorted_dictionaries = []
+
+    for dictionary in list_of_dictionaries:
+        sorted_dictionaries.append( sort_dictionary( dictionary ) )
+
+    return sorted_dictionaries
+
+
+def sort_list_of_dictionaries(list_of_dictionaries):
+    """
+        How do I sort a list of dictionaries by values of the dictionary in Python?
+        https://stackoverflow.com/questions/72899/how-do-i-sort-a-list-of-dictionaries-by-values-of-the-dictionary-in-python
+
+        case-insensitive list sorting, without lowercasing the result?
+        https://stackoverflow.com/questions/10269701/case-insensitive-list-sorting-without-lowercasing-the-result
+    """
+    sorted_dictionaries = sort_dictionaries_on_list( list_of_dictionaries )
+    return sorted( sorted_dictionaries, key=lambda k: k['name'].lower() )
+
+
 def is_directory_empty(directory_path):
     """
         How to check to see if a folder contains files using python 3
