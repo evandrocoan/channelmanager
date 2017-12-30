@@ -173,15 +173,15 @@ class ChannelInstaller(threading.Thread):
         self.uningoredPackagesToFlush = 0
 
         if self.channelSettings['INSTALLER_TYPE'] == 'installation':
-            self.isUpdate = self.channelSettings['INSTALLATION_TYPE'] == "upgrade"
+            self.isUpdateInstallation = self.channelSettings['INSTALLATION_TYPE'] == "upgrade"
             self.setupInstaller()
 
         else:
-            self.isUpdate = self.channelSettings['INSTALLATION_TYPE'] == "downgrade"
+            self.isUpdateInstallation = self.channelSettings['INSTALLATION_TYPE'] == "downgrade"
             self.setupUninstaller()
 
         global IS_UPDATE_INSTALLATION
-        IS_UPDATE_INSTALLATION = self.isUpdate
+        IS_UPDATE_INSTALLATION = self.isUpdateInstallation
 
         load_installation_settings_file( self.channelSettings )
         self.unignore_installed_packages()
@@ -193,12 +193,15 @@ class ChannelInstaller(threading.Thread):
         self.package_manager  = PackageManager()
         self.package_disabler = PackageDisabler()
 
-        log( 1, "self.isUpdate:         " + str( self.isUpdate ) )
-        log( 1, "INSTALLER_TYPE:        " + str( self.channelSettings['INSTALLER_TYPE'] ) )
-        log( 1, "INSTALLATION_TYPE:     " + str( self.channelSettings['INSTALLATION_TYPE'] ) )
+        log( 1, "INSTALLER_TYPE:            " + str( self.channelSettings['INSTALLER_TYPE'] ) )
+        log( 1, "INSTALLATION_TYPE:         " + str( self.channelSettings['INSTALLATION_TYPE'] ) )
+        log( 1, "self.isUpdateInstallation: " + str( self.isUpdateInstallation ) )
 
 
     def setupInstaller(self):
+        self.word_prefix  = ""
+        self.word_Prefix  = ""
+
         self.word_install = "install"
         self.word_Install = "Install"
 
@@ -215,7 +218,7 @@ class ChannelInstaller(threading.Thread):
         self.uninstall_message  = "Select this to install it."
 
         self.isInstaller       = True
-        self.installationType  = "Upgrade" if self.isUpdate else "Installation"
+        self.installationType  = "Upgrade" if self.isUpdateInstallation else "Installation"
         self.installerMessage  = "The %s was successfully installed." % self.installationType
         self.notInstallMessage = "You must install it or cancel the %s." % self.installationType
         self.setProgress       = CurrentUpdateProgress( 'Installing the %s packages...' % self.installationType )
@@ -231,6 +234,9 @@ class ChannelInstaller(threading.Thread):
 
 
     def setupUninstaller(self):
+        self.word_prefix  = "un"
+        self.word_Prefix  = "Un"
+
         self.word_install = "uninstall"
         self.word_Install = "Uninstall"
 
@@ -247,7 +253,7 @@ class ChannelInstaller(threading.Thread):
         self.uninstall_message  = "Select this to uninstall it."
 
         self.isInstaller       = False
-        self.installationType  = "Downgrade" if self.isUpdate else "Uninstallation"
+        self.installationType  = "Downgrade" if self.isUpdateInstallation else "Uninstallation"
         self.installerMessage  = "The %s of %s was successfully completed." % ( self.installationType, self.channelName )
         self.notInstallMessage = "You must uninstall it or cancel the %s." % self.installationType
         self.setProgress       = CurrentUpdateProgress( '%s of Sublime Text %s packages...' % ( self.installationType, self.channelName ) )
@@ -278,7 +284,7 @@ class ChannelInstaller(threading.Thread):
         g_installed_packages     = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
         g_remove_orphaned_backup = get_dictionary_key( g_package_control_settings, 'remove_orphaned', True )
 
-        if not IS_UPDATE_INSTALLATION:
+        if not self.isUpdateInstallation:
             # Temporally stops Package Control from removing orphaned packages, otherwise it will scroll up
             # the uninstallation when Package Control is installed back
             g_package_control_settings['remove_orphaned'] = False
@@ -329,7 +335,7 @@ class ChannelInstaller(threading.Thread):
             # Progressively saves the installation data, in case the user closes Sublime Text
             self.save_default_settings()
 
-            if not IS_UPDATE_INSTALLATION:
+            if not self.isUpdateInstallation:
                 # Wait PackagesManager to load the found dependencies, before announcing it to the user
                 sublime.set_timeout_async( self.check_installed_packages, 10000 )
                 sublime.set_timeout_async( self.check_installed_packages_alert, 1000 )
@@ -359,7 +365,7 @@ class ChannelInstaller(threading.Thread):
             global g_is_running
             g_is_running = False
 
-        if not IS_UPDATE_INSTALLATION:
+        if not self.isUpdateInstallation:
             self.uninstall_package_control()
 
 
@@ -367,12 +373,12 @@ class ChannelInstaller(threading.Thread):
         log( _grade(), "Entering on %s run(1)" % self.__class__.__name__ )
 
         try:
-            packages_to_uninstall = self.get_packages_to_uninstall( IS_UPDATE_INSTALLATION )
+            packages_to_uninstall = self.get_packages_to_uninstall( self.isUpdateInstallation )
 
             log( _grade(), "Packages to %s: " % self.installationType + str( packages_to_uninstall ) )
             self.uninstall_packages( packages_to_uninstall )
 
-            if not IS_UPDATE_INSTALLATION:
+            if not self.isUpdateInstallation:
                 self.remove_channel()
 
                 self.uninstall_files()
@@ -380,7 +386,7 @@ class ChannelInstaller(threading.Thread):
 
             self.attempt_to_uninstall_packagesmanager( packages_to_uninstall )
 
-            if not IS_UPDATE_INSTALLATION:
+            if not self.isUpdateInstallation:
                 self.uninstall_list_of_packages( [(self.channelSettings['CHANNEL_PACKAGE_NAME'], False)] )
 
         except ( InstallationCancelled, NoPackagesAvailable ) as error:
@@ -424,7 +430,7 @@ class ChannelInstaller(threading.Thread):
             currently_running,
             installed_packages,
             g_packages_to_uninstall,
-            g_packages_not_installed if self.isUpdate else [],
+            g_packages_not_installed if self.isUpdateInstallation else [],
             self.channelSettings['PACKAGES_TO_NOT_INSTALL_STABLE'],
             self.channelSettings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT'],
         )
@@ -462,7 +468,7 @@ class ChannelInstaller(threading.Thread):
 
             # When installing the channel, we must mark the packages already installed as packages which
             # where not installed, so they are not uninstalled when the channel is uninstalled.
-            if not self.isUpdate \
+            if not self.isUpdateInstallation \
                     and package_name in installed_packages:
 
                 g_packages_not_installed.append( package_name )
@@ -492,7 +498,7 @@ class ChannelInstaller(threading.Thread):
         if len( filtered_packages ) < 1:
             raise NoPackagesAvailable( "There are 0 packages available to install!" )
 
-        if self.isUpdate:
+        if self.isUpdateInstallation:
             log( 1, "New packages packages to install found... " + str( filtered_packages ) )
 
         return filtered_packages
@@ -1765,15 +1771,18 @@ class ChannelInstaller(threading.Thread):
         if not g_is_running:
             self.accumulative_unignore_user_packages( flush_everything=True )
 
-            if not IS_UPDATE_INSTALLATION:
+            if not self.isUpdateInstallation:
                 sublime.message_dialog( end_user_message( """\
-                        The %s %s was successfully completed.
+                        The {channel_name} {type} was successfully completed.
 
-                        You need to restart Sublime Text to unload the uninstalled packages and finish
-                        uninstalling the unused dependencies.
+                        You need to restart Sublime Text to {prefix}load the {installed} packages and finish
+                        {prefix}installing the {prefix}used dependencies.
 
                         Check you Sublime Text Console for more information.
-                        """ % ( self.channelSettings['CHANNEL_PACKAGE_NAME'], self.installationType ) ) )
+                        """.format( channel_name=self.channelSettings['CHANNEL_PACKAGE_NAME'], type=self.installationType,
+                                prefix=self.word_prefix, installed=self.word_installed )
+                    )
+                )
 
                 sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
 
@@ -1785,13 +1794,15 @@ class ChannelInstaller(threading.Thread):
 
         else:
             sublime.error_message( end_user_message( """\
-                    The %s %s could NOT be successfully completed.
+                    The {channel_name} {type} could NOT be successfully completed.
 
                     Check you Sublime Text Console for more information.
 
-                    If you want help fixing the problem, please, save your Sublime Text Console output
+                    If you want help fixing the problem, please, save your Sublime Text Console output,
                     so later others can see what happened try to fix it.
-                    """ % ( self.channelSettings['CHANNEL_PACKAGE_NAME'], self.installationType ) ) )
+                    """.format( channel_name=self.channelSettings['CHANNEL_PACKAGE_NAME'], type=self.installationType )
+                )
+            )
 
             self.accumulative_unignore_user_packages( flush_everything=True )
 
