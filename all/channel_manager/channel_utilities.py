@@ -208,6 +208,7 @@ def get_installed_packages(list_default_packages=False, exclusion_list=[]):
 
         if list_default_packages:
             packages.extend( package_manager.list_default_packages() )
+            packages.extend( ["Default", "User"] )
 
         packages.extend( package_manager.list_packages() )
         return list( set( packages ) - set( exclusion_list ) )
