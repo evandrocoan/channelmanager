@@ -1435,8 +1435,9 @@ class ChannelInstaller(threading.Thread):
                     g_next_packages_to_ignore.remove( package_name )
 
             # This adds them to the `in_process` list on the Package Control.sublime-settings file
-            self.package_disabler.disable_packages( g_next_packages_to_ignore, "install" if self.isInstaller else "remove" )
-            time.sleep( 1.7 )
+            if not self.isInstaller:
+                self.package_disabler.disable_packages( g_next_packages_to_ignore, "install" if self.isInstaller else "remove" )
+                time.sleep( 1.7 )
 
             # Let the packages be unloaded by Sublime Text while ensuring anyone is putting them back in
             self.add_packages_to_ignored_list( g_next_packages_to_ignore )
@@ -1465,7 +1466,7 @@ class ChannelInstaller(threading.Thread):
 
             if currentlyIgnored \
                     and len( currentlyIgnored ) == len( g_default_ignored_packages ) \
-                    and currentlyIgnored.sort() == g_default_ignored_packages.sort():
+                    and currentlyIgnored.sort() == g_default_ignored_packages:
 
                 break
 
@@ -1517,8 +1518,9 @@ class ChannelInstaller(threading.Thread):
 
         if is_there_unignored_packages:
             # This should remove them from the `in_process` list on the Package Control.sublime-settings file
-            self.package_disabler.reenable_package( packages_list, "install" if self.isInstaller else "remove" )
-            time.sleep( 1.7 )
+            if not self.isInstaller:
+                self.package_disabler.reenable_package( packages_list, "install" if self.isInstaller else "remove" )
+                time.sleep( 1.7 )
 
             # Let the packages be unloaded by Sublime Text while ensuring anyone is putting them back in
             self.add_packages_to_ignored_list( [] )
