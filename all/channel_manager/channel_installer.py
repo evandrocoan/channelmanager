@@ -853,10 +853,6 @@ class ChannelInstaller(threading.Thread):
             silence_error_message_box( 61.0 )
             self.ignore_next_packages( package_name, packages_names )
 
-            if is_dependency:
-                log( 1, "Skipping the dependency as they are automatically uninstalled..." )
-                continue
-
             if package_name == "Default":
                 self.uninstall_default_package()
                 continue
@@ -864,6 +860,10 @@ class ChannelInstaller(threading.Thread):
             if package_name in PACKAGES_TO_UNINSTAL_LATER:
                 log( 1, "Skipping the %s of `%s`..." % ( self.installationType, package_name ) )
                 log( 1, "This package will be handled later." )
+                continue
+
+            if is_dependency:
+                log( 1, "Skipping the dependency as they are automatically uninstalled..." )
                 continue
 
             if self.package_manager.remove_package( package_name, is_dependency ) is False:
