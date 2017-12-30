@@ -162,6 +162,8 @@ def main(channel_settings, is_forced=False):
 class ChannelInstaller(threading.Thread):
 
     def __init__(self, channel_settings):
+        global IS_UPDATE_INSTALLATION
+
         threading.Thread.__init__(self)
         self.channelSettings = channel_settings
 
@@ -180,11 +182,13 @@ class ChannelInstaller(threading.Thread):
             self.isUpdateInstallation = self.channelSettings['INSTALLATION_TYPE'] == "downgrade"
             self.setupUninstaller()
 
-        global IS_UPDATE_INSTALLATION
         IS_UPDATE_INSTALLATION = self.isUpdateInstallation
-
         load_installation_settings_file( self.channelSettings )
-        self.unignore_installed_packages()
+
+        # When the installation was interrupted, there will be ignored packages which are pending to
+        # uningored. Then these packages must to be loaded when the installer starts again.
+        log( _grade(), "g_next_packages_to_ignore: " + str( g_next_packages_to_ignore ) )
+        self.unignore_some_packages( g_next_packages_to_ignore )
 
         if not self.isInstaller:
             self.load_package_control_settings()
@@ -1322,16 +1326,16 @@ class ChannelInstaller(threading.Thread):
             self.set_development_ignored_packages( packages_names )
 
 
-    def set_development_ignored_packages(self, packages_names):
+    def set_development_ignored_packages(self, packages_to_install):
 
         for package_name in self.channelSettings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT']:
 
             # Only ignore the packages which are being installed
-            if package_name in packages_names and package_name not in g_default_ignored_packages:
+            if package_name in packages_to_install and package_name not in g_default_ignored_packages:
                 g_default_ignored_packages.append( package_name )
                 add_item_if_not_exists( g_packages_to_unignore, package_name )
 
-        self.add_packages_to_ignored_list( g_default_ignored_packages )
+        self.setup_packages_ignored_list( g_default_ignored_packages )
 
 
     def set_first_and_last_packages_to_install(self, packages_names, packages_infos=[]):
@@ -1434,8 +1438,9 @@ class ChannelInstaller(threading.Thread):
             if "Default" in g_next_packages_to_ignore:
                 g_next_packages_to_ignore.remove( "Default" )
 
-            log( 1, "Adding %d packages to the `ignored_packages` setting list." % len( g_next_packages_to_ignore ) )
-            log( 1, "g_next_packages_to_ignore: " + str( g_next_packages_to_ignore ) )
+            g_next_packages_to_ignore.sort()
+            log( 1, "Adding %d packages to the `ignored_packages` setting list..." % len( g_next_packages_to_ignore ) )
+            log( 1, "g_next_packages_to_ignore:  " + str( g_next_packages_to_ignore ) )
 
             # If the package is already on the users' `ignored_packages` settings, it means either that
             # the package was disabled by the user or the package is one of the development disabled
@@ -1446,48 +1451,55 @@ class ChannelInstaller(threading.Thread):
                     g_next_packages_to_ignore.remove( package_name )
 
             # This adds them to the `in_process` list on the Package Control.sublime-settings file
-            if not self.isInstaller:
-                self.package_disabler.disable_packages( g_next_packages_to_ignore, "install" if self.isInstaller else "remove" )
-                time.sleep( 1.7 )
+            self.package_disabler.disable_packages( g_next_packages_to_ignore, "install" if self.isInstaller else "remove" )
+            time.sleep( 1.7 )
 
             # Let the packages be unloaded by Sublime Text while ensuring anyone is putting them back in
-            self.add_packages_to_ignored_list( g_next_packages_to_ignore )
+            self.setup_packages_ignored_list( g_next_packages_to_ignore )
 
 
-    def add_packages_to_ignored_list(self, packages_list):
+    def setup_packages_ignored_list(self, packages_to_add=[], packages_to_remove=[]):
         """
             Something, somewhere is setting the ignored_packages list to `["Vintage"]`. Then ensure we
             override this.
         """
-        packages_list.sort()
-        log( 1, "add_packages_to_ignored_list, Adding packages to unignore list: %s" % str( packages_list ) )
+        currently_ignored = g_userSettings.get( "ignored_packages", [] )
+        log( 1, "Currently ignored packages: " + str( currently_ignored ) )
 
-        unique_list_append( g_default_ignored_packages, packages_list )
-        g_default_ignored_packages.sort()
+        packages_to_add.sort()
+        packages_to_remove.sort()
 
-        # Progressively saves the installation data, in case the user closes Sublime Text
-        self.save_default_settings()
+        log( 1, "Ignoring the packages:      " + str( packages_to_add ) )
+        log( 1, "Unignoring the packages:    " + str( packages_to_remove ) )
+
+        currently_ignored = [package_name for package_name in currently_ignored if package_name not in packages_to_remove]
+        unique_list_append( currently_ignored, packages_to_add )
+
+        currently_ignored.sort()
 
         for interval in range( 0, 27 ):
-            g_userSettings.set( "ignored_packages", g_default_ignored_packages )
+            g_userSettings.set( "ignored_packages", currently_ignored )
             sublime.save_settings( self.channelSettings['USER_SETTINGS_FILE'] )
 
             time.sleep( 1.7 )
 
-            currentlyIgnored = g_userSettings.get( "ignored_packages", [] )
-            log( 1, "Attempting to ignore packages... " + str( currentlyIgnored ) )
+            new_ignored_list = g_userSettings.get( "ignored_packages", [] )
+            log( 1, "Currently ignored packages: " + str( new_ignored_list ) )
 
-            if currentlyIgnored:
+            if new_ignored_list:
 
-                if len( currentlyIgnored ) == len( g_default_ignored_packages ) \
-                        and currentlyIgnored == g_default_ignored_packages:
+                if len( new_ignored_list ) == len( currently_ignored ) \
+                        and new_ignored_list == currently_ignored:
 
                     break
+
+        # Progressively saves the installation data, in case the user closes Sublime Text
+        self.save_default_settings()
 
 
     def accumulative_unignore_user_packages(self, package_name="", flush_everything=False):
         """
-            Flush off the remaining `g_next_packages_to_ignore` appended. There is a bug with the
+            Flush off the remaining `next packages to ignore` appended. There is a bug with the
             uninstalling several packages, which trigger several errors of:
 
             "It appears a package is trying to ignore itself, causing a loop.
@@ -1502,58 +1514,36 @@ class ChannelInstaller(threading.Thread):
         """
 
         if flush_everything:
-            self.uningoredPackagesToFlush = 0
             self.unignore_some_packages( g_next_packages_to_ignore )
+            self.clearNextIgnoredPackages()
 
         else:
             log( 1, "Adding package to unignore list: %s" % str( package_name ) )
             self.uningoredPackagesToFlush += 1
 
-            if self.uningoredPackagesToFlush > len( g_next_packages_to_ignore ):
+            if self.uningoredPackagesToFlush >= len( g_next_packages_to_ignore ):
                 self.unignore_some_packages( g_next_packages_to_ignore )
+                self.clearNextIgnoredPackages()
 
-                del g_next_packages_to_ignore[:]
-                self.uningoredPackagesToFlush = 0
+
+    def clearNextIgnoredPackages(self):
+        del g_next_packages_to_ignore[:]
+        self.uningoredPackagesToFlush = 0
 
 
     def unignore_some_packages(self, packages_list):
         """
             Flush just a few items each time.
         """
-        is_there_unignored_packages = False
+        log( 1, "Unignoring %d packages..." % len( packages_list ) )
 
-        for package_name in packages_list:
-
-            if package_name in g_default_ignored_packages:
-                is_there_unignored_packages = True
-
-                log( 1, "Unignoring the package: %s" % package_name )
-                g_default_ignored_packages.remove( package_name )
-
-        if is_there_unignored_packages:
+        if len( packages_list ):
             # This should remove them from the `in_process` list on the Package Control.sublime-settings file
-            if not self.isInstaller:
-                self.package_disabler.reenable_package( packages_list, "install" if self.isInstaller else "remove" )
-                time.sleep( 1.7 )
+            self.package_disabler.reenable_package( packages_list, "install" if self.isInstaller else "remove" )
+            time.sleep( 1.7 )
 
             # Let the packages be unloaded by Sublime Text while ensuring anyone is putting them back in
-            self.add_packages_to_ignored_list( [] )
-
-
-    def unignore_installed_packages(self):
-        """
-            When the installation was interrupted, there will be ignored packages which are pending to
-            uningored. Then these packages must to be loaded when the installer starts again.
-        """
-        packages_to_unignore = []
-
-        for package_name in g_next_packages_to_ignore:
-
-            if package_name in g_packages_to_uninstall:
-                packages_to_unignore.append( package_name )
-
-        log( _grade(), "unignore_installed_packages: " + str( packages_to_unignore ) )
-        self.unignore_some_packages( packages_to_unignore )
+            self.setup_packages_ignored_list( packages_to_remove=packages_list )
 
 
     def add_folders_and_files_for_removal(self, root_source_folder, relative_path):
