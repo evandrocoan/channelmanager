@@ -1038,7 +1038,7 @@ class ChannelInstaller(threading.Thread):
             else:
                 log( 1, "Error! Could not complete the Package Control uninstalling, missing import for `PackagesManager`." )
 
-        silence_error_message_box(300.0)
+        silence_error_message_box( 300.0 )
 
         packages_to_remove = [ ("Package Control", False), ("0_package_control_loader", None) ]
         packages_names     = [ package_name[0] for package_name in packages_to_remove ]
@@ -1055,8 +1055,8 @@ class ChannelInstaller(threading.Thread):
 
         remove_0_package_dependency_loader( "0_package_control_loader" )
 
-        self.accumulative_unignore_user_packages( flush_everything=True )
         self.delete_package_control_settings()
+        self.accumulative_unignore_user_packages( flush_everything=True )
 
 
     def delete_package_control_settings(self):
@@ -1084,53 +1084,6 @@ class ChannelInstaller(threading.Thread):
         # Set the flag as completed, to signalize the this part of the installation was successful
         global g_is_running
         g_is_running = False
-
-
-    def sync_package_control_and_manager(self):
-        """
-            When the installation is going on the PackagesManager will be installed. If the user restart
-            Sublime Text after doing it, on the next time Sublime Text starts, the Package Control and
-            the PackagesManager will kill each other and probably end up uninstalling all the packages
-            installed.
-
-            This happens due their configurations files list different sets of packages. So to fix this
-            we need to keep both files synced while the installation process is going on.
-        """
-        log( 1, "Calling sync_package_control_and_manager..." )
-        global g_package_control_settings
-
-        package_control_file       = os.path.join( self.channelSettings['USER_FOLDER_PATH'], g_package_control_name )
-        g_package_control_settings = load_data_file( package_control_file )
-
-        log( 2, "sync_package_control_and_manager, package_control: " + str( g_package_control_settings ) )
-        self.ensure_installed_packages_name( g_package_control_settings )
-
-        packagesmanager = os.path.join( self.channelSettings['USER_FOLDER_PATH'], g_packagesmanager_name )
-        write_data_file( packagesmanager, g_package_control_settings )
-
-
-    def ensure_installed_packages_name(self, package_control_settings):
-        """
-            Ensure the installed packages names are on the settings files.
-        """
-
-        if "installed_packages" in package_control_settings:
-            installed_packages = get_dictionary_key( package_control_settings, 'installed_packages', [] )
-
-            remove_item_if_exists( installed_packages, "Package Control" )
-
-            add_item_if_not_exists( installed_packages, "PackagesManager" )
-            add_item_if_not_exists( installed_packages, self.channelSettings['CHANNEL_PACKAGE_NAME'] )
-
-        else:
-            channel_name = self.channelSettings['CHANNEL_PACKAGE_NAME']
-            package_control_settings['installed_packages'] = [ "PackagesManager", channel_name ]
-
-        # The `remove_orphaned_backup` is used to save the default user value for the overridden key
-        # `remove_orphaned` by the `PackagesManager` when configuring
-        if "remove_orphaned_backup" in package_control_settings:
-            package_control_settings['remove_orphaned'] = package_control_settings['remove_orphaned_backup']
-            del package_control_settings['remove_orphaned_backup']
 
 
     def attempt_to_uninstall_packagesmanager(self, packages_to_uninstall):
@@ -1335,6 +1288,53 @@ class ChannelInstaller(threading.Thread):
                 add_item_if_not_exists( g_packages_to_unignore, package_name )
 
         self.setup_packages_ignored_list( g_default_ignored_packages )
+
+
+    def sync_package_control_and_manager(self):
+        """
+            When the installation is going on the PackagesManager will be installed. If the user restart
+            Sublime Text after doing it, on the next time Sublime Text starts, the Package Control and
+            the PackagesManager will kill each other and probably end up uninstalling all the packages
+            installed.
+
+            This happens due their configurations files list different sets of packages. So to fix this
+            we need to keep both files synced while the installation process is going on.
+        """
+        log( 1, "Calling sync_package_control_and_manager..." )
+        global g_package_control_settings
+
+        package_control_file       = os.path.join( self.channelSettings['USER_FOLDER_PATH'], g_package_control_name )
+        g_package_control_settings = load_data_file( package_control_file )
+
+        log( 2, "sync_package_control_and_manager, package_control: " + str( g_package_control_settings ) )
+        self.ensure_installed_packages_name( g_package_control_settings )
+
+        packagesmanager = os.path.join( self.channelSettings['USER_FOLDER_PATH'], g_packagesmanager_name )
+        write_data_file( packagesmanager, g_package_control_settings )
+
+
+    def ensure_installed_packages_name(self, package_control_settings):
+        """
+            Ensure the installed packages names are on the settings files.
+        """
+
+        if "installed_packages" in package_control_settings:
+            installed_packages = get_dictionary_key( package_control_settings, 'installed_packages', [] )
+
+            remove_item_if_exists( installed_packages, "Package Control" )
+
+            add_item_if_not_exists( installed_packages, "PackagesManager" )
+            add_item_if_not_exists( installed_packages, self.channelSettings['CHANNEL_PACKAGE_NAME'] )
+
+        else:
+            channel_name = self.channelSettings['CHANNEL_PACKAGE_NAME']
+            package_control_settings['installed_packages'] = [ "PackagesManager", channel_name ]
+
+        # The `remove_orphaned_backup` is used to save the default user value for the overridden key
+        # `remove_orphaned` by the `PackagesManager` when configuring
+        if "remove_orphaned_backup" in package_control_settings:
+            package_control_settings['remove_orphaned'] = package_control_settings['remove_orphaned_backup']
+            del package_control_settings['remove_orphaned_backup']
 
 
     def set_first_and_last_packages_to_install(self, packages_names, packages_infos=[]):
