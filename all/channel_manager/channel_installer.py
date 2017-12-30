@@ -423,7 +423,7 @@ class ChannelInstaller(threading.Thread):
         current_index     = 0
         filtered_packages = []
 
-        installed_packages = get_installed_packages( list_default_packages=True, exclusion_list=[channel_name] )
+        installed_packages = get_installed_packages( exclusion_list=[channel_name] )
         log( _grade(), "get_stable_packages, installed_packages: " + str( installed_packages ) )
 
         # Do not try to install this own package and the Package Control, as they are currently running
