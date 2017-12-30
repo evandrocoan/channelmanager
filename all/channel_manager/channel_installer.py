@@ -1174,10 +1174,13 @@ class ChannelInstaller(threading.Thread):
             log.insert_empty_line()
 
             log( 1, "Finishing PackagesManager %s..." % self.installationType )
-            self.uninstall_list_of_packages( [("PackagesManager", False), ("0_packagesmanager_loader", None)] )
+            self.ignore_next_packages( "PackagesManager", ["PackagesManager"] )
 
+            self.uninstall_list_of_packages( [("PackagesManager", False), ("0_packagesmanager_loader", None)] )
             self.remove_0_package_dependency_loader( "0_packagesmanager_loader" )
+
             self.clean_packagesmanager_settings()
+            self.accumulative_unignore_user_packages( flush_everything=True )
 
 
     def uninstall_list_of_packages(self, packages_infos):
@@ -1822,7 +1825,7 @@ def is_allowed_to_run():
         print( "You are already running a command. Wait until it finishes or restart Sublime Text" )
         return False
 
-    g_is_running = True
+    g_is_running = ALL_RUNNING_CONTROL_FLAGS
     return True
 
 
