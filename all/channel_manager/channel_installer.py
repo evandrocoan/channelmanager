@@ -608,13 +608,9 @@ class ChannelInstaller(threading.Thread):
         gitModulesFile = configparser.RawConfigParser()
 
         current_index      = 0
-        installed_packages = self.get_installed_packages()
+        installed_packages = get_installed_packages( exclusion_list=[self.channelName] )
 
-        # Do not try to install `Package Control` as they are currently running, and must be uninstalled
-        # on the end, if `PackagesManager` was installed.
-        currently_running = [ "Package Control" ]
-
-        packages_tonot_install = unique_list_join( development_ignored, installed_packages, currently_running )
+        packages_tonot_install = unique_list_join( development_ignored, installed_packages )
         log( 2, "get_development_packages, packages_tonot_install: " + str( packages_tonot_install ) )
 
         packages = []
@@ -1052,7 +1048,7 @@ class ChannelInstaller(threading.Thread):
             log.insert_empty_line()
 
             log( 1, "Uninstalling: %s..." % str( package_name ) )
-            ignore_next_packages( package_name, packages_names )
+            self.ignore_next_packages( package_name, packages_names )
 
             self.package_manager.remove_package( package_name, is_dependency )
             self.accumulative_unignore_user_packages( package_name )
