@@ -633,18 +633,19 @@ class ChannelInstaller(threading.Thread):
                 if package_name not in packages_tonot_install :
                     packages.append( ( package_name, url, path ) )
 
-        # return \
-        # [
-        #     ('Active View Jump Back', 'https://github.com/evandrocoan/SublimeActiveViewJumpBack', 'Packages/Active View Jump Back'),
-        #     ('amxmodx', 'https://github.com/evandrocoan/SublimeAMXX_Editor', 'Packages/amxmodx'),
-        #     ('All Autocomplete', 'https://github.com/evandrocoan/SublimeAllAutocomplete', 'Packages/All Autocomplete'),
-        #     ('Amxx Pawn', 'https://github.com/evandrocoan/SublimeAmxxPawn', 'Packages/Amxx Pawn'),
-        #     ('Clear Cursors Carets', 'https://github.com/evandrocoan/ClearCursorsCarets', 'Packages/Clear Cursors Carets'),
-        #     ('Notepad++ Color Scheme', 'https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme', 'Packages/Notepad++ Color Scheme'),
-        #     ('PackagesManager', 'https://github.com/evandrocoan/package_control', 'Packages/PackagesManager'),
-        #     ('Toggle Words', 'https://github.com/evandrocoan/ToggleWords', 'Packages/Toggle Words'),
-        #     ('Default', 'https://github.com/evandrocoan/SublimeDefault', 'Packages/Default'),
-        # ]
+        return \
+        [
+            ('Active View Jump Back', 'https://github.com/evandrocoan/SublimeActiveViewJumpBack', 'Packages/Active View Jump Back'),
+            # ('amxmodx', 'https://github.com/evandrocoan/SublimeAMXX_Editor', 'Packages/amxmodx'),
+            # ('All Autocomplete', 'https://github.com/evandrocoan/SublimeAllAutocomplete', 'Packages/All Autocomplete'),
+            # ('Amxx Pawn', 'https://github.com/evandrocoan/SublimeAmxxPawn', 'Packages/Amxx Pawn'),
+            # ('Clear Cursors Carets', 'https://github.com/evandrocoan/ClearCursorsCarets', 'Packages/Clear Cursors Carets'),
+            # ('Notepad++ Color Scheme', 'https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme', 'Packages/Notepad++ Color Scheme'),
+            ('PackagesManager', 'https://github.com/evandrocoan/package_control', 'Packages/PackagesManager'),
+            ('Toggle Words', 'https://github.com/evandrocoan/ToggleWords', 'Packages/Toggle Words'),
+            ('Default', 'https://github.com/evandrocoan/SublimeDefault', 'Packages/Default'),
+            ('User', 'https://github.com/evandrocoan/User', 'Packages/User'),
+        ]
 
         return packages
 
@@ -1008,7 +1009,7 @@ class ChannelInstaller(threading.Thread):
             sublime.set_timeout_async( self.complete_package_control_uninstallation, 2000 )
 
         else:
-            satisfy_dependencies( self.package_manager )
+            satisfy_dependencies( SatisfyDependenciesThread, self.package_manager )
             log( 1, "Warning: PackagesManager is was not installed on the system!" )
 
             # Clean right away the PackagesManager successful flag, was it was not installed
@@ -1026,6 +1027,7 @@ class ChannelInstaller(threading.Thread):
             from PackagesManager.packagesmanager.show_error import silence_error_message_box
             from PackagesManager.packagesmanager.package_manager import PackageManager
             from PackagesManager.packagesmanager.package_disabler import PackageDisabler
+            from PackagesManager.packagesmanager.commands.satisfy_dependencies_command import SatisfyDependenciesThread
 
         except ImportError:
 
@@ -1039,6 +1041,11 @@ class ChannelInstaller(threading.Thread):
                 log( 1, "Error! Could not complete the Package Control uninstalling, missing import for `PackagesManager`." )
 
         silence_error_message_box( 300.0 )
+        self.delete_package_control_settings( SatisfyDependenciesThread )
+
+        # Replace the Package Control installers by the PackagesManager ones
+        self.package_manager  = PackageManager()
+        self.package_disabler = PackageDisabler()
 
         packages_to_remove = [ ("Package Control", False), ("0_package_control_loader", None) ]
         packages_names     = [ package_name[0] for package_name in packages_to_remove ]
@@ -1049,26 +1056,25 @@ class ChannelInstaller(threading.Thread):
 
             log( 1, "Uninstalling: %s..." % str( package_name ) )
             self.ignore_next_packages( package_name, packages_names )
-
             self.package_manager.remove_package( package_name, is_dependency )
+
+            if package_name == "0_package_control_loader":
+                self.remove_0_package_dependency_loader( "0_package_control_loader" )
+
             self.accumulative_unignore_user_packages( package_name )
 
-        remove_0_package_dependency_loader( "0_package_control_loader" )
-
-        self.delete_package_control_settings()
         self.accumulative_unignore_user_packages( flush_everything=True )
 
 
-    def delete_package_control_settings(self):
+    def delete_package_control_settings(self, SatisfyDependenciesThread, maximum_attempts=3):
         """
             Clean it a few times because Package Control is kinda running and still flushing stuff down
             to its settings file.
         """
         log( 1, "Calling delete_package_control_settings..." )
+        maximum_attempts -= 1
 
-        clean_settings       = {}
-        package_control_file = os.path.join( self.channelSettings['USER_FOLDER_PATH'], g_package_control_name )
-
+        clean_settings = {}
         clean_settings['bootstrapped']    = False
         clean_settings['remove_orphaned'] = False
 
@@ -1078,8 +1084,14 @@ class ChannelInstaller(threading.Thread):
         else:
             clean_settings['remove_orphaned_backup'] = get_dictionary_key( g_package_control_settings, 'remove_orphaned', True )
 
-        write_data_file( package_control_file, clean_settings )
-        satisfy_dependencies( self.package_manager )
+        clean_settings = sort_dictionary( clean_settings )
+        write_data_file( PACKAGE_CONTROL, clean_settings )
+
+        if maximum_attempts > 0:
+            sublime.set_timeout_async( lambda: self.delete_package_control_settings( SatisfyDependenciesThread, maximum_attempts ), 2000 )
+            return
+
+        satisfy_dependencies( SatisfyDependenciesThread, self.package_manager )
 
         # Set the flag as completed, to signalize the this part of the installation was successful
         global g_is_running
@@ -1179,7 +1191,7 @@ class ChannelInstaller(threading.Thread):
         remove_only_if_exists( packagesmanager_loader_path_new )
 
 
-    def clean_packagesmanager_settings(self,maximum_attempts=3):
+    def clean_packagesmanager_settings(self, maximum_attempts=3):
         """
             Clean it a few times because PackagesManager is kinda running and still flushing stuff down
             to its settings file.
@@ -1302,9 +1314,7 @@ class ChannelInstaller(threading.Thread):
         """
         log( 1, "Calling sync_package_control_and_manager..." )
         global g_package_control_settings
-
-        package_control_file       = os.path.join( self.channelSettings['USER_FOLDER_PATH'], g_package_control_name )
-        g_package_control_settings = load_data_file( package_control_file )
+        g_package_control_settings = load_data_file( PACKAGE_CONTROL )
 
         log( 2, "sync_package_control_and_manager, package_control: " + str( g_package_control_settings ) )
         self.ensure_installed_packages_name( g_package_control_settings )
@@ -1829,7 +1839,7 @@ def is_allowed_to_run():
     return True
 
 
-def satisfy_dependencies(package_manager):
+def satisfy_dependencies(SatisfyDependenciesThread, package_manager):
     thread = SatisfyDependenciesThread( package_manager )
 
     thread.start()
