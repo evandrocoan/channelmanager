@@ -1462,45 +1462,6 @@ class ChannelInstaller(threading.Thread):
             self.setup_packages_ignored_list( g_next_packages_to_ignore )
 
 
-    def setup_packages_ignored_list(self, packages_to_add=[], packages_to_remove=[]):
-        """
-            Something, somewhere is setting the ignored_packages list to `["Vintage"]`. Then ensure we
-            override this.
-        """
-        currently_ignored = g_userSettings.get( "ignored_packages", [] )
-        log( 1, "Currently ignored packages: " + str( currently_ignored ) )
-
-        packages_to_add.sort()
-        packages_to_remove.sort()
-
-        log( 1, "Ignoring the packages:      " + str( packages_to_add ) )
-        log( 1, "Unignoring the packages:    " + str( packages_to_remove ) )
-
-        currently_ignored = [package_name for package_name in currently_ignored if package_name not in packages_to_remove]
-        unique_list_append( currently_ignored, packages_to_add )
-
-        currently_ignored.sort()
-
-        for interval in range( 0, 27 ):
-            g_userSettings.set( "ignored_packages", currently_ignored )
-            sublime.save_settings( self.channelSettings['USER_SETTINGS_FILE'] )
-
-            time.sleep( 1.7 )
-
-            new_ignored_list = g_userSettings.get( "ignored_packages", [] )
-            log( 1, "Currently ignored packages: " + str( new_ignored_list ) )
-
-            if new_ignored_list:
-
-                if len( new_ignored_list ) == len( currently_ignored ) \
-                        and new_ignored_list == currently_ignored:
-
-                    break
-
-        # Progressively saves the installation data, in case the user closes Sublime Text
-        self.save_default_settings()
-
-
     def accumulative_unignore_user_packages(self, package_name="", flush_everything=False):
         """
             Flush off the remaining `next packages to ignore` appended. There is a bug with the
@@ -1548,6 +1509,45 @@ class ChannelInstaller(threading.Thread):
 
             # Let the packages be unloaded by Sublime Text while ensuring anyone is putting them back in
             self.setup_packages_ignored_list( packages_to_remove=packages_list )
+
+
+    def setup_packages_ignored_list(self, packages_to_add=[], packages_to_remove=[]):
+        """
+            Something, somewhere is setting the ignored_packages list to `["Vintage"]`. Then ensure we
+            override this.
+        """
+        currently_ignored = g_userSettings.get( "ignored_packages", [] )
+        log( 1, "Currently ignored packages: " + str( currently_ignored ) )
+
+        packages_to_add.sort()
+        packages_to_remove.sort()
+
+        log( 1, "Ignoring the packages:      " + str( packages_to_add ) )
+        log( 1, "Unignoring the packages:    " + str( packages_to_remove ) )
+
+        currently_ignored = [package_name for package_name in currently_ignored if package_name not in packages_to_remove]
+        unique_list_append( currently_ignored, packages_to_add )
+
+        currently_ignored.sort()
+
+        for interval in range( 0, 27 ):
+            g_userSettings.set( "ignored_packages", currently_ignored )
+            sublime.save_settings( self.channelSettings['USER_SETTINGS_FILE'] )
+
+            time.sleep( 1.7 )
+
+            new_ignored_list = g_userSettings.get( "ignored_packages", [] )
+            log( 1, "Currently ignored packages: " + str( new_ignored_list ) )
+
+            if new_ignored_list:
+
+                if len( new_ignored_list ) == len( currently_ignored ) \
+                        and new_ignored_list == currently_ignored:
+
+                    break
+
+        # Progressively saves the installation data, in case the user closes Sublime Text
+        self.save_default_settings()
 
 
     def add_folders_and_files_for_removal(self, root_source_folder, relative_path):
