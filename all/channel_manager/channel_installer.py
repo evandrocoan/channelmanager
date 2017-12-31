@@ -183,12 +183,7 @@ class ChannelInstaller(threading.Thread):
             self.setupUninstaller()
 
         IS_UPDATE_INSTALLATION = self.isUpdateInstallation
-        load_installation_settings_file( self.channelSettings )
-
-        # When the installation was interrupted, there will be ignored packages which are pending to
-        # uningored. Then these packages must to be loaded when the installer starts again.
-        log( _grade(), "g_next_packages_to_ignore: " + str( g_next_packages_to_ignore ) )
-        self.unignore_some_packages( g_next_packages_to_ignore )
+        load_installation_settings_file( self )
 
         if not self.isInstaller:
             self.load_package_control_settings()
@@ -1846,7 +1841,9 @@ def satisfy_dependencies(SatisfyDependenciesThread, package_manager):
     thread.join()
 
 
-def load_installation_settings_file(channel_settings):
+def load_installation_settings_file(self):
+    channel_settings = self.channelSettings
+
     global PACKAGE_CONTROL
     global PACKAGESMANAGER
 
@@ -1885,6 +1882,11 @@ def load_installation_settings_file(channel_settings):
     g_next_packages_to_ignore = get_dictionary_key( g_channelDetails, 'next_packages_to_ignore', [] )
     g_packages_not_installed  = get_dictionary_key( g_channelDetails, 'packages_not_installed', [] )
     g_installation_type       = get_dictionary_key( g_channelDetails, 'installation_type', channel_settings['INSTALLATION_TYPE'] )
+
+    # When the installation was interrupted, there will be ignored packages which are pending to
+    # uningored. Then these packages must to be loaded when the installer starts again.
+    log( _grade(), "load_installation_settings_file, unignoring initial packages... " + str( g_next_packages_to_ignore ) )
+    self.unignore_some_packages( g_next_packages_to_ignore )
 
     log( _grade(), "load_installation_settings_file, g_default_ignored_packages:        " + str( g_default_ignored_packages ) )
     log( _grade(), "load_installation_settings_file, PACKAGES_TO_IGNORE_ON_DEVELOPMENT: "
