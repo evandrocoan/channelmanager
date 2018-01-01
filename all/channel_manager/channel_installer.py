@@ -193,8 +193,9 @@ class ChannelInstaller(threading.Thread):
             self.load_package_control_settings()
             self.setup_packages_to_uninstall_last()
 
-        self.package_manager  = PackageManager()
-        self.package_disabler = PackageDisabler()
+        self.package_manager   = PackageManager()
+        self.package_disabler  = PackageDisabler()
+        self.isExceptionRaised = False
 
         log( 1, "INSTALLER_TYPE:            " + str( self.channelSettings['INSTALLER_TYPE'] ) )
         log( 1, "INSTALLATION_TYPE:         " + str( self.channelSettings['INSTALLATION_TYPE'] ) )
@@ -337,7 +338,7 @@ class ChannelInstaller(threading.Thread):
 
             self.save_default_settings()
 
-            if not self.isUpdateInstallation:
+            if not self.isExceptionRaised and not self.isUpdateInstallation:
                 # Wait PackagesManager to load the found dependencies, before announcing it to the user
                 sublime.set_timeout_async( self.check_installed_packages, 10000 )
                 sublime.set_timeout_async( self.check_installed_packages_alert, 1000 )
@@ -361,6 +362,7 @@ class ChannelInstaller(threading.Thread):
             self.install_modules()
 
         except ( InstallationCancelled, NoPackagesAvailable ) as error:
+            self.isExceptionRaised = True
             log( 1, str( error ) )
 
             # Set the flag as completed, to signalize the installation has ended
@@ -392,6 +394,7 @@ class ChannelInstaller(threading.Thread):
                 self.uninstall_list_of_packages( [(self.channelSettings['CHANNEL_PACKAGE_NAME'], False)] )
 
         except ( InstallationCancelled, NoPackagesAvailable ) as error:
+            self.isExceptionRaised = True
             log( 1, str( error ) )
 
             # Set the flag as completed, to signalize the installation has ended
@@ -1663,7 +1666,7 @@ class ChannelInstaller(threading.Thread):
 
             if item_index < 1:
                 can_continue[0]  = True
-                was_cancelled[1] = True
+                was_cancelled[0] = True
                 return
 
             if item_index == 1:
