@@ -342,27 +342,13 @@ def show_license_agreement():
                 {channel_name} license.
                 """.format( channel_name=CHANNEL_PACKAGE_NAME, typed_text=typed_text ) ) )
 
-    def show_acknowledgment_panel():
-        can_continue[0] = False
-
-        widget_view = active_window.show_input_panel(
-                "Did you read and agree with these conditions for using these softwares?",
-                user_input_text[0], on_done, on_change, on_cancel )
-
-        if user_input_text[0] == initial_input:
-            widget_view.run_command( "select_all" )
-
-        # show_input_panel is a non-blocking function, but we can only continue after on_done being called
-        while not can_continue[0]:
-            time.sleep( 0.5 )
-
     def did_the_user_agreed(answer):
         user_input_text[0] = answer
         return answer.replace(".", "").replace(",", "").strip(" ").replace("  ", " ").lower() == agrement_text
 
     def on_done(answer, is_final_confirmation=True):
 
-        if did_the_user_agreed(answer):
+        if did_the_user_agreed( answer ):
             input_panel_question_answer[0] = True
 
             if is_final_confirmation:
@@ -397,6 +383,20 @@ def show_license_agreement():
 
     def on_cancel():
         can_continue[0] = True
+
+    def show_acknowledgment_panel():
+        can_continue[0] = False
+
+        widget_view = active_window.show_input_panel(
+                "Did you read and agree with these conditions for using these softwares?",
+                user_input_text[0], on_done, on_change, on_cancel )
+
+        if user_input_text[0] == initial_input:
+            widget_view.run_command( "select_all" )
+
+        # show_input_panel is a non-blocking function, but we can only continue after on_done being called
+        while not can_continue[0]:
+            time.sleep( 0.5 )
 
     while True:
         is_yes_answer, is_to_go_back = calculate_next_step( sublime.yes_no_cancel_dialog( "\n".join( lines ), "Next", "Go Back" ) )
