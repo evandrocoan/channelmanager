@@ -197,9 +197,9 @@ class ChannelInstaller(threading.Thread):
         self.package_disabler  = PackageDisabler()
         self.isExceptionRaised = False
 
-        log( 1, "INSTALLER_TYPE:            " + str( self.channelSettings['INSTALLER_TYPE'] ) )
-        log( 1, "INSTALLATION_TYPE:         " + str( self.channelSettings['INSTALLATION_TYPE'] ) )
-        log( 1, "self.isUpdateInstallation: " + str( self.isUpdateInstallation ) )
+        log( 1, "INSTALLER_TYPE:         " + str( self.channelSettings['INSTALLER_TYPE'] ) )
+        log( 1, "INSTALLATION_TYPE:      " + str( self.channelSettings['INSTALLATION_TYPE'] ) )
+        log( 1, "IS_UPDATE_INSTALLATION: " + str( IS_UPDATE_INSTALLATION ) )
 
 
     def setupInstaller(self):
@@ -355,8 +355,8 @@ class ChannelInstaller(threading.Thread):
     def installerProcedements(self):
         log( _grade(), "Entering on %s run(1)" % self.__class__.__name__ )
 
-        self.git_executable_path = self.commandLineInterface.find_binary( "git.exe" if os.name == 'nt' else "git" )
-        log( _grade(), "run, git_executable_path: " + str( self.git_executable_path ) )
+        self.gitExecutablePath = self.commandLineInterface.find_binary( "git.exe" if os.name == 'nt' else "git" )
+        log( _grade(), "run, gitExecutablePath: " + str( self.gitExecutablePath ) )
 
         try:
             self.install_modules()
@@ -405,8 +405,11 @@ class ChannelInstaller(threading.Thread):
     def install_modules(self):
 
         if self.isDevelopment:
-            packages_to_install = self.download_not_packages_submodules()
+            self.clone_sublime_text_channel()
+            packages_to_install = self.get_development_packages()
+
             self.install_development_packages( packages_to_install )
+            self.download_not_packages_submodules()
 
         else:
             packages_to_install = self.get_stable_packages()
@@ -560,10 +563,10 @@ class ChannelInstaller(threading.Thread):
 
 
     def download_not_packages_submodules(self):
-        log( 1, "download_not_packages_submodules" )
+        log( 1, "download_not_packages_submodules..." )
 
         root = self.channelSettings['CHANNEL_ROOT_DIRECTORY']
-        self.clone_sublime_text_channel()
+        log( 2, "download_not_packages_submodules, root: " + root )
 
         gitFilePath    = os.path.join( root, '.gitmodules' )
         gitModulesFile = configparser.RawConfigParser()
@@ -584,25 +587,25 @@ class ChannelInstaller(threading.Thread):
                 package_name            = os.path.basename( path )
                 submodule_absolute_path = os.path.join( root, path )
 
+                log( 2, "download_not_packages_submodules, path: " + path )
+
                 if is_directory_empty( submodule_absolute_path ):
                     log.insert_empty_line()
                     log.insert_empty_line()
                     log( 1, "Installing: %s" % ( str( url ) ) )
 
-                    command = shlex.split( '"%s" clone "%s" "%s"' % ( git_executable_path, url, path ) )
-                    output  = str( commandLineInterface.execute( command, cwd=root ) )
+                    command = shlex.split( '"%s" clone "%s" "%s"' % ( self.gitExecutablePath, url, path ) )
+                    output  = str( self.commandLineInterface.execute( command, cwd=root ) )
 
                     self.add_folders_and_files_for_removal( submodule_absolute_path, path )
                     log( 1, "download_not_packages_submodules, output: " + str( output ) )
 
                     self.save_default_settings()
 
-        return self.get_development_packages()
-
 
     def get_development_packages(self):
         development_ignored = self.channelSettings['PACKAGES_TO_NOT_INSTALL_DEVELOPMENT']
-        log( 2, "install_submodules_packages, PACKAGES_TO_NOT_INSTALL_DEVELOPMENT: " + str( development_ignored ) )
+        log( 2, "get_development_packages, PACKAGES_TO_NOT_INSTALL_DEVELOPMENT: " + str( development_ignored ) )
 
         gitFilePath    = os.path.join( self.channelSettings['CHANNEL_ROOT_DIRECTORY'], '.gitmodules' )
         gitModulesFile = configparser.RawConfigParser()
@@ -666,10 +669,9 @@ class ChannelInstaller(threading.Thread):
             log.insert_empty_line()
 
         else:
-            root = self.channelSettings['CHANNEL_ROOT_DIRECTORY']
             temp = self.channelSettings['TEMPORARY_FOLDER_TO_USE']
-
             channel_temporary_folder = os.path.join( root, temp )
+
             self.download_main_repository( root, temp )
 
             files, folders = self.copy_overrides( channel_temporary_folder, root )
@@ -702,7 +704,7 @@ class ChannelInstaller(threading.Thread):
         if os.path.isdir( channel_temporary_folder ):
             shutil.rmtree( channel_temporary_folder, onerror=_delete_read_only_file )
 
-        command = shlex.split( '"%s" clone "%s" "%s"' % ( self.git_executable_path, url, temp ) )
+        command = shlex.split( '"%s" clone "%s" "%s"' % ( self.gitExecutablePath, url, temp ) )
         output  = str( self.commandLineInterface.execute( command, cwd=root ) )
 
         log( 1, "download_repository_to_folder, output: " + str( output ) )
@@ -753,7 +755,7 @@ class ChannelInstaller(threading.Thread):
                     continue
 
             else:
-                command = shlex.split( '"%s" clone --recursive "%s" "%s"' % ( self.git_executable_path, url, path) )
+                command = shlex.split( '"%s" clone --recursive "%s" "%s"' % ( self.gitExecutablePath, url, path) )
                 result  = self.commandLineInterface.execute( command, cwd=root )
 
                 if result is False:
@@ -763,7 +765,7 @@ class ChannelInstaller(threading.Thread):
                     self.accumulative_unignore_user_packages( package_name )
                     continue
 
-            command = shlex.split( '"%s" checkout master' % ( self.git_executable_path ) )
+            command = shlex.split( '"%s" checkout master' % ( self.gitExecutablePath ) )
             output  = str( result ) + "\n" + str( self.commandLineInterface.execute( command, cwd=os.path.join( root, path ) ) )
 
             log( 1, "install_development_packages, output: " + str( output ) )
@@ -1547,13 +1549,13 @@ class ChannelInstaller(threading.Thread):
 
             for folder in directories:
                 source_file   = os.path.join( source_folder, folder )
-                relative_path = convert_absolute_path_to_relative( source_file )
+                relative_path = self.convert_absolute_path_to_relative( source_file )
 
                 add_path_if_not_exists( g_folders_to_uninstall, relative_path )
 
             for file in files:
                 source_file   = os.path.join( source_folder, file )
-                relative_path = convert_absolute_path_to_relative( source_file )
+                relative_path = self.convert_absolute_path_to_relative( source_file )
 
                 add_path_if_not_exists( g_files_to_uninstall, relative_path )
 
@@ -1755,7 +1757,7 @@ class ChannelInstaller(threading.Thread):
             they differ, attempt to uninstall they again for some times. If not successful, stop trying
             and warn the user.
         """
-        log( _grade(), "Finishing %s... maximum_attempts: " % self.installationType + str( maximum_attempts ) )
+        log( _grade(), "check_installed_packages, finishing %s... maximum_attempts: " % self.installationType + str( maximum_attempts ) )
         maximum_attempts -= 1
 
         if not g_is_running:
@@ -1780,7 +1782,7 @@ class ChannelInstaller(threading.Thread):
             return
 
         if maximum_attempts > 0:
-            sublime.set_timeout_async( lambda: self.check_installed_packages( maximum_attempts ), 2000 )
+            sublime.set_timeout_async( lambda: self.check_installed_packages( maximum_attempts ), 1000 )
 
         else:
             sublime.error_message( end_user_message( """\
