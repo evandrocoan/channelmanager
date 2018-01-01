@@ -1644,7 +1644,8 @@ class ChannelInstaller(threading.Thread):
 
 
     def ask_user_for_which_packages_to_install(self, packages_names, packages_infos=[]):
-        can_continue  = [False, False]
+        can_continue  = [False]
+        was_cancelled = [False]
         active_window = sublime.active_window()
 
         packages_informations            = self.packagesInformations()
@@ -1661,8 +1662,8 @@ class ChannelInstaller(threading.Thread):
         def on_done(item_index):
 
             if item_index < 1:
-                can_continue[0] = True
-                can_continue[1] = True
+                can_continue[0]  = True
+                was_cancelled[1] = True
                 return
 
             if item_index == 1:
@@ -1702,12 +1703,12 @@ class ChannelInstaller(threading.Thread):
 
         # show_quick_panel is a non-blocking function, but we can only continue after on_done being called
         while not can_continue[0]:
-            time.sleep(1)
+            time.sleep( 1 )
 
         # Show up the console, so the user can follow the process.
         sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
 
-        if can_continue[1]:
+        if was_cancelled[0]:
             log.insert_empty_line()
             raise InstallationCancelled( "The user closed the %s's packages pick up list." % self.word_installer )
 
