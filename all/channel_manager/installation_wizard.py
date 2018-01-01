@@ -32,6 +32,8 @@ import sublime_plugin
 
 import os
 import sys
+import time
+
 import textwrap
 import threading
 
@@ -277,9 +279,11 @@ def show_program_description():
 
 def show_license_agreement():
     g_link_wrapper.width = 71
+    input_panel_question_answer = [None]
+    input_panel_question_confirmation = [None]
 
     is_to_go_back = False
-    user_response = [None]
+    can_continue  = [False]
     active_window = sublime.active_window()
 
     initial_input   = "Type Here"
@@ -321,18 +325,26 @@ def show_license_agreement():
         g_link_wrapper.fill( agrement_text ),
     ]
 
-    def why_not_agreed():
-        sublime.message_dialog( wrap_text( """\
+    def not_confirmed_correctly(is_to_show_typed_input=True):
+        active_window.run_command( "hide_panel" )
+
+        typed_text = "" if not is_to_show_typed_input else """\
                 You typed: {input_text}
 
                 You did not typed you agree with the {channel_name} license as required when you
                 agree with the license, on the input panel at your Sublime Text window.
+                """.format( input_text=user_input_text[0], channel_name=CHANNEL_PACKAGE_NAME )
 
-                Please, click in `Cancel` instead of `Next`, if you do not agree with the
+        sublime.message_dialog( wrap_text( """\
+                {typed_text}
+                Please, click in `Cancel` instead of `Next` on the next message dialog, if you do
+                not agree with the
                 {channel_name} license.
-                """.format( input_text=user_input_text[0], channel_name=CHANNEL_PACKAGE_NAME ) ) )
+                """.format( channel_name=CHANNEL_PACKAGE_NAME, typed_text=typed_text ) ) )
 
     def show_acknowledgment_panel():
+        can_continue[0] = False
+
         widget_view = active_window.show_input_panel(
                 "Did you read and agree with these conditions for using these softwares?",
                 user_input_text[0], on_done, on_change, on_cancel )
@@ -340,47 +352,69 @@ def show_license_agreement():
         if user_input_text[0] == initial_input:
             widget_view.run_command( "select_all" )
 
+        # show_input_panel is a non-blocking function, but we can only continue after on_done being called
+        while not can_continue[0]:
+            time.sleep( 0.5 )
+
     def did_the_user_agreed(answer):
         user_input_text[0] = answer
         return answer.replace(".", "").replace(",", "").strip(" ").replace("  ", " ").lower() == agrement_text
 
-    def on_done(answer, show_question=True):
+    def on_done(answer, is_final_confirmation=True):
 
         if did_the_user_agreed(answer):
-            user_response[0] = True
+            input_panel_question_answer[0] = True
 
-            if show_question:
-                sublime.message_dialog( wrap_text( """\
-                        Thank you for agreeing with the license.
+            if is_final_confirmation:
+                is_re_confirmed = sublime.ok_cancel_dialog( wrap_text( """\
+                        Thank you for agreeing with the license, as you typed: `%s`
 
-                        Now you should click on the `Next` button on the Installation Wizard window.
-                        """ ) )
+                        If you did not mean to agree with the license, click on the `Cancel` button,
+                        otherwise click on the `OK` button.
+                        """ % answer ) )
+
+                if is_re_confirmed:
+                    input_panel_question_confirmation[0] = True
+
+                else:
+                    input_panel_question_answer[0] = False
+                    input_panel_question_confirmation[0] = False
+
+                    not_confirmed_correctly( False )
+                    user_input_text[0] = initial_input
+
+                can_continue[0] = True
 
         else:
-            user_response[0] = False
+            input_panel_question_answer[0] = False
 
-            if show_question:
-                sublime.set_timeout( show_acknowledgment_panel, 1000 )
-                why_not_agreed()
+            if is_final_confirmation:
+                not_confirmed_correctly()
+                can_continue[0] = True
 
     def on_change(answer):
         on_done(answer, False)
 
     def on_cancel():
-        pass
+        can_continue[0] = True
 
     while True:
-        show_acknowledgment_panel()
-        user_acknowledgment, is_to_go_back = calculate_next_step( sublime.yes_no_cancel_dialog( "\n".join( lines ), "Next", "Go Back" ) )
+        is_yes_answer, is_to_go_back = calculate_next_step( sublime.yes_no_cancel_dialog( "\n".join( lines ), "Next", "Go Back" ) )
 
-        if user_response[0] or is_to_go_back or not ( user_acknowledgment or is_to_go_back ) :
+        if is_to_go_back \
+                or input_panel_question_answer[0] and input_panel_question_confirmation[0] is False:
             break
 
-        else:
-            why_not_agreed()
+        if is_yes_answer:
+            show_acknowledgment_panel()
 
-    active_window.run_command("hide_panel")
-    return user_response[0] and user_acknowledgment, is_to_go_back
+        else:
+            break
+
+        if input_panel_question_answer[0] and input_panel_question_confirmation[0]:
+            break
+
+    return input_panel_question_answer[0] and is_yes_answer, is_to_go_back
 
 
 def select_stable_or_developent_version():
