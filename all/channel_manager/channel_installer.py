@@ -1048,24 +1048,6 @@ class ChannelInstaller(threading.Thread):
         self.package_manager  = PackageManager()
         self.package_disabler = PackageDisabler()
 
-        packages_to_remove = [ ("Package Control", False), ("0_package_control_loader", None) ]
-        packages_names     = [ package_name[0] for package_name in packages_to_remove ]
-
-        for package_name, is_dependency in packages_to_remove:
-            log.insert_empty_line()
-            log.insert_empty_line()
-
-            log( 1, "Uninstalling: %s..." % str( package_name ) )
-            self.ignore_next_packages( package_name, packages_names )
-            self.package_manager.remove_package( package_name, is_dependency )
-
-            if package_name == "0_package_control_loader":
-                self.remove_0_package_dependency_loader( "0_package_control_loader" )
-
-            self.accumulative_unignore_user_packages( package_name )
-
-        self.accumulative_unignore_user_packages( flush_everything=True )
-
 
     def delete_package_control_settings(self, SatisfyDependenciesThread, maximum_attempts=3):
         """
