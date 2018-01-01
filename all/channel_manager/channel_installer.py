@@ -404,10 +404,10 @@ class ChannelInstaller(threading.Thread):
 
         if self.isDevelopment:
             self.clone_sublime_text_channel()
-            packages_to_install = self.get_development_packages()
-
-            self.install_development_packages( packages_to_install )
             self.download_not_packages_submodules()
+
+            packages_to_install = self.get_development_packages()
+            self.install_development_packages( packages_to_install )
 
         else:
             packages_to_install = self.get_stable_packages()
@@ -1314,7 +1314,6 @@ class ChannelInstaller(threading.Thread):
 
         if "installed_packages" in package_control_settings:
             installed_packages = get_dictionary_key( package_control_settings, 'installed_packages', [] )
-
             remove_item_if_exists( installed_packages, "Package Control" )
 
             add_item_if_not_exists( installed_packages, "PackagesManager" )
@@ -1492,11 +1491,11 @@ class ChannelInstaller(threading.Thread):
             https://github.com/SublimeTextIssues/Core/issues/2132
         """
         currently_ignored = g_userSettings.get( "ignored_packages", [] )
-        log( 1, "Currently ignored packages: " + str( currently_ignored ) )
 
         packages_to_add.sort()
         packages_to_remove.sort()
 
+        log( 1, "Currently ignored packages: " + str( currently_ignored ) )
         log( 1, "Ignoring the packages:      " + str( packages_to_add ) )
         log( 1, "Unignoring the packages:    " + str( packages_to_remove ) )
 
