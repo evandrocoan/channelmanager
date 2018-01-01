@@ -108,7 +108,6 @@ try:
     from package_control.package_disabler import PackageDisabler
 
     from package_control.thread_progress import ThreadProgress
-    from package_control.commands.satisfy_dependencies_command import SatisfyDependenciesThread
     from package_control.commands.advanced_install_package_command import AdvancedInstallPackageThread
 
     def silence_error_message_box(value):
@@ -122,7 +121,6 @@ except ImportError:
     from PackagesManager.packagesmanager.package_disabler import PackageDisabler
 
     from PackagesManager.packagesmanager.thread_progress import ThreadProgress
-    from PackagesManager.packagesmanager.commands.satisfy_dependencies_command import SatisfyDependenciesThread
     from PackagesManager.packagesmanager.commands.advanced_install_package_command import AdvancedInstallPackageThread
 
 
@@ -1015,7 +1013,6 @@ class ChannelInstaller(threading.Thread):
             sublime.set_timeout_async( self.complete_package_control_uninstallation, 2000 )
 
         else:
-            satisfy_dependencies( SatisfyDependenciesThread, self.package_manager )
             log( 1, "Warning: PackagesManager is was not installed on the system!" )
 
             # Clean right away the PackagesManager successful flag, was it was not installed
@@ -1031,9 +1028,9 @@ class ChannelInstaller(threading.Thread):
         # Import the recent installed PackagesManager
         try:
             from PackagesManager.packagesmanager.show_error import silence_error_message_box
+
             from PackagesManager.packagesmanager.package_manager import PackageManager
             from PackagesManager.packagesmanager.package_disabler import PackageDisabler
-            from PackagesManager.packagesmanager.commands.satisfy_dependencies_command import SatisfyDependenciesThread
 
         except ImportError:
 
@@ -1047,14 +1044,14 @@ class ChannelInstaller(threading.Thread):
                 log( 1, "Error! Could not complete the Package Control uninstalling, missing import for `PackagesManager`." )
 
         silence_error_message_box( 300.0 )
-        self.delete_package_control_settings( SatisfyDependenciesThread )
+        self.delete_package_control_settings()
 
         # Replace the Package Control installers by the PackagesManager ones
         self.package_manager  = PackageManager()
         self.package_disabler = PackageDisabler()
 
 
-    def delete_package_control_settings(self, SatisfyDependenciesThread, maximum_attempts=3):
+    def delete_package_control_settings(self, maximum_attempts=3):
         """
             Clean it a few times because Package Control is kinda running and still flushing stuff down
             to its settings file.
@@ -1076,10 +1073,8 @@ class ChannelInstaller(threading.Thread):
         write_data_file( PACKAGE_CONTROL, clean_settings )
 
         if maximum_attempts > 0:
-            sublime.set_timeout_async( lambda: self.delete_package_control_settings( SatisfyDependenciesThread, maximum_attempts ), 2000 )
+            sublime.set_timeout_async( lambda: self.delete_package_control_settings( maximum_attempts ), 2000 )
             return
-
-        satisfy_dependencies( SatisfyDependenciesThread, self.package_manager )
 
         # Set the flag as completed, to signalize the this part of the installation was successful
         global g_is_running
@@ -1822,17 +1817,6 @@ def is_allowed_to_run():
 
     g_is_running = ALL_RUNNING_CONTROL_FLAGS
     return True
-
-
-def satisfy_dependencies(SatisfyDependenciesThread, package_manager):
-    thread = SatisfyDependenciesThread( package_manager )
-    thread.start()
-
-    # Do not join this, otherwise the installer will hang Sublime Text if the command throws an
-    # excepting like the on at:
-    # TypeError: 'NoneType' object is not subscriptable while batch calling satisfy_dependencies_command
-    # https://github.com/wbond/package_control/issues/1314
-    # thread.join()
 
 
 def load_installation_settings_file(self):
