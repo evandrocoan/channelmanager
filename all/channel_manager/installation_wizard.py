@@ -278,17 +278,19 @@ def show_program_description():
 
 
 def show_license_agreement():
-    g_link_wrapper.width = 71
-    input_panel_question_answer = [None]
-    input_panel_question_confirmation = [None]
-
     is_to_go_back = False
-    can_continue  = [False]
     active_window = sublime.active_window()
+    can_continue  = [False]
+
+    active_window_panel  = active_window.active_panel()
+    g_link_wrapper.width = 71
 
     initial_input   = "Type Here"
     user_input_text = [initial_input]
     agrement_text   = "i did read and agree"
+
+    input_panel_question_answer       = [None]
+    input_panel_question_confirmation = [None]
 
     lines = \
     [
@@ -325,8 +327,14 @@ def show_license_agreement():
         g_link_wrapper.fill( agrement_text ),
     ]
 
+    def restore_last_actived_panel():
+
+        if active_window_panel:
+            sublime.active_window().run_command( "show_panel", {"panel": active_window_panel, "toggle": False} )
+
     def not_confirmed_correctly(is_to_show_typed_input=True):
         active_window.run_command( "hide_panel" )
+        restore_last_actived_panel()
 
         typed_text = "" if not is_to_show_typed_input else """\
                 You typed: {input_text}
@@ -352,6 +360,8 @@ def show_license_agreement():
             input_panel_question_answer[0] = True
 
             if is_final_confirmation:
+                restore_last_actived_panel()
+
                 is_re_confirmed = sublime.ok_cancel_dialog( wrap_text( """\
                         Thank you for agreeing with the license, as you typed: `%s`
 
@@ -414,6 +424,7 @@ def show_license_agreement():
         if input_panel_question_answer[0] and input_panel_question_confirmation[0]:
             break
 
+    restore_last_actived_panel()
     return input_panel_question_answer[0] and is_yes_answer, is_to_go_back
 
 
