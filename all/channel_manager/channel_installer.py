@@ -48,6 +48,10 @@ g_is_package_control_installed = False
 # How many packages to ignore and unignore in batch to fix the ignored packages bug error
 PACKAGES_COUNT_TO_IGNORE_AHEAD = 8
 
+# The minimum time between multiple calls setting the `ignored_packages` setting, without triggering
+# the Sublime Text error `It appears a package is trying to ignore itself, causing a loop`
+IGNORE_PACKAGE_MINIMUM_WAIT_TIME = 1.7
+
 CLEAN_PACKAGESMANAGER_FLAG   = 1
 RESTORE_REMOVE_ORPHANED_FLAG = 2
 ALL_RUNNING_CONTROL_FLAGS    = CLEAN_PACKAGESMANAGER_FLAG | RESTORE_REMOVE_ORPHANED_FLAG
@@ -743,8 +747,9 @@ class ChannelInstaller(threading.Thread):
 
                 else:
                     self.failedRepositories.append( package_name )
-
                     log( 1, "Error: Failed to backup and install the repository `%s`!" % package_name )
+
+                    self.accumulative_unignore_user_packages( package_name )
                     continue
 
             else:
@@ -754,6 +759,8 @@ class ChannelInstaller(threading.Thread):
                 if result is False:
                     self.failedRepositories.append( package_name )
                     log( 1, "Error: Failed to download the repository `%s`!" % package_name )
+
+                    self.accumulative_unignore_user_packages( package_name )
                     continue
 
             command = shlex.split( '"%s" checkout master' % ( self.git_executable_path ) )
@@ -847,15 +854,21 @@ class ChannelInstaller(threading.Thread):
 
             if package_name == "Default":
                 self.uninstall_default_package()
+
+                self.accumulative_unignore_user_packages( package_name )
                 continue
 
             if package_name in PACKAGES_TO_UNINSTAL_LATER:
                 log( 1, "Skipping the %s of `%s`..." % ( self.installationType, package_name ) )
                 log( 1, "This package will be handled later." )
+
+                self.accumulative_unignore_user_packages( package_name )
                 continue
 
             if is_dependency:
                 log( 1, "Skipping the dependency as they are automatically uninstalled..." )
+
+                self.accumulative_unignore_user_packages( package_name )
                 continue
 
             if self.package_manager.remove_package( package_name, is_dependency ) is False:
@@ -1438,13 +1451,9 @@ class ChannelInstaller(threading.Thread):
             last_ignored_packages     = packages_list.index( package_name )
             g_next_packages_to_ignore = packages_list[last_ignored_packages : last_ignored_packages+PACKAGES_COUNT_TO_IGNORE_AHEAD+1]
 
-            # We never can ignore the Default package, otherwise several errors/anomalies show up
             if "Default" in g_next_packages_to_ignore:
+                log( 1, "Warning: We never can ignore the Default package, otherwise several errors/anomalies show up." )
                 g_next_packages_to_ignore.remove( "Default" )
-
-            g_next_packages_to_ignore.sort()
-            log( 1, "Adding %d packages to the `ignored_packages` setting list..." % len( g_next_packages_to_ignore ) )
-            log( 1, "g_next_packages_to_ignore:  " + str( g_next_packages_to_ignore ) )
 
             # If the package is already on the users' `ignored_packages` settings, it means either that
             # the package was disabled by the user or the package is one of the development disabled
@@ -1452,11 +1461,16 @@ class ChannelInstaller(threading.Thread):
             for package_name in list( g_next_packages_to_ignore ):
 
                 if package_name in g_default_ignored_packages:
+                    log( 1, "Warning: The package `%s` could be ignored because it already ignored." % package_name )
                     g_next_packages_to_ignore.remove( package_name )
+
+            g_next_packages_to_ignore.sort()
+            log( 1, "Adding %d packages to the `ignored_packages` setting list..." % len( g_next_packages_to_ignore ) )
+            log( 1, "g_next_packages_to_ignore:  " + str( g_next_packages_to_ignore ) )
 
             # This adds them to the `in_process` list on the Package Control.sublime-settings file
             self.package_disabler.disable_packages( g_next_packages_to_ignore, "install" if self.isInstaller else "remove" )
-            time.sleep( 1.7 )
+            time.sleep( IGNORE_PACKAGE_MINIMUM_WAIT_TIME )
 
             # Let the packages be unloaded by Sublime Text while ensuring anyone is putting them back in
             self.setup_packages_ignored_list( g_next_packages_to_ignore )
@@ -1483,6 +1497,10 @@ class ChannelInstaller(threading.Thread):
             self.clearNextIgnoredPackages()
 
         else:
+            if package_name in ("Default"):
+                log( 1, "Warning: The default package was never ignored." )
+                return
+
             log( 1, "Adding package to unignore list: %s" % str( package_name ) )
             self.uningoredPackagesToFlush += 1
 
@@ -1505,7 +1523,7 @@ class ChannelInstaller(threading.Thread):
         if len( packages_list ):
             # This should remove them from the `in_process` list on the Package Control.sublime-settings file
             self.package_disabler.reenable_package( packages_list, "install" if self.isInstaller else "remove" )
-            time.sleep( 1.7 )
+            time.sleep( IGNORE_PACKAGE_MINIMUM_WAIT_TIME )
 
             # Let the packages be unloaded by Sublime Text while ensuring anyone is putting them back in
             self.setup_packages_ignored_list( packages_to_remove=packages_list )
@@ -1534,7 +1552,7 @@ class ChannelInstaller(threading.Thread):
             g_userSettings.set( "ignored_packages", currently_ignored )
             sublime.save_settings( self.channelSettings['USER_SETTINGS_FILE'] )
 
-            time.sleep( 1.7 )
+            time.sleep( IGNORE_PACKAGE_MINIMUM_WAIT_TIME )
 
             new_ignored_list = g_userSettings.get( "ignored_packages", [] )
             log( 1, "Currently ignored packages: " + str( new_ignored_list ) )
