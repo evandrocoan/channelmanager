@@ -440,13 +440,13 @@ def is_directory_empty(directory_path):
         How to check to see if a folder contains files using python 3
         https://stackoverflow.com/questions/25675352/how-to-check-to-see-if-a-folder-contains-files-using-python-3
     """
-    is_empty = True
+    is_empty = False
 
     try:
         os.rmdir( directory_path )
 
     except OSError:
-        is_empty = False
+        is_empty = True
 
     return is_empty
 
