@@ -1826,9 +1826,13 @@ def is_allowed_to_run():
 
 def satisfy_dependencies(SatisfyDependenciesThread, package_manager):
     thread = SatisfyDependenciesThread( package_manager )
-
     thread.start()
-    thread.join()
+
+    # Do not join this, otherwise the installer will hang Sublime Text if the command throws an
+    # excepting like the on at:
+    # TypeError: 'NoneType' object is not subscriptable while batch calling satisfy_dependencies_command
+    # https://github.com/wbond/package_control/issues/1314
+    # thread.join()
 
 
 def load_installation_settings_file(self):
