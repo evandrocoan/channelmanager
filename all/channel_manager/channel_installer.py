@@ -335,7 +335,6 @@ class ChannelInstaller(threading.Thread):
             else:
                 self.setupThread( self.uninstallerProcedements )
 
-            # Progressively saves the installation data, in case the user closes Sublime Text
             self.save_default_settings()
 
             if not self.isUpdateInstallation:
@@ -593,7 +592,6 @@ class ChannelInstaller(threading.Thread):
                     self.add_folders_and_files_for_removal( submodule_absolute_path, path )
                     log( 1, "download_not_packages_submodules, output: " + str( output ) )
 
-                    # Progressively saves the installation data, in case the user closes Sublime Text
                     self.save_default_settings()
 
         return self.get_development_packages()
@@ -677,7 +675,6 @@ class ChannelInstaller(threading.Thread):
             unique_list_append( g_files_to_uninstall, files )
             unique_list_append( g_folders_to_uninstall, folders )
 
-            # Progressively saves the installation data, in case the user closes Sublime Text
             self.save_default_settings()
 
 
@@ -938,7 +935,6 @@ class ChannelInstaller(threading.Thread):
         remove_if_exists( g_installed_packages, package_name )
         remove_if_exists( g_packages_to_uninstall, package_name )
 
-        # Progressively saves the installation data, in case the user closes Sublime Text
         self.save_default_settings()
         self.save_package_control_settings()
 
@@ -963,7 +959,6 @@ class ChannelInstaller(threading.Thread):
         for git_folder in git_folders:
             remove_git_folder( git_folder )
 
-        # Progressively saves the installation data, in case the user closes Sublime Text
         self.save_default_settings()
 
 
@@ -998,8 +993,6 @@ class ChannelInstaller(threading.Thread):
                 log( 1, "Its files contents are: " + str( os.listdir( folder_absolute_path ) ) )
 
         del g_files_to_uninstall[:]
-
-        # Progressively saves the installation data, in case the user closes Sublime Text
         self.save_default_settings()
 
 
@@ -1240,7 +1233,8 @@ class ChannelInstaller(threading.Thread):
 
     def save_default_settings(self):
         """
-            When uninstalling this channel we can only remove our packages, keeping the user's original
+            Progressively saves the installation data, in case the user closes Sublime Text. When
+            uninstalling this channel we can only remove our packages, keeping the user's original
             ignored packages intact.
         """
         # https://stackoverflow.com/questions/9264763/unboundlocalerror-in-python
@@ -1465,12 +1459,6 @@ class ChannelInstaller(threading.Thread):
                     g_next_packages_to_ignore.remove( package_name )
 
             g_next_packages_to_ignore.sort()
-            log( 1, "Adding %d packages to the `ignored_packages` setting list..." % len( g_next_packages_to_ignore ) )
-            log( 1, "g_next_packages_to_ignore:  " + str( g_next_packages_to_ignore ) )
-
-            # This adds them to the `in_process` list on the Package Control.sublime-settings file
-            self.package_disabler.disable_packages( g_next_packages_to_ignore, "install" if self.isInstaller else "remove" )
-            time.sleep( IGNORE_PACKAGE_MINIMUM_WAIT_TIME )
 
             # Let the packages be unloaded by Sublime Text while ensuring anyone is putting them back in
             self.setup_packages_ignored_list( g_next_packages_to_ignore )
@@ -1481,10 +1469,9 @@ class ChannelInstaller(threading.Thread):
             Flush off the remaining `next packages to ignore` appended. There is a bug with the
             uninstalling several packages, which trigger several errors of:
 
-            "It appears a package is trying to ignore itself, causing a loop.
-            Please resolve by removing the offending ignored_packages setting."
-
-            When trying to uninstall several package at once, then here I am unignoring them all at once.
+            "It appears a package is trying to ignore itself, causing a loop. Please resolve by
+            removing the offending ignored_packages setting", when trying to uninstall several
+            package at once, then here I am unignoring them all at once.
 
             Package Control: Advanced Install Package
             https://github.com/wbond/package_control/issues/1191
@@ -1493,7 +1480,7 @@ class ChannelInstaller(threading.Thread):
         """
 
         if flush_everything:
-            self.unignore_some_packages( g_next_packages_to_ignore )
+            self.setup_packages_ignored_list( packages_to_remove=g_next_packages_to_ignore )
             self.clearNextIgnoredPackages()
 
         else:
@@ -1505,7 +1492,7 @@ class ChannelInstaller(threading.Thread):
             self.uningoredPackagesToFlush += 1
 
             if self.uningoredPackagesToFlush >= len( g_next_packages_to_ignore ):
-                self.unignore_some_packages( g_next_packages_to_ignore )
+                self.setup_packages_ignored_list( packages_to_remove=g_next_packages_to_ignore )
                 self.clearNextIgnoredPackages()
 
 
@@ -1514,25 +1501,13 @@ class ChannelInstaller(threading.Thread):
         self.uningoredPackagesToFlush = 0
 
 
-    def unignore_some_packages(self, packages_list):
-        """
-            Flush just a few items each time.
-        """
-        log( 1, "Unignoring %d packages..." % len( packages_list ) )
-
-        if len( packages_list ):
-            # This should remove them from the `in_process` list on the Package Control.sublime-settings file
-            self.package_disabler.reenable_package( packages_list, "install" if self.isInstaller else "remove" )
-            time.sleep( IGNORE_PACKAGE_MINIMUM_WAIT_TIME )
-
-            # Let the packages be unloaded by Sublime Text while ensuring anyone is putting them back in
-            self.setup_packages_ignored_list( packages_to_remove=packages_list )
-
-
     def setup_packages_ignored_list(self, packages_to_add=[], packages_to_remove=[]):
         """
-            Something, somewhere is setting the ignored_packages list to `["Vintage"]`. Then ensure we
-            override this.
+            Flush just a few items each time. Let the packages be unloaded by Sublime Text while
+            ensuring anyone is putting them back in.
+
+            Randomly reverting back the `ignored_packages` setting on batch operations
+            https://github.com/SublimeTextIssues/Core/issues/2132
         """
         currently_ignored = g_userSettings.get( "ignored_packages", [] )
         log( 1, "Currently ignored packages: " + str( currently_ignored ) )
@@ -1547,7 +1522,20 @@ class ChannelInstaller(threading.Thread):
         unique_list_append( currently_ignored, packages_to_add )
 
         currently_ignored.sort()
+        ignoring_type = "install" if self.isInstaller else "remove"
 
+        # This adds them to the `in_process` list on the Package Control.sublime-settings file
+        if len( packages_to_add ):
+            self.package_disabler.disable_packages( packages_to_add, ignoring_type )
+            time.sleep( IGNORE_PACKAGE_MINIMUM_WAIT_TIME )
+
+        # This should remove them from the `in_process` list on the Package Control.sublime-settings file
+        if len( packages_to_remove ):
+            self.package_disabler.reenable_package( packages_to_remove, ignoring_type )
+            time.sleep( IGNORE_PACKAGE_MINIMUM_WAIT_TIME )
+
+        # Something, somewhere is setting the ignored_packages list back to `["Vintage"]`. Then
+        # ensure we override this.
         for interval in range( 0, 27 ):
             g_userSettings.set( "ignored_packages", currently_ignored )
             sublime.save_settings( self.channelSettings['USER_SETTINGS_FILE'] )
@@ -1564,7 +1552,6 @@ class ChannelInstaller(threading.Thread):
 
                     break
 
-        # Progressively saves the installation data, in case the user closes Sublime Text
         self.save_default_settings()
 
 
@@ -1605,8 +1592,6 @@ class ChannelInstaller(threading.Thread):
             write_data_file( packagesmanager, sort_dictionary( g_package_control_settings ) )
 
         add_item_if_not_exists( g_packages_to_uninstall, package_name )
-
-        # Progressively saves the installation data, in case the user closes Sublime Text
         self.save_default_settings()
 
 
@@ -1753,7 +1738,6 @@ class ChannelInstaller(threading.Thread):
             if len( packages_infos ):
                 del packages_infos[target_index]
 
-        # Progressively saves the installation data, in case the user closes Sublime Text
         self.save_default_settings()
 
 
@@ -1903,8 +1887,8 @@ def load_installation_settings_file(self):
 
     # When the installation was interrupted, there will be ignored packages which are pending to
     # uningored. Then these packages must to be loaded when the installer starts again.
-    log( _grade(), "load_installation_settings_file, unignoring initial packages... " + str( g_next_packages_to_ignore ) )
-    self.unignore_some_packages( g_next_packages_to_ignore )
+    log( _grade(), "load_installation_settings_file, unignoring initial packages... " )
+    self.setup_packages_ignored_list( packages_to_remove=g_next_packages_to_ignore )
 
     log( _grade(), "load_installation_settings_file, g_default_ignored_packages:        " + str( g_default_ignored_packages ) )
     log( _grade(), "load_installation_settings_file, PACKAGES_TO_IGNORE_ON_DEVELOPMENT: "
