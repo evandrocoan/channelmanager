@@ -548,6 +548,9 @@ class ChannelInstaller(threading.Thread):
             log( 1, "%s Installing %d of %d: %s" % ( progress, current_index, git_packages_count, str( package_name ) ) )
             self.ignore_next_packages( package_name, packages_names )
 
+            if package_name == "PackagesManager":
+                self.setup_packages_ignored_list( ["Package Control", "0_package_control_loader"] )
+
             if self.package_manager.install_package( package_name, False ) is False:
                 log( 1, "Error: Failed to install the repository `%s`!" % package_name )
                 self.failedRepositories.append( package_name )
@@ -737,6 +740,9 @@ class ChannelInstaller(threading.Thread):
 
             log( 1, "%s Installing %d of %d: %s" % ( progress, current_index, git_packages_count, str( package_name ) ) )
             self.ignore_next_packages( package_name, packages_names )
+
+            if package_name == "PackagesManager":
+                self.setup_packages_ignored_list( ["Package Control", "0_package_control_loader"] )
 
             if os.path.exists( submodule_absolute_path ):
 
@@ -1008,9 +1014,11 @@ class ChannelInstaller(threading.Thread):
 
         # Only uninstall it, when `PackagesManager` was also installed
         if "PackagesManager" in g_packages_to_uninstall:
-            # Sublime Text is waiting the current thread to finish before loading the just installed
-            # PackagesManager, therefore run a new thread delayed which finishes the job
-            sublime.set_timeout_async( self.complete_package_control_uninstallation, 2000 )
+            # When PackagesManager is installed, it was must be the last package to be installed
+            # because as soon as it loads, it starts uninstalling the Package Control. Then we wait
+            # until it finishes this and delete the old Package Control settings
+            # threading.Timer( 10.0, self.delete_package_control_settings ).start()
+            sublime.set_timeout_async( self.delete_package_control_settings, 2000 )
 
         else:
             log( 1, "Warning: PackagesManager is was not installed on the system!" )
@@ -1018,37 +1026,6 @@ class ChannelInstaller(threading.Thread):
             # Clean right away the PackagesManager successful flag, was it was not installed
             global g_is_running
             g_is_running = False
-
-
-    def complete_package_control_uninstallation(self, maximum_attempts=3):
-        log.insert_empty_line()
-        log.insert_empty_line()
-        log( 1, "Finishing Package Control Uninstallation... maximum_attempts: " + str( maximum_attempts ) )
-
-        # Import the recent installed PackagesManager
-        try:
-            from PackagesManager.packagesmanager.show_error import silence_error_message_box
-
-            from PackagesManager.packagesmanager.package_manager import PackageManager
-            from PackagesManager.packagesmanager.package_disabler import PackageDisabler
-
-        except ImportError:
-
-            if maximum_attempts > 0:
-                maximum_attempts -= 1
-
-                sublime.set_timeout_async( lambda: self.complete_package_control_uninstallation( maximum_attempts ), 2000 )
-                return
-
-            else:
-                log( 1, "Error! Could not complete the Package Control uninstalling, missing import for `PackagesManager`." )
-
-        silence_error_message_box( 300.0 )
-        self.delete_package_control_settings()
-
-        # Replace the Package Control installers by the PackagesManager ones
-        self.package_manager  = PackageManager()
-        self.package_disabler = PackageDisabler()
 
 
     def delete_package_control_settings(self, maximum_attempts=3):
@@ -1098,6 +1075,22 @@ class ChannelInstaller(threading.Thread):
             g_is_running &= ~CLEAN_PACKAGESMANAGER_FLAG
 
 
+    def restore_remove_orphaned_setting(self):
+
+        if g_remove_orphaned_backup:
+            # By default, it is already True on `Package Control.sublime-settings`, so just remove it
+            del g_package_control_settings['remove_orphaned']
+
+        else:
+            g_package_control_settings['remove_orphaned'] = g_remove_orphaned_backup
+
+        self.save_package_control_settings()
+
+        # Set the flag as completed, to signalize the this part of the installation was successful
+        global g_is_running
+        g_is_running &= ~RESTORE_REMOVE_ORPHANED_FLAG
+
+
     def install_package_control(self):
         package_name = "Package Control"
         log.insert_empty_line()
@@ -1129,35 +1122,6 @@ class ChannelInstaller(threading.Thread):
 
             self.clean_packagesmanager_settings()
             self.accumulative_unignore_user_packages( flush_everything=True )
-
-
-    def uninstall_list_of_packages(self, packages_infos):
-        """
-            By last uninstall itself `self.channelSettings['CHANNEL_PACKAGE_NAME']` and let the package be
-            unloaded by Sublime Text
-        """
-        log( 1, "uninstall_list_of_packages, %s... " % self.installationType + str( packages_infos ) )
-        packages_names = [ package_name for package_name, _ in packages_infos ]
-
-        for package_name, is_dependency in packages_infos:
-            log.insert_empty_line()
-            log.insert_empty_line()
-
-            log( 1, "%s of: %s..." % ( self.installationType, str( package_name ) ) )
-
-            silence_error_message_box( 62.0 )
-            self.ignore_next_packages( package_name, packages_names )
-
-            if self.package_manager.remove_package( package_name, is_dependency ) is False:
-                log( 1, "Error: Failed to uninstall the repository `%s`!" % package_name )
-                self.failedRepositories.append( package_name )
-
-            else:
-                self.remove_packages_from_list( package_name )
-
-            self.accumulative_unignore_user_packages( package_name )
-
-        self.accumulative_unignore_user_packages( flush_everything=True )
 
 
     def remove_0_package_dependency_loader(self, loader_name):
@@ -1197,20 +1161,33 @@ class ChannelInstaller(threading.Thread):
         g_is_running &= ~CLEAN_PACKAGESMANAGER_FLAG
 
 
-    def restore_remove_orphaned_setting(self):
+    def uninstall_list_of_packages(self, packages_infos):
+        """
+            By last uninstall itself `self.channelSettings['CHANNEL_PACKAGE_NAME']` and let the package be
+            unloaded by Sublime Text
+        """
+        log( 1, "uninstall_list_of_packages, %s... " % self.installationType + str( packages_infos ) )
+        packages_names = [ package_name for package_name, _ in packages_infos ]
 
-        if g_remove_orphaned_backup:
-            # By default, it is already True on `Package Control.sublime-settings`, so just remove it
-            del g_package_control_settings['remove_orphaned']
+        for package_name, is_dependency in packages_infos:
+            log.insert_empty_line()
+            log.insert_empty_line()
 
-        else:
-            g_package_control_settings['remove_orphaned'] = g_remove_orphaned_backup
+            log( 1, "%s of: %s..." % ( self.installationType, str( package_name ) ) )
 
-        self.save_package_control_settings()
+            silence_error_message_box( 62.0 )
+            self.ignore_next_packages( package_name, packages_names )
 
-        # Set the flag as completed, to signalize the this part of the installation was successful
-        global g_is_running
-        g_is_running &= ~RESTORE_REMOVE_ORPHANED_FLAG
+            if self.package_manager.remove_package( package_name, is_dependency ) is False:
+                log( 1, "Error: Failed to uninstall the repository `%s`!" % package_name )
+                self.failedRepositories.append( package_name )
+
+            else:
+                self.remove_packages_from_list( package_name )
+
+            self.accumulative_unignore_user_packages( package_name )
+
+        self.accumulative_unignore_user_packages( flush_everything=True )
 
 
     def save_default_settings(self):
