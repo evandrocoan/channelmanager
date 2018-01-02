@@ -123,7 +123,7 @@ def load_data_file(file_path, wait_on_error=True):
 
             try:
                 with open( file_path, 'r', encoding='utf-8' ) as data_file:
-                    return json.load( data_file )
+                    return json.load( data_file, object_pairs_hook=OrderedDict )
 
             except ValueError as error:
                 log( 1, "Error: maximum_attempts %d, %s (%s)" % ( maximum_attempts, error, file_path ) )
@@ -145,7 +145,7 @@ def load_data_file(file_path, wait_on_error=True):
                 log( 1, "load_data_file, packages_relative_path: " + str( packages_relative_path ) )
                 resource_bytes = sublime.load_binary_resource( packages_relative_path )
 
-                return json.loads( resource_bytes.decode('utf-8') )
+                return json.loads( resource_bytes.decode('utf-8'), object_pairs_hook=OrderedDict )
 
             except IOError as error:
                 log( 1, "Error on load_data_file(1), the file '%s' does not exists! %s" % ( file_path, error ) )

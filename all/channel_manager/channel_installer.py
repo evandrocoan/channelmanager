@@ -1577,12 +1577,14 @@ class ChannelInstaller(threading.Thread):
             So, here we try to keep things nice by syncing both `Package Control` and `PackagesManager`
             settings files.
         """
+        global g_package_control_settings
 
         if g_package_control_settings and not self.isDevelopment:
             installed_packages = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
             add_item_if_not_exists( installed_packages, package_name )
 
-            write_data_file( PACKAGESMANAGER, sort_dictionary( g_package_control_settings ) )
+            g_package_control_settings = sort_dictionary( g_package_control_settings )
+            write_data_file( PACKAGESMANAGER, g_package_control_settings )
 
         add_item_if_not_exists( g_packages_to_uninstall, package_name )
         self.save_default_settings()
