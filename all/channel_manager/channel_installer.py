@@ -404,7 +404,6 @@ class ChannelInstaller(threading.Thread):
 
         if self.isDevelopment:
             self.clone_sublime_text_channel()
-            self.download_not_packages_submodules()
 
             packages_to_install = self.get_development_packages()
             self.install_development_packages( packages_to_install )
@@ -720,6 +719,8 @@ class ChannelInstaller(threading.Thread):
 
         self.set_default_settings( packages_names, packages_infos )
         log( 2, "install_development_packages, packages_infos: " + str( packages_infos ) )
+
+        self.download_not_packages_submodules()
 
         current_index      = 0
         git_packages_count = len( packages_infos )
