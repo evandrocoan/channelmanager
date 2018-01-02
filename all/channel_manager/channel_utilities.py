@@ -31,6 +31,7 @@ import os
 import sys
 import json
 import stat
+import shutil
 
 import re
 import time
@@ -498,7 +499,7 @@ def _delete_read_only_file(action, name, exc):
 
 
 def remove_git_folder(default_git_folder, parent_folder=None):
-    log( 1, "%s of default_git_folder: %s" % ( self.installationType, str( default_git_folder ) ) )
+    log( 1, "remove_git_folder, default_git_folder: %s" % str( default_git_folder ) )
     shutil.rmtree( default_git_folder, ignore_errors=True, onerror=_delete_read_only_file )
 
     if parent_folder:

@@ -169,6 +169,10 @@ class ChannelInstaller(threading.Thread):
         threading.Thread.__init__(self)
         self.channelSettings = channel_settings
 
+        self.package_manager   = PackageManager()
+        self.package_disabler  = PackageDisabler()
+        self.isExceptionRaised = False
+
         self.channelName   = self.channelSettings['CHANNEL_PACKAGE_NAME']
         self.isDevelopment = self.channelSettings['INSTALLATION_TYPE'] == "development"
 
@@ -189,9 +193,9 @@ class ChannelInstaller(threading.Thread):
         load_installation_settings_file( self )
         self.ensure_packagesmanager_on_last_positoin()
 
-        self.package_manager   = PackageManager()
-        self.package_disabler  = PackageDisabler()
-        self.isExceptionRaised = False
+        if not self.isInstaller:
+            self.load_package_control_settings()
+            self.setup_packages_to_uninstall_last()
 
         log( 1, "INSTALLER_TYPE:         " + str( self.channelSettings['INSTALLER_TYPE'] ) )
         log( 1, "INSTALLATION_TYPE:      " + str( self.channelSettings['INSTALLATION_TYPE'] ) )
@@ -266,9 +270,6 @@ class ChannelInstaller(threading.Thread):
             ]
 
         self.packagesInformations = packagesInformations
-
-        self.load_package_control_settings()
-        self.setup_packages_to_uninstall_last()
 
 
     def run(self):
@@ -1547,6 +1548,7 @@ class ChannelInstaller(threading.Thread):
                     break
 
         self.save_default_settings()
+        return currently_ignored
 
 
     def add_folders_and_files_for_removal(self, root_source_folder, relative_path):
@@ -1864,11 +1866,9 @@ def load_installation_settings_file(self):
     global g_channelDetails
     global g_default_ignored_packages
 
-    g_channelDetails = load_data_file( channel_settings['CHANNEL_INSTALLATION_DETAILS'] )
-
     # Contains the original user's ignored packages.
+    g_channelDetails = load_data_file( channel_settings['CHANNEL_INSTALLATION_DETAILS'] )
     log( _grade(), "Loaded g_channelDetails: " + str( g_channelDetails ) )
-    g_default_ignored_packages = sublime_settings().get( 'ignored_packages', [] )
 
     global g_packages_to_uninstall
     global g_files_to_uninstall
@@ -1889,7 +1889,7 @@ def load_installation_settings_file(self):
     # When the installation was interrupted, there will be ignored packages which are pending to
     # uningored. Then these packages must to be loaded when the installer starts again.
     log( _grade(), "load_installation_settings_file, unignoring initial packages... " )
-    self.setup_packages_ignored_list( packages_to_remove=g_next_packages_to_ignore )
+    g_default_ignored_packages = self.setup_packages_ignored_list( packages_to_remove=g_next_packages_to_ignore )
 
     log( _grade(), "load_installation_settings_file, g_default_ignored_packages:        " + str( g_default_ignored_packages ) )
     log( _grade(), "load_installation_settings_file, PACKAGES_TO_IGNORE_ON_DEVELOPMENT: "
