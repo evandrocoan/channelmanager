@@ -1308,14 +1308,15 @@ class ChannelInstaller(threading.Thread):
             we need to keep both files synced while the installation process is going on.
         """
         log( 1, "Calling sync_package_control_and_manager..." )
+
         global g_package_control_settings
         g_package_control_settings = load_data_file( PACKAGE_CONTROL )
 
         log( 2, "sync_package_control_and_manager, package_control: " + str( g_package_control_settings ) )
         self.ensure_installed_packages_name( g_package_control_settings )
 
-        packagesmanager = os.path.join( self.channelSettings['USER_FOLDER_PATH'], g_packagesmanager_name )
-        write_data_file( packagesmanager, g_package_control_settings )
+        g_package_control_settings = sort_dictionary( g_package_control_settings )
+        write_data_file( PACKAGESMANAGER, g_package_control_settings )
 
 
     def ensure_installed_packages_name(self, package_control_settings):
@@ -1580,8 +1581,7 @@ class ChannelInstaller(threading.Thread):
             installed_packages = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
             add_item_if_not_exists( installed_packages, package_name )
 
-            packagesmanager = os.path.join( self.channelSettings['USER_FOLDER_PATH'], g_packagesmanager_name )
-            write_data_file( packagesmanager, sort_dictionary( g_package_control_settings ) )
+            write_data_file( PACKAGESMANAGER, sort_dictionary( g_package_control_settings ) )
 
         add_item_if_not_exists( g_packages_to_uninstall, package_name )
         self.save_default_settings()
