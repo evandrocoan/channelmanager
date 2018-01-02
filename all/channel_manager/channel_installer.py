@@ -185,10 +185,9 @@ class ChannelInstaller(threading.Thread):
             self.setupUninstaller()
 
         IS_UPDATE_INSTALLATION = self.isUpdateInstallation
-        load_installation_settings_file( self )
 
-        self.load_package_control_settings()
-        self.setup_packages_to_uninstall_last()
+        load_installation_settings_file( self )
+        self.ensure_packagesmanager_on_last_positoin()
 
         self.package_manager   = PackageManager()
         self.package_disabler  = PackageDisabler()
@@ -267,6 +266,9 @@ class ChannelInstaller(threading.Thread):
             ]
 
         self.packagesInformations = packagesInformations
+
+        self.load_package_control_settings()
+        self.setup_packages_to_uninstall_last()
 
 
     def run(self):
@@ -1234,8 +1236,6 @@ class ChannelInstaller(threading.Thread):
         """
             Remove the remaining packages to be uninstalled separately on another function call.
         """
-        self.ensure_packagesmanager_on_last_positoin()
-
         global PACKAGES_TO_UNINSTALL_FIRST
         global PACKAGES_TO_UNINSTALL_LAST
 
