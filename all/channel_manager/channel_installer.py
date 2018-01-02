@@ -269,55 +269,6 @@ class ChannelInstaller(threading.Thread):
         self.packagesInformations = packagesInformations
 
 
-    def load_package_control_settings(self):
-        global g_package_control_settings
-
-        # Allow to not override the Package Control file when PackagesManager does exists
-        if os.path.exists( PACKAGESMANAGER ):
-            g_package_control_settings = load_data_file( PACKAGESMANAGER )
-
-        else:
-            g_package_control_settings = load_data_file( PACKAGE_CONTROL )
-
-        global g_installed_packages
-        global g_remove_orphaned_backup
-
-        g_installed_packages     = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
-        g_remove_orphaned_backup = get_dictionary_key( g_package_control_settings, 'remove_orphaned', True )
-
-        if not self.isUpdateInstallation:
-            # Temporally stops Package Control from removing orphaned packages, otherwise it will scroll up
-            # the uninstallation when Package Control is installed back
-            g_package_control_settings['remove_orphaned'] = False
-            self.save_package_control_settings()
-
-
-    def setup_packages_to_uninstall_last(self):
-        """
-            Remove the remaining packages to be uninstalled separately on another function call.
-        """
-        self.ensure_packagesmanager_on_last_positoin()
-
-        global PACKAGES_TO_UNINSTALL_FIRST
-        global PACKAGES_TO_UNINSTALL_LAST
-
-        global PACKAGES_TO_UNINSTAL_LATER
-        global PACKAGES_TO_NOT_ADD_TO_IGNORE_LIST
-
-        PACKAGES_TO_UNINSTAL_LATER  = [ "PackagesManager", self.channelSettings['CHANNEL_PACKAGE_NAME'] ]
-        PACKAGES_TO_UNINSTALL_FIRST = list( reversed( self.channelSettings['PACKAGES_TO_INSTALL_LAST'] ) )
-        PACKAGES_TO_UNINSTALL_LAST  = list( reversed( self.channelSettings['PACKAGES_TO_INSTALL_FIRST'] ) )
-
-        # We need to remove it by last, after installing Package Control back
-        for package in PACKAGES_TO_UNINSTAL_LATER:
-
-            if package in PACKAGES_TO_UNINSTALL_FIRST:
-                PACKAGES_TO_UNINSTALL_FIRST.remove( package )
-
-        PACKAGES_TO_NOT_ADD_TO_IGNORE_LIST = set( PACKAGES_TO_UNINSTAL_LATER )
-        PACKAGES_TO_NOT_ADD_TO_IGNORE_LIST.add( "Default" )
-
-
     def run(self):
         """
             The installation is not complete when the user cancelled the installation process or
@@ -939,35 +890,6 @@ class ChannelInstaller(threading.Thread):
         remove_git_folder( default_git_folder, default_packages_path )
 
 
-    def remove_channel(self):
-        channels = get_dictionary_key( g_package_control_settings, "channels", [] )
-
-        while self.channelSettings['CHANNEL_FILE_URL'] in channels:
-            log( 1, "Removing %s channel from Package Control settings: %s" % ( self.channelSettings['CHANNEL_PACKAGE_NAME'], str( channels ) ) )
-            channels.remove( self.channelSettings['CHANNEL_FILE_URL'] )
-
-        g_package_control_settings['channels'] = channels
-        self.save_package_control_settings()
-
-
-    def save_package_control_settings(self):
-        global g_package_control_settings
-        g_installed_packages.sort()
-
-        g_package_control_settings['installed_packages'] = g_installed_packages
-        g_package_control_settings = sort_dictionary( g_package_control_settings )
-
-        write_data_file( PACKAGE_CONTROL, g_package_control_settings )
-
-
-    def remove_packages_from_list(self, package_name):
-        remove_if_exists( g_installed_packages, package_name )
-        remove_if_exists( g_packages_to_uninstall, package_name )
-
-        self.save_default_settings()
-        self.save_package_control_settings()
-
-
     def uninstall_files(self):
         git_folders = []
 
@@ -1283,6 +1205,84 @@ class ChannelInstaller(threading.Thread):
                 add_item_if_not_exists( g_packages_to_unignore, package_name )
 
         self.setup_packages_ignored_list( g_default_ignored_packages )
+
+
+    def load_package_control_settings(self):
+        global g_package_control_settings
+
+        # Allow to not override the Package Control file when PackagesManager does exists
+        if os.path.exists( PACKAGESMANAGER ):
+            g_package_control_settings = load_data_file( PACKAGESMANAGER )
+
+        else:
+            g_package_control_settings = load_data_file( PACKAGE_CONTROL )
+
+        global g_installed_packages
+        global g_remove_orphaned_backup
+
+        g_installed_packages     = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
+        g_remove_orphaned_backup = get_dictionary_key( g_package_control_settings, 'remove_orphaned', True )
+
+        if not self.isUpdateInstallation:
+            # Temporally stops Package Control from removing orphaned packages, otherwise it will scroll up
+            # the uninstallation when Package Control is installed back
+            g_package_control_settings['remove_orphaned'] = False
+            self.save_package_control_settings()
+
+
+    def setup_packages_to_uninstall_last(self):
+        """
+            Remove the remaining packages to be uninstalled separately on another function call.
+        """
+        self.ensure_packagesmanager_on_last_positoin()
+
+        global PACKAGES_TO_UNINSTALL_FIRST
+        global PACKAGES_TO_UNINSTALL_LAST
+
+        global PACKAGES_TO_UNINSTAL_LATER
+        global PACKAGES_TO_NOT_ADD_TO_IGNORE_LIST
+
+        PACKAGES_TO_UNINSTAL_LATER  = [ "PackagesManager", self.channelSettings['CHANNEL_PACKAGE_NAME'] ]
+        PACKAGES_TO_UNINSTALL_FIRST = list( reversed( self.channelSettings['PACKAGES_TO_INSTALL_LAST'] ) )
+        PACKAGES_TO_UNINSTALL_LAST  = list( reversed( self.channelSettings['PACKAGES_TO_INSTALL_FIRST'] ) )
+
+        # We need to remove it by last, after installing Package Control back
+        for package in PACKAGES_TO_UNINSTAL_LATER:
+
+            if package in PACKAGES_TO_UNINSTALL_FIRST:
+                PACKAGES_TO_UNINSTALL_FIRST.remove( package )
+
+        PACKAGES_TO_NOT_ADD_TO_IGNORE_LIST = set( PACKAGES_TO_UNINSTAL_LATER )
+        PACKAGES_TO_NOT_ADD_TO_IGNORE_LIST.add( "Default" )
+
+
+    def remove_channel(self):
+        channels = get_dictionary_key( g_package_control_settings, "channels", [] )
+
+        while self.channelSettings['CHANNEL_FILE_URL'] in channels:
+            log( 1, "Removing %s channel from Package Control settings: %s" % ( self.channelSettings['CHANNEL_PACKAGE_NAME'], str( channels ) ) )
+            channels.remove( self.channelSettings['CHANNEL_FILE_URL'] )
+
+        g_package_control_settings['channels'] = channels
+        self.save_package_control_settings()
+
+
+    def save_package_control_settings(self):
+        global g_package_control_settings
+        g_installed_packages.sort()
+
+        g_package_control_settings['installed_packages'] = g_installed_packages
+        g_package_control_settings = sort_dictionary( g_package_control_settings )
+
+        write_data_file( PACKAGE_CONTROL, g_package_control_settings )
+
+
+    def remove_packages_from_list(self, package_name):
+        remove_if_exists( g_installed_packages, package_name )
+        remove_if_exists( g_packages_to_uninstall, package_name )
+
+        self.save_default_settings()
+        self.save_package_control_settings()
 
 
     def ensure_packagesmanager_on_last_positoin(self):
