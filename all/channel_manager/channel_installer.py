@@ -344,11 +344,12 @@ class ChannelInstaller(threading.Thread):
 
 
     def setupThread(self, targetFunction):
-        self.installerThread = threading.Thread( target=targetFunction )
-        self.installerThread.start()
 
-        ThreadProgress( self.installerThread, self.setProgress, self.installerMessage )
-        self.installerThread.join()
+        try:
+            targetFunction()
+
+        finally:
+            pass
 
 
     def installerProcedements(self):
