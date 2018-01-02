@@ -848,7 +848,7 @@ class ChannelInstaller(threading.Thread):
                 self.remove_packages_from_list( package_name )
                 continue
 
-            if package_name in PACKAGES_TO_UNINSTAL_LATER:
+            if package_name in PACKAGES_TO_UNINSTALL_LATER:
                 log( 1, "Skipping the %s of `%s`..." % ( self.installationType, package_name ) )
                 log( 1, "This package will be handled later." )
 
@@ -1242,23 +1242,18 @@ class ChannelInstaller(threading.Thread):
             Remove the remaining packages to be uninstalled separately on another function call.
         """
         global PACKAGES_TO_UNINSTALL_FIRST
+        global PACKAGES_TO_UNINSTALL_LATER
         global PACKAGES_TO_UNINSTALL_LAST
 
-        global PACKAGES_TO_UNINSTAL_LATER
-        global PACKAGES_TO_NOT_ADD_TO_IGNORE_LIST
-
-        PACKAGES_TO_UNINSTAL_LATER  = [ "PackagesManager", self.channelSettings['CHANNEL_PACKAGE_NAME'] ]
         PACKAGES_TO_UNINSTALL_FIRST = list( reversed( self.channelSettings['PACKAGES_TO_INSTALL_LAST'] ) )
+        PACKAGES_TO_UNINSTALL_LATER = [ "PackagesManager", self.channelSettings['CHANNEL_PACKAGE_NAME'] ]
         PACKAGES_TO_UNINSTALL_LAST  = list( reversed( self.channelSettings['PACKAGES_TO_INSTALL_FIRST'] ) )
 
         # We need to remove it by last, after installing Package Control back
-        for package in PACKAGES_TO_UNINSTAL_LATER:
+        for package in PACKAGES_TO_UNINSTALL_LATER:
 
             if package in PACKAGES_TO_UNINSTALL_FIRST:
                 PACKAGES_TO_UNINSTALL_FIRST.remove( package )
-
-        PACKAGES_TO_NOT_ADD_TO_IGNORE_LIST = set( PACKAGES_TO_UNINSTAL_LATER )
-        PACKAGES_TO_NOT_ADD_TO_IGNORE_LIST.add( "Default" )
 
 
     def remove_channel(self):
