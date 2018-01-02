@@ -375,10 +375,11 @@ class ChannelInstaller(threading.Thread):
         log( _grade(), "Entering on %s run(1)" % self.__class__.__name__ )
 
         try:
-            packages_to_uninstall = self.get_packages_to_uninstall( self.isUpdateInstallation )
+            packages_to_uninstall     = self.get_packages_to_uninstall( self.isUpdateInstallation )
+            non_packages_to_uninstall = self.get_non_packages_to_uninstall()
 
             log( _grade(), "Packages to %s: " % self.installationType + str( packages_to_uninstall ) )
-            self.uninstall_packages( packages_to_uninstall )
+            self.uninstall_packages( packages_to_uninstall, non_packages_to_uninstall )
 
             if not self.isUpdateInstallation:
                 self.remove_channel()
@@ -404,9 +405,10 @@ class ChannelInstaller(threading.Thread):
 
         if self.isDevelopment:
             self.clone_sublime_text_channel()
+            non_packages_to_uninstall = self.get_non_packages_to_uninstall()
 
             packages_to_install = self.get_development_packages()
-            self.install_development_packages( packages_to_install )
+            self.install_development_packages( packages_to_install, non_packages_to_uninstall )
 
         else:
             packages_to_install = self.get_stable_packages()
@@ -547,6 +549,7 @@ class ChannelInstaller(threading.Thread):
             log( 1, "%s Installing %d of %d: %s" % ( progress, current_index, git_packages_count, str( package_name ) ) )
             self.ignore_next_packages( package_name, packages_names )
 
+            # We must to ignore it beforehand, otherwise it will start unignoring itself several times
             if package_name == "PackagesManager":
                 self.setup_packages_ignored_list( ["Package Control", "0_package_control_loader"] )
 
@@ -562,8 +565,13 @@ class ChannelInstaller(threading.Thread):
         self.accumulative_unignore_user_packages( flush_everything=True )
 
 
-    def download_not_packages_submodules(self):
+    def get_non_packages_to_uninstall(self):
+        return self.download_not_packages_submodules( True )
+
+
+    def download_not_packages_submodules(self, only_list_packages=False):
         log( 1, "download_not_packages_submodules..." )
+        non_packages_names = []
 
         root = self.channelSettings['CHANNEL_ROOT_DIRECTORY']
         log( 2, "download_not_packages_submodules, root: " + root )
@@ -589,18 +597,26 @@ class ChannelInstaller(threading.Thread):
 
                 log( 2, "download_not_packages_submodules, path: " + path )
 
-                if is_directory_empty( submodule_absolute_path ):
-                    log.insert_empty_line()
-                    log.insert_empty_line()
-                    log( 1, "Installing: %s" % ( str( url ) ) )
+                if only_list_packages:
+                    non_packages_names.append( package_name )
 
-                    command = shlex.split( '"%s" clone "%s" "%s"' % ( self.gitExecutablePath, url, path ) )
-                    output  = str( self.commandLineInterface.execute( command, cwd=root ) )
+                else:
+                    if is_directory_empty( submodule_absolute_path ):
+                        log.insert_empty_line()
+                        log.insert_empty_line()
 
-                    self.add_folders_and_files_for_removal( submodule_absolute_path, path )
-                    log( 1, "download_not_packages_submodules, output: " + str( output ) )
+                        log( 1, "Installing: %s" % ( str( url ) ) )
+                        non_packages_names.append( package_name )
 
-                    self.save_default_settings()
+                        command = shlex.split( '"%s" clone "%s" "%s"' % ( self.gitExecutablePath, url, path ) )
+                        output  = str( self.commandLineInterface.execute( command, cwd=root ) )
+
+                        self.add_folders_and_files_for_removal( submodule_absolute_path, path )
+                        log( 1, "download_not_packages_submodules, output: " + str( output ) )
+
+                        self.save_default_settings()
+
+        return non_packages_names
 
 
     def get_development_packages(self):
@@ -710,16 +726,16 @@ class ChannelInstaller(threading.Thread):
         log( 1, "download_repository_to_folder, output: " + str( output ) )
 
 
-    def install_development_packages(self, packages_infos):
+    def install_development_packages(self, packages_infos, non_packages_to_uninstall):
         root = self.channelSettings['CHANNEL_ROOT_DIRECTORY']
         temp = self.channelSettings['TEMPORARY_FOLDER_TO_USE']
 
         packages_names = [ package_info[0] for package_info in packages_infos ]
         channel_temporary_folder = os.path.join( root, temp )
 
-        self.set_default_settings( packages_names, packages_infos )
-        log( 2, "install_development_packages, packages_infos: " + str( packages_infos ) )
+        self.set_default_settings( packages_names, packages_infos, non_packages_to_uninstall )
 
+        log( 2, "install_development_packages, packages_infos: " + str( packages_infos ) )
         self.download_not_packages_submodules()
 
         current_index      = 0
@@ -742,6 +758,7 @@ class ChannelInstaller(threading.Thread):
             log( 1, "%s Installing %d of %d: %s" % ( progress, current_index, git_packages_count, str( package_name ) ) )
             self.ignore_next_packages( package_name, packages_names )
 
+            # We must to ignore it beforehand, otherwise it will start unignoring itself several times
             if package_name == "PackagesManager":
                 self.setup_packages_ignored_list( ["Package Control", "0_package_control_loader"] )
 
@@ -838,8 +855,8 @@ class ChannelInstaller(threading.Thread):
         return filtered_packages
 
 
-    def uninstall_packages(self, packages_names):
-        self.ask_user_for_which_packages_to_install( packages_names )
+    def uninstall_packages(self, packages_names, non_packages_names):
+        self.ask_user_for_which_packages_to_install( packages_names, non_packages_names=non_packages_names )
         all_packages, dependencies = self.get_installed_repositories()
 
         current_index  = 0
@@ -1226,7 +1243,7 @@ class ChannelInstaller(threading.Thread):
         write_data_file( self.channelSettings['CHANNEL_INSTALLATION_DETAILS'], g_channelDetails )
 
 
-    def set_default_settings(self, packages_names, packages_infos=[]):
+    def set_default_settings(self, packages_names, packages_infos=[], non_packages_names=[]):
         """
             Set some package to be enabled at last due their settings being dependent on other packages
             which need to be installed first.
@@ -1237,7 +1254,7 @@ class ChannelInstaller(threading.Thread):
             to install them.
         """
         self.set_first_and_last_packages_to_install( packages_names, packages_infos )
-        self.ask_user_for_which_packages_to_install( packages_names, packages_infos )
+        self.ask_user_for_which_packages_to_install( packages_names, packages_infos, non_packages_names )
 
         if "PackagesManager" in packages_names:
             self.sync_package_control_and_manager()
@@ -1620,13 +1637,16 @@ class ChannelInstaller(threading.Thread):
         return convert_to_unix_path(relative_path)
 
 
-    def ask_user_for_which_packages_to_install(self, packages_names, packages_infos=[]):
+    def ask_user_for_which_packages_to_install(self, packages_names, packages_infos=[], non_packages_names=[]):
         can_continue  = [False]
         was_cancelled = [False]
         active_window = sublime.active_window()
 
         packages_informations            = self.packagesInformations()
         selected_packages_to_not_install = []
+
+        for non_package_name in non_packages_names:
+            packages_informations.append( [ non_package_name, self.notInstallMessage ] )
 
         for package_name in packages_names:
 
@@ -1653,7 +1673,8 @@ class ChannelInstaller(threading.Thread):
             package_information = packages_informations[item_index]
             package_name        = package_information[0]
 
-            if package_name not in self.channelSettings['FORBIDDEN_PACKAGES']:
+            if package_name not in non_packages_names \
+                    and package_name not in self.channelSettings['FORBIDDEN_PACKAGES']:
 
                 if package_information[1] == self.install_message:
                     log( 1, "%s the package: %s" % ( "Removing" if self.isInstaller else "Keeping", package_name ) )
