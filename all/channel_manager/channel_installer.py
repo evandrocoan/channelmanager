@@ -1053,9 +1053,15 @@ class ChannelInstaller(threading.Thread):
             to its settings file.
         """
         log( 1, "Calling delete_package_control_settings..." )
+        clean_settings    = {}
         maximum_attempts -= 1
 
-        clean_settings = {}
+        if maximum_attempts > 0:
+            sublime.set_timeout_async( lambda: self.delete_package_control_settings( maximum_attempts ), 2000 )
+
+            write_data_file( PACKAGE_CONTROL, clean_settings )
+            return
+
         clean_settings['bootstrapped']    = False
         clean_settings['remove_orphaned'] = False
 
@@ -1067,10 +1073,6 @@ class ChannelInstaller(threading.Thread):
 
         clean_settings = sort_dictionary( clean_settings )
         write_data_file( PACKAGE_CONTROL, clean_settings )
-
-        if maximum_attempts > 0:
-            sublime.set_timeout_async( lambda: self.delete_package_control_settings( maximum_attempts ), 2000 )
-            return
 
         # Set the flag as completed, to signalize the this part of the installation was successful
         global g_is_running
@@ -1498,7 +1500,7 @@ class ChannelInstaller(threading.Thread):
             Randomly reverting back the `ignored_packages` setting on batch operations
             https://github.com/SublimeTextIssues/Core/issues/2132
         """
-        currently_ignored = g_userSettings.get( "ignored_packages", [] )
+        currently_ignored = sublime_settings().get( "ignored_packages", [] )
 
         packages_to_add.sort()
         packages_to_remove.sort()
@@ -1526,12 +1528,12 @@ class ChannelInstaller(threading.Thread):
         # Something, somewhere is setting the ignored_packages list back to `["Vintage"]`. Then
         # ensure we override this.
         for interval in range( 0, 27 ):
-            g_userSettings.set( "ignored_packages", currently_ignored )
-            sublime.save_settings( self.channelSettings['USER_SETTINGS_FILE'] )
+            sublime_settings().set( "ignored_packages", currently_ignored )
+            save_sublime_settings()
 
             time.sleep( IGNORE_PACKAGE_MINIMUM_WAIT_TIME )
 
-            new_ignored_list = g_userSettings.get( "ignored_packages", [] )
+            new_ignored_list = sublime_settings().get( "ignored_packages", [] )
             log( 1, "Currently ignored packages: " + str( new_ignored_list ) )
 
             if new_ignored_list:
@@ -1823,11 +1825,21 @@ def is_allowed_to_run():
     global g_is_running
 
     if g_is_running:
-        print( "You are already running a command. Wait until it finishes or restart Sublime Text" )
+        log( 1, "You are already running a command. Wait until it finishes or restart Sublime Text" )
         return False
 
     g_is_running = ALL_RUNNING_CONTROL_FLAGS
     return True
+
+
+def sublime_settings():
+    settings_name = "Preferences.sublime-settings"
+    return sublime.load_settings( settings_name )
+
+
+def save_sublime_settings():
+    settings_name = "Preferences.sublime-settings"
+    sublime.save_settings( settings_name )
 
 
 def load_installation_settings_file(self):
@@ -1845,16 +1857,14 @@ def load_installation_settings_file(self):
     PACKAGESMANAGER = os.path.join( channel_settings['USER_FOLDER_PATH'], g_packagesmanager_name )
     PACKAGE_CONTROL = os.path.join( channel_settings['USER_FOLDER_PATH'], g_package_control_name )
 
-    global g_userSettings
     global g_channelDetails
     global g_default_ignored_packages
 
-    g_userSettings   = sublime.load_settings( channel_settings['USER_SETTINGS_FILE'] )
     g_channelDetails = load_data_file( channel_settings['CHANNEL_INSTALLATION_DETAILS'] )
 
     # Contains the original user's ignored packages.
     log( _grade(), "Loaded g_channelDetails: " + str( g_channelDetails ) )
-    g_default_ignored_packages = g_userSettings.get( 'ignored_packages', [] )
+    g_default_ignored_packages = sublime_settings().get( 'ignored_packages', [] )
 
     global g_packages_to_uninstall
     global g_files_to_uninstall
