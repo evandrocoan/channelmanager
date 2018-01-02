@@ -299,6 +299,7 @@ class ChannelInstaller(threading.Thread):
     def setupThread(self, targetFunction):
 
         try:
+            ThreadProgress( self, self.setProgress, self.installerMessage )
             targetFunction()
 
         finally:
