@@ -835,6 +835,7 @@ class ChannelInstaller(threading.Thread):
 
             if package_name == "Default":
                 self.uninstall_default_package()
+                self.remove_packages_from_list( package_name )
 
                 self.accumulative_unignore_user_packages( package_name )
                 continue
@@ -842,12 +843,6 @@ class ChannelInstaller(threading.Thread):
             if package_name in PACKAGES_TO_UNINSTAL_LATER:
                 log( 1, "Skipping the %s of `%s`..." % ( self.installationType, package_name ) )
                 log( 1, "This package will be handled later." )
-
-                self.accumulative_unignore_user_packages( package_name )
-                continue
-
-            if is_dependency:
-                log( 1, "Skipping the dependency as they are automatically uninstalled..." )
 
                 self.accumulative_unignore_user_packages( package_name )
                 continue
