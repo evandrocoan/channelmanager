@@ -275,7 +275,7 @@ def look_for_invalid_default_ignored_packages(installed_packages):
     for package_name in ignored_packages:
 
         if package_name not in installed_packages:
-            log( 1, "Warning: The package `%-40s` on your User `ignored_packages` setting was not found installed!" % package_name )
+            log( 1, "Warning: The package `%-30s` on your User `ignored_packages` setting was not found installed!" % package_name )
 
 
 def look_for_invalid_development_ignored_packages(channel_settings, installed_packages, setting_name):
@@ -284,7 +284,7 @@ def look_for_invalid_development_ignored_packages(channel_settings, installed_pa
     for package_name in ignored_packages:
 
         if package_name not in installed_packages:
-            log( 1, "%s Warning: The package `%-40s` on the `%s` setting was found not installed!" % (
+            log( 1, "%s Warning: The package `%-30s` on the `%s` setting was found not installed!" % (
                     channel_settings['CHANNEL_PACKAGE_NAME'], package_name, setting_name ) )
 
 
