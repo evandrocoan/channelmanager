@@ -1066,13 +1066,10 @@ class ChannelInstaller(threading.Thread):
             log.insert_empty_line()
 
             log( 1, "Finishing PackagesManager %s..." % self.installationType )
-            self.ignore_next_packages( "PackagesManager", ["PackagesManager"] )
-
             self.uninstall_list_of_packages( [("PackagesManager", False), ("0_packagesmanager_loader", None)] )
-            self.remove_0_package_dependency_loader( "0_packagesmanager_loader" )
 
+            self.remove_0_package_dependency_loader( "0_packagesmanager_loader" )
             self.clean_packagesmanager_settings()
-            self.accumulative_unignore_user_packages( flush_everything=True )
 
 
     def remove_0_package_dependency_loader(self, loader_name):
