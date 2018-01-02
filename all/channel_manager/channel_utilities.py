@@ -51,8 +51,8 @@ except( ImportError, ValueError):
     import settings
 
 
-BASE_FILE_FOLDER          = os.path.join( g_settings.CURRENT_PACKAGE_ROOT_DIRECTORY, "all", "channel_manager", "base_file" )
-UPGRADE_SESSION_FILE      = os.path.join( g_settings.CURRENT_PACKAGE_ROOT_DIRECTORY, "all", "last_sublime_upgrade.channel-manager" )
+BASE_FILE_FOLDER          = os.path.join( g_settings.PACKAGE_ROOT_DIRECTORY, "all", "channel_manager", "base_file" )
+UPGRADE_SESSION_FILE      = os.path.join( g_settings.PACKAGE_ROOT_DIRECTORY, "all", "last_sublime_upgrade.channel-manager" )
 LAST_SUBLIME_TEXT_SECTION = "last_sublime_text_version"
 
 # print_python_envinronment()
@@ -94,7 +94,7 @@ except ImportError:
     # Import the debugger. It will fail when `PythonDebugTools` is inside a `.sublime-package`,
     # however, this is only meant to be used on the Development version, when `PythonDebugTools` is
     # unpacked at the loose packages folder as a git submodule.
-    assert_path( os.path.join( os.path.dirname( g_settings.CURRENT_PACKAGE_ROOT_DIRECTORY ), 'PythonDebugTools/all' ) )
+    assert_path( os.path.join( os.path.dirname( g_settings.PACKAGE_ROOT_DIRECTORY ), 'PythonDebugTools/all' ) )
     from python_debug_tools import Debugger
 
 
@@ -258,8 +258,44 @@ def get_main_directory(current_directory):
     return possible_main_directory
 
 
-def run_channel_setup(channel_settings, channel_package_name, channel_package_directory):
-    channel_directory = get_main_directory( channel_package_directory )
+def look_for_invalid_packages(channel_settings, installed_packages):
+    look_for_invalid_default_ignored_packages( installed_packages )
+
+    look_for_invalid_development_ignored_packages( channel_settings, installed_packages, "FORBIDDEN_PACKAGES" )
+    look_for_invalid_development_ignored_packages( channel_settings, installed_packages, "PACKAGES_TO_INSTALL_EXCLUSIVELY" )
+    look_for_invalid_development_ignored_packages( channel_settings, installed_packages, "PACKAGES_TO_IGNORE_ON_DEVELOPMENT" )
+    look_for_invalid_development_ignored_packages( channel_settings, installed_packages, "PACKAGES_TO_NOT_INSTALL_STABLE" )
+    look_for_invalid_development_ignored_packages( channel_settings, installed_packages, "PACKAGES_TO_NOT_INSTALL_DEVELOPMENT" )
+
+
+def look_for_invalid_default_ignored_packages(installed_packages):
+    user_settings    = sublime.load_settings( "Preferences.sublime-settings" )
+    ignored_packages = user_settings.get( "ignored_packages", [] )
+
+    for package_name in ignored_packages:
+
+        if package_name not in installed_packages:
+            log( 1, "Warning: The package `%-40s` on your User `ignored_packages` setting was not found installed!" % package_name )
+
+
+def look_for_invalid_development_ignored_packages(channel_settings, installed_packages, setting_name):
+    ignored_packages = channel_settings[setting_name]
+
+    for package_name in ignored_packages:
+
+        if package_name not in installed_packages:
+            log( 1, "%s Warning: The package `%-40s` on the `%s` setting was found not installed!" % (
+                    channel_settings['CHANNEL_PACKAGE_NAME'], package_name, setting_name ) )
+
+
+def run_channel_setup(channel_settings, channel_package_file):
+    channel_package_directory = channel_package_file.replace( ".sublime-package", "" )
+
+    channel_package_name = os.path.basename( channel_package_directory )
+    channel_directory    = get_main_directory( channel_package_directory )
+
+    if channel_package_name not in channel_settings['FORBIDDEN_PACKAGES']:
+        channel_settings['FORBIDDEN_PACKAGES'].append( channel_package_name )
 
     channel_settings['INSTALLER_TYPE']    = ""
     channel_settings['INSTALLATION_TYPE'] = ""
@@ -281,45 +317,15 @@ def run_channel_setup(channel_settings, channel_package_name, channel_package_di
     channel_settings['CHANNEL_ROOT_DIRECTORY']  = channel_directory
     channel_settings['TEMPORARY_FOLDER_TO_USE'] = "__channel_temporary_directory"
 
-    look_for_invalid_packages( channel_settings )
-    generate_channel_files( channel_package_name, channel_package_directory )
+    generate_channel_files( channel_package_name, channel_package_directory, channel_package_file )
 
 
-def look_for_invalid_packages(channel_settings):
-    installed_packages = get_installed_packages( list_default_packages=True, list_dependencies=True )
-    look_for_invalid_default_ignored_packages( installed_packages )
+def generate_channel_files(channel_package_name, channel_package_directory, channel_package_file):
 
-    look_for_invalid_development_ignored_packages( channel_settings, installed_packages, "FORBIDDEN_PACKAGES" )
-    look_for_invalid_development_ignored_packages( channel_settings, installed_packages, "PACKAGES_TO_INSTALL_EXCLUSIVELY" )
-    look_for_invalid_development_ignored_packages( channel_settings, installed_packages, "PACKAGES_TO_IGNORE_ON_DEVELOPMENT" )
-    look_for_invalid_development_ignored_packages( channel_settings, installed_packages, "PACKAGES_TO_NOT_INSTALL_STABLE" )
-    look_for_invalid_development_ignored_packages( channel_settings, installed_packages, "PACKAGES_TO_NOT_INSTALL_DEVELOPMENT" )
-
-
-def look_for_invalid_default_ignored_packages(installed_packages):
-    user_settings    = sublime.load_settings( "Preferences.sublime-settings" )
-    ignored_packages = user_settings.get( "ignored_packages", [] )
-
-    for package_name in ignored_packages:
-
-        if package_name not in installed_packages:
-            log( 1, "Warning: The package `%s` on your User `ignored_packages` setting was not found installed!" % package_name )
-
-
-def look_for_invalid_development_ignored_packages(channel_settings, installed_packages, setting_name):
-    ignored_packages = channel_settings[setting_name]
-
-    for package_name in ignored_packages:
-
-        if package_name not in installed_packages:
-            log( 1, "%s Warning: The package `%s` on the `%s` setting was found not installed!" % (
-                    channel_settings['CHANNEL_PACKAGE_NAME'], package_name, setting_name ) )
-
-
-def generate_channel_files(channel_package_name, channel_package_directory):
-    _configure_channel_menu_file( channel_package_name, channel_package_directory )
-    _configure_channel_runner_file( channel_package_name, channel_package_directory )
-    _configure_channel_commands_file( channel_package_name, channel_package_directory )
+    if not channel_package_file.endswith( ".sublime-package" ):
+        _configure_channel_menu_file( channel_package_name, channel_package_directory )
+        _configure_channel_runner_file( channel_package_name, channel_package_directory )
+        _configure_channel_commands_file( channel_package_name, channel_package_directory )
 
 
 def convert_to_pascal_case(input_string):

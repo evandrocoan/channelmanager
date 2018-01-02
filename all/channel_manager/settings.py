@@ -32,8 +32,8 @@ import datetime
 
 
 # Infer the correct package name and current directory absolute path
-CURRENT_PACKAGE_ROOT_DIRECTORY = os.path.dirname( os.path.dirname( os.path.dirname( os.path.realpath( __file__ ) ) ) )
-CURRENT_PACKAGE_NAME           = os.path.basename( CURRENT_PACKAGE_ROOT_DIRECTORY ).rsplit('.', 1)[0]
+PACKAGE_ROOT_DIRECTORY = os.path.dirname( os.path.dirname( os.path.dirname( os.path.realpath( __file__ ) ) ) )
+CURRENT_PACKAGE_NAME           = os.path.basename( PACKAGE_ROOT_DIRECTORY ).rsplit('.', 1)[0]
 
 
 # Print all their values for debugging

@@ -48,14 +48,14 @@ log = Debugger( 127, os.path.basename( __file__ ) )
 # log( 2, "..." )
 # log( 2, "..." )
 # log( 2, "Debugging" )
-# log( 2, "CURRENT_PACKAGE_ROOT_DIRECTORY: " + g_settings.CURRENT_PACKAGE_ROOT_DIRECTORY )
+# log( 2, "PACKAGE_ROOT_DIRECTORY: " + g_settings.PACKAGE_ROOT_DIRECTORY )
 
 
 def main(default_package_files=[], is_forced=False):
 
     # We can only run this when we are using the development version of the channel. And when there
     # is a `.git` folder, we are running the `Development Version` of the channel.
-    main_git_path = os.path.join( g_settings.CURRENT_PACKAGE_ROOT_DIRECTORY, ".git" )
+    main_git_path = os.path.join( g_settings.PACKAGE_ROOT_DIRECTORY, ".git" )
 
     # Not attempt to run when we are running from inside a `.sublime-package` because this is only
     # available for the `Development Version` as there is not need to unpack the `Default Package`
