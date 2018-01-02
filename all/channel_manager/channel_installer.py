@@ -833,11 +833,19 @@ class ChannelInstaller(threading.Thread):
             silence_error_message_box( 61.0 )
             self.ignore_next_packages( package_name, packages_names )
 
+            # We cannot uninstall the `User` and `Default` package by Package Control
             if package_name == "Default":
                 self.uninstall_default_package()
                 self.remove_packages_from_list( package_name )
 
                 self.accumulative_unignore_user_packages( package_name )
+                continue
+
+            if package_name == "User":
+                log( 1, "Warning: We cannot touch the `User` package as is it is now filled with new settings." )
+                self.failedRepositories.append( package_name )
+
+                self.remove_packages_from_list( package_name )
                 continue
 
             if package_name in PACKAGES_TO_UNINSTAL_LATER:
