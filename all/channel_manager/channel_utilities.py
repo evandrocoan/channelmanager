@@ -201,7 +201,7 @@ def load_repository_file(channel_repository_file, load_dependencies=True):
     return last_packages_dictionary
 
 
-def get_installed_packages(list_default_packages=False, exclusion_list=[]):
+def get_installed_packages(exclusion_list=[], list_default_packages=False, list_dependencies=False):
 
     if PackageManager:
         packages        = []
@@ -210,6 +210,9 @@ def get_installed_packages(list_default_packages=False, exclusion_list=[]):
         if list_default_packages:
             packages.extend( package_manager.list_default_packages() )
             packages.extend( ["Default", "User"] )
+
+        if list_dependencies:
+            packages.extend( package_manager.list_dependencies() )
 
         packages.extend( package_manager.list_packages() )
         return list( set( packages ) - set( exclusion_list ) )
@@ -261,8 +264,8 @@ def run_channel_setup(channel_settings, channel_package_name, channel_package_di
     channel_settings['INSTALLER_TYPE']    = ""
     channel_settings['INSTALLATION_TYPE'] = ""
 
-    channel_settings['FORBIDDEN_PACKAGES'].sort()
     channel_settings['DEFAULT_PACKAGE_FILES'].sort()
+    channel_settings['FORBIDDEN_PACKAGES'].sort()
     channel_settings['PACKAGES_TO_INSTALL_EXCLUSIVELY'].sort()
     channel_settings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT'].sort()
     channel_settings['PACKAGES_TO_NOT_INSTALL_STABLE'].sort()
@@ -278,8 +281,38 @@ def run_channel_setup(channel_settings, channel_package_name, channel_package_di
     channel_settings['CHANNEL_ROOT_DIRECTORY']  = channel_directory
     channel_settings['TEMPORARY_FOLDER_TO_USE'] = "__channel_temporary_directory"
 
-    if os.path.exists( os.path.join( channel_package_directory, "settings.py" ) ):
-        generate_channel_files( channel_package_name, channel_package_directory )
+    look_for_invalid_packages( channel_settings )
+    generate_channel_files( channel_package_name, channel_package_directory )
+
+
+def look_for_invalid_packages(channel_settings):
+    installed_packages = get_installed_packages( list_default_packages=True, list_dependencies=True )
+    look_for_invalid_default_ignored_packages( installed_packages )
+
+    look_for_invalid_development_ignored_packages( channel_settings, installed_packages, "FORBIDDEN_PACKAGES" )
+    look_for_invalid_development_ignored_packages( channel_settings, installed_packages, "PACKAGES_TO_INSTALL_EXCLUSIVELY" )
+    look_for_invalid_development_ignored_packages( channel_settings, installed_packages, "PACKAGES_TO_IGNORE_ON_DEVELOPMENT" )
+    look_for_invalid_development_ignored_packages( channel_settings, installed_packages, "PACKAGES_TO_NOT_INSTALL_STABLE" )
+    look_for_invalid_development_ignored_packages( channel_settings, installed_packages, "PACKAGES_TO_NOT_INSTALL_DEVELOPMENT" )
+
+
+def look_for_invalid_default_ignored_packages(installed_packages):
+    user_settings    = sublime.load_settings( "Preferences.sublime-settings" )
+    ignored_packages = user_settings.get( "ignored_packages", [] )
+
+    for package_name in ignored_packages:
+
+        if package_name not in installed_packages:
+            log( 1, "Warning: The package `%s` on the `ignored_packages` setting was found not installed!" % package_name )
+
+
+def look_for_invalid_development_ignored_packages(channel_settings, installed_packages, setting_name):
+    ignored_packages = channel_settings[setting_name]
+
+    for package_name in ignored_packages:
+
+        if package_name not in installed_packages:
+            log( 1, "Warning: The package `%s` on the `%s` setting was found not installed!" % ( package_name, setting_name ) )
 
 
 def generate_channel_files(channel_package_name, channel_package_directory):
@@ -637,7 +670,7 @@ def clean_urljoin(*urls):
 def dictionary_to_string_by_line(dictionary):
     variables = \
     [
-        "%-30s: %s" % ( variable_name, dictionary[variable_name] )
+        "%-50s: %s" % ( variable_name, dictionary[variable_name] )
         for variable_name in dictionary.keys()
     ]
 
