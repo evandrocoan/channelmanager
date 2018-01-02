@@ -1012,6 +1012,7 @@ class ChannelInstaller(threading.Thread):
     def attempt_to_uninstall_packagesmanager(self, packages_to_uninstall):
 
         if "PackagesManager" in packages_to_uninstall:
+            silence_error_message_box( 620.0 )
             installed_packages = self.package_manager.list_packages()
 
             if "Package Control" not in installed_packages:
@@ -1049,9 +1050,10 @@ class ChannelInstaller(threading.Thread):
 
         log( 1, "Installing: %s" % str( package_name ) )
         self.ignore_next_packages( package_name, [package_name] )
-
         self.package_manager.install_package( package_name, False )
-        self.accumulative_unignore_user_packages( flush_everything=True )
+
+        # Intentionally do not call `self.accumulative_unignore_user_packages( flush_everything=True )`
+        # forcing it to only be enabled after the `PackagesManager` uninstallation to be completed
 
 
     def uninstall_packagesmanger(self, installed_packages):
@@ -1122,8 +1124,6 @@ class ChannelInstaller(threading.Thread):
             log.insert_empty_line()
 
             log( 1, "%s of: %s..." % ( self.installationType, str( package_name ) ) )
-
-            silence_error_message_box( 62.0 )
             self.ignore_next_packages( package_name, packages_names )
 
             if self.package_manager.remove_package( package_name, is_dependency ) is False:
@@ -1437,8 +1437,8 @@ class ChannelInstaller(threading.Thread):
         if self.uningoredPackagesToFlush < 1:
             global g_next_packages_to_ignore
 
-            last_ignored_packages     = packages_list.index( package_name )
-            g_next_packages_to_ignore = packages_list[last_ignored_packages : last_ignored_packages+PACKAGES_COUNT_TO_IGNORE_AHEAD+1]
+            last_ignored_packages = packages_list.index( package_name )
+            g_next_packages_to_ignore.extend( packages_list[last_ignored_packages : last_ignored_packages+PACKAGES_COUNT_TO_IGNORE_AHEAD+1] )
 
             if "Default" in g_next_packages_to_ignore:
                 log( 1, "Warning: We never can ignore the Default package, otherwise several errors/anomalies show up." )
