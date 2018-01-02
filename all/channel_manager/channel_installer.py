@@ -881,6 +881,9 @@ class ChannelInstaller(threading.Thread):
 
 
     def uninstall_default_package(self):
+        """
+            Uninstall all the Default.sublime-packages files.
+        """
         log( 1, "%s of `Default Package` files..." % self.installationType )
 
         files_installed       = get_dictionary_key( g_channelDetails, 'default_package_files', [] )
@@ -908,35 +911,35 @@ class ChannelInstaller(threading.Thread):
             safe_remove( file_absolute_path )
             add_git_folder_by_file( file, git_folders )
 
-        del g_files_to_uninstall[:]
         log( 1, "Removing git_folders..." )
 
         for git_folder in git_folders:
             remove_git_folder( git_folder )
 
+        del g_files_to_uninstall[:]
         self.save_default_settings()
 
 
     def uninstall_folders(self):
         log.insert_empty_line()
         log.insert_empty_line()
-        log( 1, "%s of added folders: %s" % ( self.installationType, str( g_files_to_uninstall ) ) )
+        log( 1, "%s of added folders: %s" % ( self.installationType, str( g_folders_to_uninstall ) ) )
 
-        for folder in reversed( g_files_to_uninstall ):
+        for folder in reversed( g_folders_to_uninstall ):
             folders_not_empty = []
             log( 1, "Uninstalling folder: %s" % str( folder ) )
 
             folder_absolute_path = os.path.join( self.channelSettings['CHANNEL_ROOT_DIRECTORY'], folder )
             recursively_delete_empty_folders( folder_absolute_path, folders_not_empty )
 
-        for folder in g_files_to_uninstall:
+        for folder in g_folders_to_uninstall:
             folders_not_empty = []
             log( 1, "Uninstalling folder: %s" % str( folder ) )
 
             folder_absolute_path = os.path.join( self.channelSettings['CHANNEL_ROOT_DIRECTORY'], folder )
             recursively_delete_empty_folders( folder_absolute_path, folders_not_empty )
 
-        for folder in g_files_to_uninstall:
+        for folder in g_folders_to_uninstall:
             folders_not_empty = []
             log( 1, "Uninstalling folder: %s" % str( folder ) )
 
@@ -947,7 +950,7 @@ class ChannelInstaller(threading.Thread):
                 log( 1, "The installed folder `%s` could not be removed because is it not empty." % folder_absolute_path )
                 log( 1, "Its files contents are: " + str( os.listdir( folder_absolute_path ) ) )
 
-        del g_files_to_uninstall[:]
+        del g_folders_to_uninstall[:]
         self.save_default_settings()
 
 
