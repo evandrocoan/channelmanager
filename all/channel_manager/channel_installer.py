@@ -187,9 +187,8 @@ class ChannelInstaller(threading.Thread):
         IS_UPDATE_INSTALLATION = self.isUpdateInstallation
         load_installation_settings_file( self )
 
-        if not self.isInstaller:
-            self.load_package_control_settings()
-            self.setup_packages_to_uninstall_last()
+        self.load_package_control_settings()
+        self.setup_packages_to_uninstall_last()
 
         self.package_manager   = PackageManager()
         self.package_disabler  = PackageDisabler()
@@ -297,6 +296,8 @@ class ChannelInstaller(threading.Thread):
         """
             Remove the remaining packages to be uninstalled separately on another function call.
         """
+        self.ensure_packagesmanager_on_last_positoin()
+
         global PACKAGES_TO_UNINSTALL_FIRST
         global PACKAGES_TO_UNINSTALL_LAST
 
@@ -1279,6 +1280,18 @@ class ChannelInstaller(threading.Thread):
                 add_item_if_not_exists( g_packages_to_unignore, package_name )
 
         self.setup_packages_ignored_list( g_default_ignored_packages )
+
+
+    def ensure_packagesmanager_on_last_positoin(self):
+        """
+            Garantes `PackagesManager` to be on the list of PACKAGES_TO_INSTALL_LAST, and for it
+            to be on the last position.
+        """
+
+        if "PackagesManager" in self.channelSettings['PACKAGES_TO_INSTALL_LAST']:
+            self.channelSettings['PACKAGES_TO_INSTALL_LAST'].remove( "PackagesManager" )
+
+        self.channelSettings['PACKAGES_TO_INSTALL_LAST'].append( "PackagesManager" )
 
 
     def sync_package_control_and_manager(self):
