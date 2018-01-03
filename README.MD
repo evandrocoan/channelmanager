@@ -580,54 +580,54 @@ as you usually do with the default `Package Control` channel.
        run_channel_setup( g_channelSettings, CURRENT_PACKAGE_FILE )
    ```
 
-1. PACKAGE_ROOT_DIRECTORY/CURRENT_PACKAGE_NAME
-   * Infer the correct package name and the root directory of the channel
-1. plugin_loaded()
-   * We can only load the information when the Sublime Text API is available due the use of the get_main_directory() which requires it.
-1. run_channel_setup()
-   * Generate the files `Main.sublime-menu`, `Default.sublime-commands` and `commands.py` files
-1. CHANNEL_ROOT_DIRECTORY
-   * The directory where the Sublime Text loose Packages directory IS ON/IN/INSIDE
-1. g_channelSettings
-   * Hold all the information for this channel, which will be used to install this channel
-1. CHANNEL_PACKAGE_NAME
-   * The name of your channel
-1. TEMPORARY_FOLDER_TO_USE
-   * The temporary folder to download the main repository when installing the development version
-1. USER_FOLDER_PATH
-   * A direct Path to the User settings folder
-1. CHANNEL_INSTALLATION_DETAILS
-   * A direct Path to the channel installation details saved after the completion of installation of the channel
-1. DEFAULT_CHANNEL_URL
-   * The default Package Control channel full URL address
-1. CHANNEL_RAW_URL
-   * The URL of the directory where the files `channel.json` and `repository.json` are hosted
-1. CHANNEL_ROOT_URL/CHANNEL_ROOT_DIRECTORY
-   * A direct URL/Path to the main to the repository where there is the `.gitmodules`
-1. CHANNEL_FILE_URL/CHANNEL_FILE_PATH
-   * A direct URL/Path to the Repository File `channel.json` to use when installing the stable/development version
-1. CHANNEL_REPOSITORY_URL/CHANNEL_REPOSITORY_FILE
-   * A direct URL/Path to the Repository File `repository.json` to use when installing the stable/development version
-1. USER_SETTINGS_FILE
-   * The default user preferences file
-1. PACKAGES_TO_INSTALL_FIRST/PACKAGES_TO_INSTALL_LAST
-   * You can specify for some packages to be popped out from the list and being installed by first/last in the following order presented.
-1. FORBIDDEN_PACKAGES
-   * Packages which are not allowed to be selected by the user while choosing the packages to not be installed.
-     Useful for packages which are required for the channel maintainability.
-1. PACKAGES_TO_NOT_INSTALL_STABLE
-   * Packages which you do want to install when reading the `.gitmodules` packages list (stable)
-1. PACKAGES_TO_NOT_INSTALL_DEVELOPMENT
-   * Packages which you do want to install when reading the `.gitmodules` packages list (development)
-1. PACKAGES_TO_IGNORE_ON_DEVELOPMENT
-   * Packages which must not be installed on the stable version and must be disabled by default on
-     the development version, i.e., added to the `ignored_packages` list setting.
-1. DEFAULT_PACKAGE_FILES:
-   * The files of the `Default.sublime-package` you are installing
-1. PACKAGES_TO_INSTALL_EXCLUSIVELY
-   * If this list variable has length greater than 0, it will only add the packages which are listed
-     on it when installing the channel. This is useful to maintain two or more channels within the
-     same `channel.json` repository file.
+   1. PACKAGE_ROOT_DIRECTORY/CURRENT_PACKAGE_NAME
+      * Infer the correct package name and the root directory of the channel
+   1. plugin_loaded()
+      * We can only load the information when the Sublime Text API is available due the use of the get_main_directory() which requires it.
+   1. run_channel_setup()
+      * Generate the files `Main.sublime-menu`, `Default.sublime-commands` and `commands.py` files
+   1. CHANNEL_ROOT_DIRECTORY
+      * The directory where the Sublime Text loose Packages directory IS ON/IN/INSIDE
+   1. g_channelSettings
+      * Hold all the information for this channel, which will be used to install this channel
+   1. CHANNEL_PACKAGE_NAME
+      * The name of your channel
+   1. TEMPORARY_FOLDER_TO_USE
+      * The temporary folder to download the main repository when installing the development version
+   1. USER_FOLDER_PATH
+      * A direct Path to the User settings folder
+   1. CHANNEL_INSTALLATION_DETAILS
+      * A direct Path to the channel installation details saved after the completion of installation of the channel
+   1. DEFAULT_CHANNEL_URL
+      * The default Package Control channel full URL address
+   1. CHANNEL_RAW_URL
+      * The URL of the directory where the files `channel.json` and `repository.json` are hosted
+   1. CHANNEL_ROOT_URL/CHANNEL_ROOT_DIRECTORY
+      * A direct URL/Path to the main to the repository where there is the `.gitmodules`
+   1. CHANNEL_FILE_URL/CHANNEL_FILE_PATH
+      * A direct URL/Path to the Repository File `channel.json` to use when installing the stable/development version
+   1. CHANNEL_REPOSITORY_URL/CHANNEL_REPOSITORY_FILE
+      * A direct URL/Path to the Repository File `repository.json` to use when installing the stable/development version
+   1. USER_SETTINGS_FILE
+      * The default user preferences file
+   1. PACKAGES_TO_INSTALL_FIRST/PACKAGES_TO_INSTALL_LAST
+      * You can specify for some packages to be popped out from the list and being installed by first/last in the following order presented.
+   1. FORBIDDEN_PACKAGES
+      * Packages which are not allowed to be selected by the user while choosing the packages to not be installed.
+        Useful for packages which are required for the channel maintainability.
+   1. PACKAGES_TO_NOT_INSTALL_STABLE
+      * Packages which you do want to install when reading the `.gitmodules` packages list (stable)
+   1. PACKAGES_TO_NOT_INSTALL_DEVELOPMENT
+      * Packages which you do want to install when reading the `.gitmodules` packages list (development)
+   1. PACKAGES_TO_IGNORE_ON_DEVELOPMENT
+      * Packages which must not be installed on the stable version and must be disabled by default on
+        the development version, i.e., added to the `ignored_packages` list setting.
+   1. DEFAULT_PACKAGE_FILES:
+      * The files of the `Default.sublime-package` you are installing
+   1. PACKAGES_TO_INSTALL_EXCLUSIVELY
+      * If this list variable has length greater than 0, it will only add the packages which are listed
+        on it when installing the channel. This is useful to maintain two or more channels within the
+        same `channel.json` repository file.
 
 
 If you want to get more elaborated with the installation process, you can see the
