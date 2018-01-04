@@ -114,14 +114,14 @@ try:
         pass
 
 except ImportError:
-    from PackagesManager.packagesmanager import cmd
-    from PackagesManager.packagesmanager.show_error import silence_error_message_box
+    from PackagesManager.packages_manager import cmd
+    from PackagesManager.packages_manager.show_error import silence_error_message_box
 
-    from PackagesManager.packagesmanager.package_manager import PackageManager
-    from PackagesManager.packagesmanager.package_disabler import PackageDisabler
+    from PackagesManager.packages_manager.package_manager import PackageManager
+    from PackagesManager.packages_manager.package_disabler import PackageDisabler
 
-    from PackagesManager.packagesmanager.thread_progress import ThreadProgress
-    from PackagesManager.packagesmanager.commands.advanced_install_package_command import AdvancedInstallPackageThread
+    from PackagesManager.packages_manager.thread_progress import ThreadProgress
+    from PackagesManager.packages_manager.commands.advanced_install_package_command import AdvancedInstallPackageThread
 
 
 from python_debug_tools import Debugger
@@ -191,7 +191,7 @@ class ChannelInstaller(threading.Thread):
         IS_UPDATE_INSTALLATION = self.isUpdateInstallation
 
         load_installation_settings_file( self )
-        self.ensure_packagesmanager_on_last_positoin()
+        self.ensure_packages_manager_on_last_positoin()
 
         if not self.isInstaller:
             self.load_package_control_settings()
@@ -344,7 +344,7 @@ class ChannelInstaller(threading.Thread):
                 self.uninstall_files()
                 self.uninstall_folders()
 
-            self.attempt_to_uninstall_packagesmanager( packages_to_uninstall )
+            self.attempt_to_uninstall_packages_manager( packages_to_uninstall )
 
             if not self.isUpdateInstallation:
                 self.uninstall_list_of_packages( [(self.channelSettings['CHANNEL_PACKAGE_NAME'], False)] )
@@ -1012,7 +1012,7 @@ class ChannelInstaller(threading.Thread):
         g_is_running = False
 
 
-    def attempt_to_uninstall_packagesmanager(self, packages_to_uninstall):
+    def attempt_to_uninstall_packages_manager(self, packages_to_uninstall):
 
         if "PackagesManager" in packages_to_uninstall:
             silence_error_message_box( 620.0 )
@@ -1071,27 +1071,27 @@ class ChannelInstaller(threading.Thread):
             log.insert_empty_line()
 
             log( 1, "Finishing PackagesManager %s..." % self.installationType )
-            self.uninstall_list_of_packages( [("PackagesManager", False), ("0_packagesmanager_loader", None)] )
+            self.uninstall_list_of_packages( [("PackagesManager", False), ("0_packages_manager_loader", None)] )
 
-            self.remove_0_package_dependency_loader( "0_packagesmanager_loader" )
-            self.clean_packagesmanager_settings()
+            self.remove_0_package_dependency_loader( "0_packages_manager_loader" )
+            self.clean_packages_manager_settings()
 
 
     def remove_0_package_dependency_loader(self, loader_name):
         """
-            Most times the 0_packagesmanager_loader is not being deleted/removed, then try again.
+            Most times the 0_packages_manager_loader is not being deleted/removed, then try again.
         """
-        packagesmanager_loader_path     = os.path.join(
+        packages_manager_loader_path     = os.path.join(
                 self.channelSettings['CHANNEL_ROOT_DIRECTORY'], "Installed Packages", "%s.sublime-package" % loader_name )
 
-        packagesmanager_loader_path_new = os.path.join(
+        packages_manager_loader_path_new = os.path.join(
                 self.channelSettings['CHANNEL_ROOT_DIRECTORY'], "Installed Packages", "%s.sublime-package-new" % loader_name )
 
-        remove_only_if_exists( packagesmanager_loader_path )
-        remove_only_if_exists( packagesmanager_loader_path_new )
+        remove_only_if_exists( packages_manager_loader_path )
+        remove_only_if_exists( packages_manager_loader_path_new )
 
 
-    def clean_packagesmanager_settings(self, maximum_attempts=3):
+    def clean_packages_manager_settings(self, maximum_attempts=3):
         """
             Clean it a few times because PackagesManager is kinda running and still flushing stuff down
             to its settings file.
@@ -1106,7 +1106,7 @@ class ChannelInstaller(threading.Thread):
         maximum_attempts -= 1
 
         if maximum_attempts > 0:
-            sublime.set_timeout_async( lambda: self.clean_packagesmanager_settings( maximum_attempts ), 2000 )
+            sublime.set_timeout_async( lambda: self.clean_packages_manager_settings( maximum_attempts ), 2000 )
             return
 
         # Set the flag as completed, to signalize the this part of the installation was successful
@@ -1285,7 +1285,7 @@ class ChannelInstaller(threading.Thread):
         self.save_package_control_settings()
 
 
-    def ensure_packagesmanager_on_last_positoin(self):
+    def ensure_packages_manager_on_last_positoin(self):
         """
             Garantes `PackagesManager` to be on the list of PACKAGES_TO_INSTALL_LAST, and for it
             to be on the last position.
@@ -1853,12 +1853,12 @@ def load_installation_settings_file(self):
     global PACKAGESMANAGER
 
     global g_package_control_name
-    global g_packagesmanager_name
+    global g_packages_manager_name
 
     g_package_control_name = "Package Control.sublime-settings"
-    g_packagesmanager_name = "PackagesManager.sublime-settings"
+    g_packages_manager_name = "PackagesManager.sublime-settings"
 
-    PACKAGESMANAGER = os.path.join( channel_settings['USER_FOLDER_PATH'], g_packagesmanager_name )
+    PACKAGESMANAGER = os.path.join( channel_settings['USER_FOLDER_PATH'], g_packages_manager_name )
     PACKAGE_CONTROL = os.path.join( channel_settings['USER_FOLDER_PATH'], g_package_control_name )
 
     global g_channelDetails

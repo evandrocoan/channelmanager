@@ -77,8 +77,8 @@ try:
     except ImportError:
 
         try:
-            from PackagesManager.packagesmanager.download_manager import downloader
-            from PackagesManager.packagesmanager.package_manager import PackageManager
+            from PackagesManager.packages_manager.download_manager import downloader
+            from PackagesManager.packages_manager.package_manager import PackageManager
 
         except ImportError:
             PackageManager = None
