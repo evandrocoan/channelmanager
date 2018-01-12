@@ -66,7 +66,7 @@ try:
     # https://stackoverflow.com/questions/14087598/python-3-importerror-no-module-named-configparser
     import configparser
 
-    from python_debug_tools import Debugger
+    from python_debug_tools import getLogger
     from estimated_time_left import sequence_timer
     from estimated_time_left import progress_info
 
@@ -93,7 +93,7 @@ except( ImportError, ValueError ):
 
     from six.moves import configparser
     from packages_manager import cmd
-    from python_debug_tools import Debugger
+    from python_debug_tools import getLogger
     from estimated_time_left import sequence_timer
 
 
@@ -131,17 +131,16 @@ MAXIMUM_REQUEST_ERRORS = 10
 g_is_already_running   = False
 
 
-if Debugger:
-    # Debugger settings: 0 - disabled, 127 - enabled
-    log = Debugger( 127, os.path.basename( __file__ ) )
+# Debugger settings: 0 - disabled, 127 - enabled
+log = getLogger( 127, os.path.basename( __file__ ) )
 
-    #log.log_to_file( "Debug.txt" )
-    #log.clear_log_file()
+#log.set_file_logger( "Debug.txt" )
+#log.clear_log_file()
 
-    # log( 1, "..." )
-    # log( 1, "..." )
-    # log( 1, "Debugging" )
-    # log( 1, "PACKAGE_ROOT_DIRECTORY: " + g_settings.PACKAGE_ROOT_DIRECTORY )
+# log( 1, "..." )
+# log( 1, "..." )
+# log( 1, "Debugging" )
+# log( 1, "PACKAGE_ROOT_DIRECTORY: " + g_settings.PACKAGE_ROOT_DIRECTORY )
 
 
 def main(command=None):

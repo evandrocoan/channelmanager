@@ -124,10 +124,10 @@ except ImportError:
     from PackagesManager.packages_manager.commands.advanced_install_package_command import AdvancedInstallPackageThread
 
 
-from python_debug_tools import Debugger
+from python_debug_tools import getLogger
 
 # Debugger settings: 0 - disabled, 127 - enabled
-log = Debugger( 127, os.path.basename( __file__ ) )
+log = getLogger( 127, os.path.basename( __file__ ) )
 
 def _grade():
     return 1 & ( not IS_UPDATE_INSTALLATION )
