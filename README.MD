@@ -913,6 +913,8 @@ ___
    the repository. Currently it is not implemented the code to automatically figure out such tags
    and then try the get some older tag on the correct format.
 
+1. Use the form below to test your repository JSON to ensure Package Control will be able to index your package.
+   https://packagecontrol.io/test_repo
 
 
 ___
