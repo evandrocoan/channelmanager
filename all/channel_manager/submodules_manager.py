@@ -134,7 +134,7 @@ g_is_already_running   = False
 # Debugger settings: 0 - disabled, 127 - enabled
 log = getLogger( 127, os.path.basename( __file__ ) )
 
-#log.set_file_logger( "Debug.txt" )
+#log.setup_logger( "Debug.txt" )
 #log.clear_log_file()
 
 # log( 1, "..." )
