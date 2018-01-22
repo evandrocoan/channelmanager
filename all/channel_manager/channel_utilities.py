@@ -414,8 +414,7 @@ def print_failed_repositories(failed_repositories):
     if len( failed_repositories ) > 0:
         sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
 
-        log.insert_empty_line()
-        log.insert_empty_line()
+        log.newline( count=2 )
         log( 1, "The following repositories failed their commands..." )
 
     for package_name in failed_repositories:

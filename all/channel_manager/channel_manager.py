@@ -85,8 +85,8 @@ from estimated_time_left import CurrentUpdateProgress
 # Debugger settings: 0 - disabled, 127 - enabled
 log = getLogger( 127, os.path.basename( __file__ ) )
 
-#log.setup_logger( "Debug.txt" )
-#log.clear_log_file()
+#log.setup( "Debug.txt" )
+#log.clear()
 
 # log( 2, "..." )
 # log( 2, "..." )
@@ -135,7 +135,7 @@ class GenerateChannelThread(threading.Thread):
             if self.command == "all":
                 repositories, dependencies = create_repositories_list( all_packages, last_channel_file )
 
-                log.insert_empty_line()
+                log.newline()
                 self.save_log_file( repositories, dependencies )
 
             elif self.command == "git_tag":
@@ -233,7 +233,7 @@ class GenerateChannelThread(threading.Thread):
 
     def on_done_async(self):
         save_items = False
-        log.insert_empty_line()
+        log.newline()
 
         for package_index, pi in sequence_timer( range( 1, self.last_picked_item + 1 ), info_frequency=0 ):
             package_name = self.repositories_list[package_index]
@@ -249,7 +249,7 @@ class GenerateChannelThread(threading.Thread):
             last_dictionary = get_dictionary_key( self.last_channel_file, package_name, {} )
 
             update_repository( last_dictionary, package_name )
-            log.insert_empty_line()
+            log.newline()
 
         if save_items:
             repositories, dependencies = split_repositories_and_depencies( self.last_channel_file )
@@ -305,8 +305,7 @@ def update_repository(last_dictionary, package_name):
 def print_failed_repositories():
 
     if len( g_failed_repositories ) > 0:
-        log.insert_empty_line()
-        log.insert_empty_line()
+        log.newline( count=2 )
         log( 1, "The following repositories failed their commands..." )
 
     for command, repository in g_failed_repositories:
@@ -463,7 +462,7 @@ def get_last_tag_fixed(absolute_path, last_dictionary, command_line_interface, f
                     tags_list = current_tags.split( "\n" )
 
                     log( 1, "Error: The current HEAD commit already has the following tags(s): %s" % str( current_tags ) )
-                    log.insert_empty_line()
+                    log.newline()
 
                     # For now, disable all tag prefixes, i.e., tags which are not strictly "0.0.0",
                     # because we cannot handle repositories which have a tag prefix for each
@@ -475,7 +474,7 @@ def get_last_tag_fixed(absolute_path, last_dictionary, command_line_interface, f
                         # We will skip the current tag and create the next available
                         if create_git_tag( absolute_path, unprefixed_tag, command_line_interface ):
                             git_tag = unprefixed_tag
-                            log.insert_empty_line()
+                            log.newline()
 
                 else:
 

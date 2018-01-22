@@ -42,7 +42,7 @@ log = getLogger( 127, os.path.basename( __file__ ) )
 
 def main():
     log( 1, "Entering on main(0)" )
-    # log.insert_empty_line()
+    # log.newline()
 
     runner = unittest.TextTestRunner()
     runner.run( suite() )

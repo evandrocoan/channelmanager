@@ -500,9 +500,7 @@ class ChannelInstaller(threading.Thread):
             # if current_index > 3:
             #     break
 
-            log.insert_empty_line()
-            log.insert_empty_line()
-
+            log.newline( 2, count=2 )
             log( 1, "%s Installing %d of %d: %s" % ( progress, current_index, git_packages_count, str( package_name ) ) )
             self.ignore_next_packages( package_name, packages_names )
 
@@ -559,8 +557,7 @@ class ChannelInstaller(threading.Thread):
 
                 else:
                     if is_directory_empty( submodule_absolute_path ):
-                        log.insert_empty_line()
-                        log.insert_empty_line()
+                        log.newline( count=2 )
 
                         log( 1, "Installing: %s" % ( str( url ) ) )
                         non_packages_names.append( package_name )
@@ -635,11 +632,10 @@ class ChannelInstaller(threading.Thread):
         main_git_folder = os.path.join( root, ".git" )
 
         if os.path.exists( main_git_folder ):
-            log.insert_empty_line()
-            log.insert_empty_line()
+            log.newline( count=2 )
 
             log( 1, "Error: The folder '%s' already exists.\nYou already has some custom channel git installation." % main_git_folder )
-            log.insert_empty_line()
+            log.newline()
 
         else:
             temp = self.channelSettings['TEMPORARY_FOLDER_TO_USE']
@@ -660,9 +656,7 @@ class ChannelInstaller(threading.Thread):
         log( 1, "download_main_repository..." )
         url = self.channelSettings['CHANNEL_ROOT_URL']
 
-        log.insert_empty_line()
-        log.insert_empty_line()
-
+        log.newline( count=2 )
         log( 1, "Installing: %s" % ( str( self.channelSettings['CHANNEL_ROOT_URL'] ) ) )
         self.download_repository_to_folder( url, root, temp )
 
@@ -709,9 +703,7 @@ class ChannelInstaller(threading.Thread):
             # if current_index > 3:
             #     break
 
-            log.insert_empty_line()
-            log.insert_empty_line()
-
+            log.newline( count=2 )
             log( 1, "%s Installing %d of %d: %s" % ( progress, current_index, git_packages_count, str( package_name ) ) )
             self.ignore_next_packages( package_name, packages_names )
 
@@ -824,9 +816,7 @@ class ChannelInstaller(threading.Thread):
             progress       = progress_info( pi, self.setProgress )
             is_dependency  = is_package_dependency( package_name, dependencies, all_packages )
 
-            log.insert_empty_line()
-            log.insert_empty_line()
-
+            log.newline( count=2 )
             log( 1, "%s %s of %d of %d: %s (%s)" % ( progress, self.installationType,
                     current_index, packages_count, str( package_name ), str( is_dependency ) ) )
 
@@ -903,8 +893,7 @@ class ChannelInstaller(threading.Thread):
     def uninstall_files(self):
         git_folders = []
 
-        log.insert_empty_line()
-        log.insert_empty_line()
+        log.newline( count=2 )
         log( 1, "%s of added files: %s" % ( self.installationType, str( g_files_to_uninstall ) ) )
 
         for file in g_files_to_uninstall:
@@ -924,8 +913,7 @@ class ChannelInstaller(threading.Thread):
 
 
     def uninstall_folders(self):
-        log.insert_empty_line()
-        log.insert_empty_line()
+        log.newline( count=2 )
         log( 1, "%s of added folders: %s" % ( self.installationType, str( g_folders_to_uninstall ) ) )
 
         for folder in reversed( g_folders_to_uninstall ):
@@ -1048,8 +1036,7 @@ class ChannelInstaller(threading.Thread):
 
     def install_package_control(self):
         package_name = "Package Control"
-        log.insert_empty_line()
-        log.insert_empty_line()
+        log.newline( count=2 )
 
         log( 1, "Installing: %s" % str( package_name ) )
         self.ignore_next_packages( package_name, [package_name] )
@@ -1067,8 +1054,7 @@ class ChannelInstaller(threading.Thread):
 
         # Only uninstall them when they were installed
         if "PackagesManager" in installed_packages:
-            log.insert_empty_line()
-            log.insert_empty_line()
+            log.newline( count=2 )
 
             log( 1, "Finishing PackagesManager %s..." % self.installationType )
             self.uninstall_list_of_packages( [("PackagesManager", False), ("0_packages_manager_loader", None)] )
@@ -1123,8 +1109,7 @@ class ChannelInstaller(threading.Thread):
         packages_names = [ package_name for package_name, _ in packages_infos ]
 
         for package_name, is_dependency in packages_infos:
-            log.insert_empty_line()
-            log.insert_empty_line()
+            log.newline( count=2 )
 
             log( 1, "%s of: %s..." % ( self.installationType, str( package_name ) ) )
             self.ignore_next_packages( package_name, packages_names )
@@ -1683,7 +1668,7 @@ class ChannelInstaller(threading.Thread):
                 return
 
             if item_index == 1:
-                log.insert_empty_line()
+                log.newline()
                 log( 1, "Continuing the %s after the packages pick up..." % self.installationType )
 
                 can_continue[0] = True
@@ -1726,7 +1711,7 @@ class ChannelInstaller(threading.Thread):
         sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
 
         if was_cancelled[0]:
-            log.insert_empty_line()
+            log.newline()
             raise InstallationCancelled( "The user closed the %s's packages pick up list." % self.word_installer )
 
         for package_name in selected_packages_to_not_install:
@@ -1819,7 +1804,7 @@ def end_user_message(message):
     global g_is_running
     g_is_running = False
 
-    log.insert_empty_line()
+    log.newline()
     log.clean( 1, message )
 
     return wrap_text( message )
