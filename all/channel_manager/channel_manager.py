@@ -76,7 +76,7 @@ except ImportError:
 # # https://github.com/randy3k/AutomaticPackageReloader/issues/12
 # sublime_plugin.reload_plugin( "estimated_time_left" )
 
-from python_debug_tools import getLogger
+from debug_tools import getLogger
 from estimated_time_left import sequence_timer
 from estimated_time_left import progress_info
 from estimated_time_left import CurrentUpdateProgress

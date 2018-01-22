@@ -60,7 +60,7 @@ except ImportError:
     from PackagesManager.packages_manager.package_manager import clear_cache
 
 
-from python_debug_tools import getLogger
+from debug_tools import getLogger
 
 # Debugger settings: 0 - disabled, 127 - enabled
 log = getLogger( 127, os.path.basename( __file__ ) )

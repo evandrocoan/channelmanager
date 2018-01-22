@@ -66,7 +66,7 @@ try:
     # https://stackoverflow.com/questions/14087598/python-3-importerror-no-module-named-configparser
     import configparser
 
-    from python_debug_tools import getLogger
+    from debug_tools import getLogger
     from estimated_time_left import sequence_timer
     from estimated_time_left import progress_info
 
@@ -93,7 +93,7 @@ except( ImportError, ValueError ):
 
     from six.moves import configparser
     from packages_manager import cmd
-    from python_debug_tools import getLogger
+    from debug_tools import getLogger
     from estimated_time_left import sequence_timer
 
 

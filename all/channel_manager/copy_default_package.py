@@ -40,7 +40,7 @@ from . import settings as g_settings
 from .channel_utilities import is_sublime_text_upgraded
 
 
-from python_debug_tools import getLogger
+from debug_tools import getLogger
 
 # Debugger settings: 0 - disabled, 127 - enabled
 log = getLogger( 127, os.path.basename( __file__ ) )

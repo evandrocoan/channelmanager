@@ -34,7 +34,7 @@ import unittest
 from .channel_manager import fix_semantic_version
 from .channel_manager import increment_patch_version
 
-from python_debug_tools import getLogger
+from debug_tools import getLogger
 
 # Debugger settings: 0 - disabled, 127 - enabled
 log = getLogger( 127, os.path.basename( __file__ ) )

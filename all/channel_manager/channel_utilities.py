@@ -83,7 +83,7 @@ try:
         except ImportError:
             PackageManager = None
 
-    from python_debug_tools import getLogger
+    from debug_tools import getLogger
 
 except ImportError:
     sublime = None
@@ -92,7 +92,7 @@ except ImportError:
     # however, this is only meant to be used on the Development version, when `PythonDebugTools` is
     # unpacked at the loose packages folder as a git submodule.
     assert_path( os.path.join( os.path.dirname( g_settings.PACKAGE_ROOT_DIRECTORY ), 'PythonDebugTools/all' ) )
-    from python_debug_tools import getLogger
+    from debug_tools import getLogger
 
 
 # Debugger settings: 0 - disabled, 127 - enabled
