@@ -82,10 +82,10 @@ except( ImportError, ValueError ):
     sublime = None
     sublime_plugin = None
 
-    # Import the debugger. It will fail when `PythonDebugTools` is inside a `.sublime-package`,
-    # however, this is only meant to be used on the Development version, `PythonDebugTools` is
+    # Import the debugger. It will fail when `debug_tools` is inside a `.sublime-package`,
+    # however, this is only meant to be used on the Development version, `debug_tools` is
     # unpacked at the loose packages folder as a git submodule.
-    assert_path( os.path.join( os.path.dirname( g_settings.PACKAGE_ROOT_DIRECTORY ), 'PythonDebugTools/all' ) )
+    assert_path( os.path.join( os.path.dirname( g_settings.PACKAGE_ROOT_DIRECTORY ), 'debug_tools/all' ) )
     assert_path( os.path.join( os.path.dirname( g_settings.PACKAGE_ROOT_DIRECTORY ), 'PackagesManager' ) )
     assert_path( os.path.join( os.path.dirname( g_settings.PACKAGE_ROOT_DIRECTORY ), 'EstimatedTimeLeft/all' ) )
     assert_path( os.path.join( g_settings.PACKAGE_ROOT_DIRECTORY, 'six' ) )
