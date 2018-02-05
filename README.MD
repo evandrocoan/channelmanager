@@ -86,7 +86,7 @@ channel files. Currently there are implemented the following keys:
     path = Packages/Notepad++ Color Scheme
     url = https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme
     upstream =
-    dependency = debug_tools, regex
+    dependency = DebugTools, regex
     tags = 3143, 3147
 ```
 
@@ -100,9 +100,9 @@ This is useful when you are want a package to always be downloaded from the late
 master branch.
 
 The key `dependency` is comma separate lists of `dependencies` a package has. If the dependency key
-start with number like in `dependency = 50, debug_tools, regex`, it would mean that the package
+start with number like in `dependency = 50, DebugTools, regex`, it would mean that the package
 `Packages/Notepad++ Color Scheme` would be a dependency with load order of 50, which requires as
-dependency the dependencies `debug_tools` and `regex`.
+dependency the dependencies `DebugTools` and `regex`.
 
 As well it could just be `dependency = 50`, then it would mean `Packages/Notepad++ Color Scheme` is
 a dependency which has the loading order set as `50`. You can learn more about dependencies reading
@@ -174,7 +174,7 @@ before sending the files contents to the `configparser`:
     path = Packages/BufferScroll
     url = https://github.com/evandrocoan/BufferScroll
     upstream = https://github.com/titoBouzout/BufferScroll
-    dependency = debug_tools
+    dependency = DebugTools
 ```
 
 **Backstroke.gitmodules**
@@ -200,7 +200,7 @@ look like:
     path = Packages/Notepad++ Color Scheme
     url = https://github.com/your_user_name/SublimeNotepadPlusPlusTheme
     upstream = https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme
-    dependency = debug_tools, regex
+    dependency = DebugTools, regex
     tags = 3143, 3147
 ```
 
@@ -349,12 +349,12 @@ as you usually do with the default `Package Control` channel.
        path = Packages/ChannelManager
        url = https://github.com/evandrocoan/SublimeChannelManager
        upstream =
-       dependency = 50, debug_tools
+       dependency = 50, DebugTools
    ```
 
    The packages `ChannelManager` is responsible for generating the channel files, installing and
    uninstalling them. As it is set on the `.gitmodules` file, it defines itself as being a
-   dependency with load order of `50` and requiring another dependency called `debug_tools`.
+   dependency with load order of `50` and requiring another dependency called `DebugTools`.
    You can read more about the dependency load order on [Package Control, Docs:
    Dependencies](https://packagecontrol.io/docs/dependencies)
 
@@ -363,7 +363,7 @@ as you usually do with the default `Package Control` channel.
    the commands. However, if you do not add it:
 
       1. The installation could just not work, if the dependency `ChannelManager` and
-         `debug_tools` are not available on the `Package Control` default channel.
+         `DebugTools` are not available on the `Package Control` default channel.
       1. You cannot use all the features available because currently it is dependent on git
          submodules and Package Control cannot clone the submodules together yet. Therefore, cannot
          use the features dependent on the submodules as the `find_forks` command.
@@ -373,7 +373,7 @@ as you usually do with the default `Package Control` channel.
    as you already have a full git repository at hand, you just need to change the remote to a new
    repository or for a fork of yours at GitHub.
 
-   Therefore as you may notice, was skipped the addition of the dependency `debug_tools` as it is
+   Therefore as you may notice, was skipped the addition of the dependency `DebugTools` as it is
    not dependent on git submodules and there is not much room for improvement or changes on it.
    However if you like you can also add it as a package. You just need to add the following entry to
    your `.gitmodules`:
@@ -386,11 +386,11 @@ as you usually do with the default `Package Control` channel.
        path = Packages/ChannelManager
        url = https://github.com/evandrocoan/SublimeChannelManager
        upstream =
-       dependency = 50, debug_tools
+       dependency = 50, DebugTools
 
-   [submodule "Packages/debug_tools"]
-       path = Packages/debug_tools
-       url = https://github.com/evandrocoan/debug_tools
+   [submodule "Packages/DebugTools"]
+       path = Packages/DebugTools
+       url = https://github.com/evandrocoan/DebugTools
        upstream =
        dependency = 49
    ```
@@ -436,11 +436,11 @@ as you usually do with the default `Package Control` channel.
        path = Packages/ChannelManager
        url = https://github.com/evandrocoan/SublimeChannelManager
        upstream =
-       dependency = 50, debug_tools
+       dependency = 50, DebugTools
 
-   [submodule "Packages/debug_tools"]
-       path = Packages/debug_tools
-       url = https://github.com/evandrocoan/debug_tools
+   [submodule "Packages/DebugTools"]
+       path = Packages/DebugTools
+       url = https://github.com/evandrocoan/DebugTools
        upstream =
        dependency = 49
 
@@ -448,14 +448,14 @@ as you usually do with the default `Package Control` channel.
        path = Packages/MyBrandNewChannel
        url = https://github.com/your_user_name/MyBrandNewChannel
        upstream =
-       dependency = ChannelManager, debug_tools
+       dependency = ChannelManager, DebugTools
        tags = master
    ```
 
    * Note: Due Package Control currently not accept dependencies requiring dependencies, we also
      need to add the `ChannelManager` dependencies to the `MyBrandNewChannel` dependencies list. On
-     this case, we added the dependency `debug_tools` to the `MyBrandNewChannel` dependencies
-     list, as `ChannelManager` requires the `debug_tools` as dependency. See the following
+     this case, we added the dependency `DebugTools` to the `MyBrandNewChannel` dependencies
+     list, as `ChannelManager` requires the `DebugTools` as dependency. See the following
      issue for details about when this should be correctly supported by `Package Control`:
 
      1. [package_control#1300](https://github.com/wbond/package_control/issues/1300) If a dependency has a dependency, its dependencies are not installed
@@ -893,7 +893,7 @@ ___
 ## Development Problems
 ___
 
-1. The Development Version currently cannot install the dependencies `debug_tools` and
+1. The Development Version currently cannot install the dependencies `DebugTools` and
    `ChannelManager` as Package Control always unpack package dependencies. Because to install the
    development packages, it required to they do not exists on the user loose `Packages` folder. But
    as Package Control unpacks them when installing the required dependencies, the installer cannot
@@ -901,7 +901,7 @@ ___
 
    The solution to this problem is to Package Control accept some dependencies to be installed
    inside a `sublime-package`. There is a open pull request for Package Control allowing this
-   feature: [Pull$1291](https://github.com/wbond/package_control/pull/1291) Allowed debug_tools
+   feature: [Pull$1291](https://github.com/wbond/package_control/pull/1291) Allowed DebugTools
    to be import from a .sublime-package file.
 
    The work around to fix this, is after the Development Version installation process to be
