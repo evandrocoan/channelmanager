@@ -61,12 +61,12 @@ from .channel_utilities import sort_list_of_dictionaries
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
 # or vice-versa. Which means we cannot do nothing as this is only compatible with PackagesManager.
 try:
-    from PackagesManager.packages_manager.package_manager import PackageManager
-    from PackagesManager.packages_manager.providers.channel_provider import ChannelProvider
+    from PackagesManager.package_control.package_manager import PackageManager
+    from PackagesManager.package_control.providers.channel_provider import ChannelProvider
 
-    from PackagesManager.packages_manager import cmd
-    from PackagesManager.packages_manager.thread_progress import ThreadProgress
-    from PackagesManager.packages_manager.show_quick_panel import show_quick_panel
+    from PackagesManager.package_control import cmd
+    from PackagesManager.package_control.thread_progress import ThreadProgress
+    from PackagesManager.package_control.show_quick_panel import show_quick_panel
 
 except ImportError:
     pass

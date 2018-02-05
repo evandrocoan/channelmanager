@@ -46,7 +46,7 @@ try:
     from package_control.thread_progress import ThreadProgress
 
 except ImportError:
-    from PackagesManager.packages_manager.thread_progress import ThreadProgress
+    from PackagesManager.package_control.thread_progress import ThreadProgress
 
 
 from debug_tools import getLogger

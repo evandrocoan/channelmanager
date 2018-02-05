@@ -55,9 +55,9 @@ try:
     from package_control.package_manager import clear_cache
 
 except ImportError:
-    from PackagesManager.packages_manager import cmd
-    from PackagesManager.packages_manager.thread_progress import ThreadProgress
-    from PackagesManager.packages_manager.package_manager import clear_cache
+    from PackagesManager.package_control import cmd
+    from PackagesManager.package_control.thread_progress import ThreadProgress
+    from PackagesManager.package_control.package_manager import clear_cache
 
 
 from debug_tools import getLogger

@@ -114,14 +114,14 @@ try:
         pass
 
 except ImportError:
-    from PackagesManager.packages_manager import cmd
-    from PackagesManager.packages_manager.show_error import silence_error_message_box
+    from PackagesManager.package_control import cmd
+    from PackagesManager.package_control.show_error import silence_error_message_box
 
-    from PackagesManager.packages_manager.package_manager import PackageManager
-    from PackagesManager.packages_manager.package_disabler import PackageDisabler
+    from PackagesManager.package_control.package_manager import PackageManager
+    from PackagesManager.package_control.package_disabler import PackageDisabler
 
-    from PackagesManager.packages_manager.thread_progress import ThreadProgress
-    from PackagesManager.packages_manager.commands.advanced_install_package_command import AdvancedInstallPackageThread
+    from PackagesManager.package_control.thread_progress import ThreadProgress
+    from PackagesManager.package_control.commands.advanced_install_package_command import AdvancedInstallPackageThread
 
 
 from debug_tools import getLogger

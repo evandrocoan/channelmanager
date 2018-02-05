@@ -73,7 +73,7 @@ try:
     # When there is an ImportError, means that Package Control is installed instead of PackagesManager.
     # Which means we cannot do nothing as this is only compatible with PackagesManager.
     try:
-        from PackagesManager.packages_manager import cmd
+        from PackagesManager.package_control import cmd
 
     except( ImportError, ValueError ):
         pass
@@ -92,7 +92,7 @@ except( ImportError, ValueError ):
     assert_path( os.path.join( g_settings.PACKAGE_ROOT_DIRECTORY, 'all' ) )
 
     from six.moves import configparser
-    from packages_manager import cmd
+    from package_control import cmd
     from debug_tools import getLogger
     from estimated_time_left import sequence_timer
 
