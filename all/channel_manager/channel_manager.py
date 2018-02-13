@@ -431,9 +431,9 @@ def get_last_tag_fixed(absolute_path, last_dictionary, command_line_interface, f
 
         @param force_tag_update if True, the tag will be created and also push the created tag to origin.
     """
-    release_date = get_git_date( absolute_path, command_line_interface )
-    date_tag     = get_git_version( release_date )
     git_tag      = get_git_latest_tag( absolute_path, command_line_interface )
+    release_date = get_git_tag_date( absolute_path, command_line_interface, git_tag )
+    date_tag     = get_git_version( release_date )
 
     # # Delete all local tags not present on the remote
     # # https://stackoverflow.com/questions/1841341/remove-local-tags-that-are-no-longer
@@ -687,7 +687,7 @@ def fix_semantic_version(tag):
     return tag, tag
 
 
-def get_git_date(absolute_path, command_line_interface):
+def get_git_commit_date(absolute_path, command_line_interface):
     """
         Get timestamp of the last commit in git repository
         https://gist.github.com/bitrut/1494315
