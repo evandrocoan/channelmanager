@@ -997,9 +997,9 @@ class Repository():
             self._addToRepositoriesList( repositories )
             # self._deleteSublimeDependencyFile( sublime_dependency_path )
 
-        if self.getDependenciesCount() > 0:
-            self.release_data['dependencies'] = self.dependency_list
-            self._createDependenciesJson( dependencies_json_path )
+        # if self.getDependenciesCount() > 0:
+        #     self.release_data['dependencies'] = self.dependency_list
+        #     self._createDependenciesJson( dependencies_json_path )
 
         # else:
         #     self._deleteDependenciesJson( dependencies_json_path )

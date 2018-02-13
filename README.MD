@@ -86,7 +86,6 @@ channel files. Currently there are implemented the following keys:
     path = Packages/Notepad++ Color Scheme
     url = https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme
     upstream =
-    dependency = DebugTools, regex
     tags = 3143, 3147
 ```
 
@@ -99,15 +98,12 @@ name. For example, if you set `tag = master`, the download link will always poin
 This is useful when you are want a package to always be downloaded from the latest version on the
 master branch.
 
-The key `dependency` is comma separate lists of `dependencies` a package has. If the dependency key
-start with number like in `dependency = 50, DebugTools, regex`, it would mean that the package
-`Packages/Notepad++ Color Scheme` would be a dependency with load order of 50, which requires as
-dependency the dependencies `DebugTools` and `regex`.
-
-As well it could just be `dependency = 50`, then it would mean `Packages/Notepad++ Color Scheme` is
-a dependency which has the loading order set as `50`. You can learn more about dependencies reading
-[Package Control, Docs: Dependencies](https://packagecontrol.io/docs/dependencies). If it had no key
-`dependency` then it mean it is just a `Package` with no dependencies.
+The if the dependency key start with number like `dependency = 50`,
+it would mean that the package `Packages/Notepad++ Color Scheme` would be a dependency with load order of 50.
+You can learn more about dependencies reading [Package Control,
+Docs:
+Dependencies](https://packagecontrol.io/docs/dependencies).
+If it had no key `dependency` then it mean it is just a `Package` instead of a Package Control dependency.
 
 The `upstream` can be empty or not present if you would like to. It is used to set your repository
 `upstream` when the project is a fork of some another project. For example, let us suppose you liked
@@ -174,7 +170,6 @@ before sending the files contents to the `configparser`:
     path = Packages/BufferScroll
     url = https://github.com/evandrocoan/BufferScroll
     upstream = https://github.com/titoBouzout/BufferScroll
-    dependency = DebugTools
 ```
 
 **Backstroke.gitmodules**
@@ -200,7 +195,6 @@ look like:
     path = Packages/Notepad++ Color Scheme
     url = https://github.com/your_user_name/SublimeNotepadPlusPlusTheme
     upstream = https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme
-    dependency = DebugTools, regex
     tags = 3143, 3147
 ```
 
@@ -349,18 +343,19 @@ as you usually do with the default `Package Control` channel.
        path = Packages/ChannelManager
        url = https://github.com/evandrocoan/SublimeChannelManager
        upstream =
-       dependency = 50, DebugTools
+       dependency = 50
    ```
 
-   The packages `ChannelManager` is responsible for generating the channel files, installing and
-   uninstalling them. As it is set on the `.gitmodules` file, it defines itself as being a
-   dependency with load order of `50` and requiring another dependency called `DebugTools`.
-   You can read more about the dependency load order on [Package Control, Docs:
-   Dependencies](https://packagecontrol.io/docs/dependencies)
+   The packages `ChannelManager` is responsible for generating the channel files,
+   installing and uninstalling them.
+   As it is set on the `.gitmodules` file,
+   it defines itself as being a dependency with load order of `50`.
+   You can read more about the dependency load order on [Package Control, Docs: Dependencies](https://packagecontrol.io/docs/dependencies)
 
-   As it is a dependency you could just skip it, i.e., not add this entry to your `.gitmodules` file
-   as `Package Control` would install it when you requires it on the actual package which provides
-   the commands. However, if you do not add it:
+   As it is a dependency,
+   if you just skip it, i.e.,
+   not add this entry to your `.gitmodules` file as `Package Control` will fail to install
+   it when you requires it on the actual package which provides the commands, because:
 
       1. The installation could just not work, if the dependency `ChannelManager` and
          `DebugTools` are not available on the `Package Control` default channel.
@@ -373,10 +368,12 @@ as you usually do with the default `Package Control` channel.
    as you already have a full git repository at hand, you just need to change the remote to a new
    repository or for a fork of yours at GitHub.
 
-   Therefore as you may notice, was skipped the addition of the dependency `DebugTools` as it is
-   not dependent on git submodules and there is not much room for improvement or changes on it.
-   However if you like you can also add it as a package. You just need to add the following entry to
-   your `.gitmodules`:
+   Therefore as you may notice,
+   was skipped the addition of the dependency `DebugTools`,
+   as it is not dependent on git submodules and there is not much room for improvement or changes on it.
+   However,
+   if you like you can also add it as a package.
+   You just need to add the following entry to your `.gitmodules`:
    ```java
    [submodule "Packages/GitGutter"]
        path = Packages/GitGutter
@@ -386,7 +383,7 @@ as you usually do with the default `Package Control` channel.
        path = Packages/ChannelManager
        url = https://github.com/evandrocoan/SublimeChannelManager
        upstream =
-       dependency = 50, DebugTools
+       dependency = 50
 
    [submodule "Packages/DebugTools"]
        path = Packages/DebugTools
@@ -436,7 +433,7 @@ as you usually do with the default `Package Control` channel.
        path = Packages/ChannelManager
        url = https://github.com/evandrocoan/SublimeChannelManager
        upstream =
-       dependency = 50, DebugTools
+       dependency = 50
 
    [submodule "Packages/DebugTools"]
        path = Packages/DebugTools
@@ -448,15 +445,35 @@ as you usually do with the default `Package Control` channel.
        path = Packages/MyBrandNewChannel
        url = https://github.com/your_user_name/MyBrandNewChannel
        upstream =
-       dependency = ChannelManager, DebugTools
        tags = master
    ```
 
    * Note: Due Package Control currently not accept dependencies requiring dependencies, we also
-     need to add the `ChannelManager` dependencies to the `MyBrandNewChannel` dependencies list. On
-     this case, we added the dependency `DebugTools` to the `MyBrandNewChannel` dependencies
-     list, as `ChannelManager` requires the `DebugTools` as dependency. See the following
-     issue for details about when this should be correctly supported by `Package Control`:
+     need to add the `ChannelManager` dependencies to the `MyBrandNewChannel` dependencies list:
+
+   **dependencies.json**
+   ```javascript
+   {
+       "windows": {
+           ">3000": [
+               "python-pywin32"
+           ]
+       },
+       "*": {
+           "*": [
+               "PortalockerFiles",
+               "ConcurrentLogHandler",
+               "DebugTools",
+               "EstimatedTimeLeft"
+           ]
+       }
+   }
+   ```
+
+     On this case,
+     we added the dependency `DebugTools` to the `MyBrandNewChannel` dependencies list,
+     as `ChannelManager` requires the `DebugTools` as dependency.
+     See the following issue for details about when this should be correctly supported by `Package Control`:
 
      1. [package_control#1300](https://github.com/wbond/package_control/issues/1300) If a dependency has a dependency, its dependencies are not installed
 
