@@ -861,7 +861,8 @@ class Repository():
             if len( self.dependency_list ) > 0:
 
                 try:
-                    self.load_order = int( self.dependency_list[0] )
+                    int( self.dependency_list[0] )
+                    self.load_order = self.dependency_list[0]
 
                     self.isPackageDependency = True
                     del self.dependency_list[0]
@@ -1010,7 +1011,7 @@ class Repository():
     def _createSublimeDependencyFile(self, sublime_dependency_path):
 
         with open( sublime_dependency_path, "w", newline='\n' ) as text_file:
-            text_file.write( "%d\n" % self.load_order )
+            text_file.write( "%s\n" % self.load_order )
 
     def _deleteDependenciesJson(self, dependencies_json_path):
         remove_only_if_exists( dependencies_json_path )
