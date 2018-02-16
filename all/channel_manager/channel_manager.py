@@ -198,12 +198,30 @@ class GenerateChannelThread(threading.Thread):
 
         if picked_index == 0:
 
+            # No repositories selected, reshow the menu
             if self.get_total_items_selected() < 1:
                 show_quick_panel( sublime.active_window(), self.repositories_list, self.on_done )
 
             else:
-                thread = threading.Thread( target=self.on_done_async )
-                thread.start()
+                severity_options = ["Go Back", "Cancel", "Patch", "Minor", "Major"]
+
+                def on_done_severity(picked_index):
+
+                    if picked_index < 0 or picked_index == 1:
+                        free_mutex_lock()
+                        return
+
+                    if picked_index == 0:
+                        show_quick_panel( sublime.active_window(), self.repositories_list, self.on_done )
+
+                    # See the function get_last_tag_fixed()
+                    self.severity_level = 3 if picked_index == 2 else 2 if picked_index == 3 else 1
+                    log( 1, "severity_level: %s", self.severity_level )
+
+                    thread = threading.Thread( target=self.on_done_async )
+                    thread.start()
+
+                show_quick_panel( sublime.active_window(), severity_options, on_done_severity )
 
         else:
 
@@ -248,7 +266,7 @@ class GenerateChannelThread(threading.Thread):
             save_items      = True
             last_dictionary = get_dictionary_key( self.last_channel_file, package_name, {} )
 
-            update_repository( last_dictionary, package_name )
+            update_repository( last_dictionary, package_name, self.severity_level )
             log.newline()
 
         if save_items:
@@ -278,13 +296,13 @@ def split_repositories_and_depencies(repositories_dictionary):
     return sort_list_of_dictionaries( packages_list), sort_list_of_dictionaries( dependencies_list )
 
 
-def update_repository(last_dictionary, package_name):
+def update_repository(last_dictionary, package_name, severity_level):
     log( 1, "Updating repository... %s" % ( str( package_name ) ) )
 
     command_line_interface = cmd.Cli( None, True )
     absolute_path = os.path.join( g_channelSettings['CHANNEL_ROOT_DIRECTORY'], "Packages", package_name )
 
-    git_tag, date_tag, release_date = get_last_tag_fixed( absolute_path, last_dictionary, command_line_interface, True )
+    git_tag, date_tag, release_date = get_last_tag_fixed( absolute_path, last_dictionary, command_line_interface, True, severity_level )
     release_data = last_dictionary['releases'][0]
 
     release_data['date']    = release_date
@@ -424,11 +442,12 @@ def create_repositories_list(all_packages, last_channel_file):
     return sort_list_of_dictionaries( repositories), sort_list_of_dictionaries( dependencies )
 
 
-def get_last_tag_fixed(absolute_path, last_dictionary, command_line_interface, force_tag_update=False):
+def get_last_tag_fixed(absolute_path, last_dictionary, command_line_interface, force_tag_update=False, severity_level=1):
     """
         This is a entry point to do some batch operation on each git submodule. We can temporarily
         insert the code we want to run with `command_line_interface` and remove later.
 
+        @param severity_level   3 - Patch, 2 - Minor, 1 - Major
         @param force_tag_update if True, the tag will be created and also push the created tag to origin.
     """
     git_tag      = get_git_latest_tag( absolute_path, command_line_interface )
@@ -455,7 +474,7 @@ def get_last_tag_fixed(absolute_path, last_dictionary, command_line_interface, f
 
             # if LooseVersion( date_tag ) > LooseVersion( last_date_tag ):
             if True:
-                next_git_tag, is_incremented, unprefixed_tag = increment_patch_version( git_tag, force_tag_update )
+                next_git_tag, is_incremented, unprefixed_tag = increment_tag_version( git_tag, force_tag_update, severity_level )
                 current_tags = get_current_cummit_tags( absolute_path, command_line_interface )
 
                 if len( current_tags ) > 0:
@@ -530,9 +549,11 @@ def get_current_cummit_tags(absolute_path, command_line_interface):
     return str( output )
 
 
-def increment_patch_version(git_tag, force_tag_update=False):
+def increment_tag_version(git_tag, force_tag_update=False, severity_level=1):
     """
         Increments tags on the form `0.0.0`.
+
+        @param severity_level      see the function get_last_tag_fixed()
 
         @return new_tag_name       the new incremented tag if it was incremented, or the original
                                    value or some other valid value otherwise.
@@ -555,8 +576,20 @@ def increment_patch_version(git_tag, force_tag_update=False):
     fixed_tag, matched_tag = fix_semantic_version( git_tag )
     matches = re.search( "(\d+)\.(\d+)\.(\d+)", fixed_tag )
 
+    def determine_update_level(group):
+
+        if severity_level == group:
+            return str( int( matches.group( group ) ) + 1 )
+
+        else:
+
+            if severity_level < group:
+                return "0"
+
+            return matches.group( group )
+
     if matches:
-        fixed_tag = "%s.%s.%s" % ( matches.group(1), matches.group(2), str( int( matches.group(3) ) + 1 ) )
+        fixed_tag = "%s.%s.%s" % ( determine_update_level(1), determine_update_level(2), determine_update_level(3) )
         return git_tag.replace( matched_tag, fixed_tag ), True, fixed_tag
 
     log( 1, "Warning: Could not increment the git_tag: " + str( git_tag ) )
