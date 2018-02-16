@@ -740,6 +740,8 @@ def get_git_tag_date(absolute_path, command_line_interface, tag):
     """
         Get timestamp of the specified tag in git repository
         https://gist.github.com/bitrut/1494315
+
+        @return release_date `2018-02-16 01:40:11 -0200`
     """
     # command = shlex.split( "git log -1 --date=iso" )
     command = shlex.split( "git log -1 --pretty=format:%ci {}".format( tag ) )
@@ -810,19 +812,15 @@ def get_git_version(release_date):
     """
         Get timestamp of the last commit in git repository
         https://gist.github.com/bitrut/1494315
-    """
-    return release_date.replace("-", ".")[0:10]
 
-
-def get_git_tag_version(tag_date, tag):
+        @param `release_date` the date on the format "2018-02-16 01:40:11 -0200"
+        @return 2018.0216.0140
     """
-        Get timestamp of the last commit in git repository
-        https://gist.github.com/bitrut/1494315
-    """
-    tag_date      = tag_date.replace("-", ".")[0:10]
-    patch_version = tag_date[5:].replace(".", "")
+    fixed_date = release_date.replace("-", ".")
+    month_day = fixed_date[6:10].replace(".", "")
+    hour_minute = fixed_date[11:16].replace(":", "")
 
-    return tag + "." + tag_date[:4] + "." + patch_version
+    return "{}.{:0>4}.{}".format( fixed_date[:4], month_day, hour_minute )
 
 
 def count_package_sections(gitModulesFile, sections):
@@ -1013,7 +1011,7 @@ class Repository():
 
                 release_data['url']     = get_download_url( self.url, tag )
                 release_data['date']    = tag_date
-                release_data['version'] = get_git_tag_version( tag_date, tag )
+                release_data['version'] = get_git_version( tag_date )
 
                 tagged_releases.append( release_data )
 
