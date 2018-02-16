@@ -214,7 +214,7 @@ class GenerateChannelThread(threading.Thread):
                     if picked_index == 0:
                         show_quick_panel( sublime.active_window(), self.repositories_list, self.on_done )
 
-                    # See the function get_last_tag_fixed()
+                    # See the function get_last_tag_fixed() for the severity leves available
                     self.severity_level = 3 if picked_index == 2 else 2 if picked_index == 3 else 1
                     log( 1, "severity_level: %s", self.severity_level )
 
@@ -296,7 +296,10 @@ def split_repositories_and_depencies(repositories_dictionary):
     return sort_list_of_dictionaries( packages_list), sort_list_of_dictionaries( dependencies_list )
 
 
-def update_repository(last_dictionary, package_name, severity_level):
+def update_repository(last_dictionary, package_name, severity_level=3):
+    """
+        @param severity_level see the function get_last_tag_fixed() for the severity leves available
+    """
     log( 1, "Updating repository... %s" % ( str( package_name ) ) )
 
     command_line_interface = cmd.Cli( None, True )
