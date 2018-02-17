@@ -135,7 +135,7 @@ def load_data_file(file_path, wait_on_error=True):
                     time.sleep( 0.1 )
 
         if maximum_attempts < 1:
-            raise ValueError( "file_path: %s" % ( file_path ) )
+            raise ValueError( "Could not open the file_path: %s" % ( file_path ) )
 
     else:
 
