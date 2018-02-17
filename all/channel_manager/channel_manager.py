@@ -396,14 +396,13 @@ def create_repositories_list(all_packages, last_channel_file):
     gitModulesFile.read( gitFilePath )
     command_line_interface = cmd.Cli( None, False )
 
-    sections       = gitModulesFile.sections()
-    sections_count = count_package_sections( gitModulesFile, sections )
+    gitRepositories = get_git_repositories( gitModulesFile )
+    sections_count  = len( gitRepositories )
 
     index = 0
     log( 1, "Total repositories to parse: " + str( sections_count ) )
 
-    for section, pi in sequence_timer( sections, info_frequency=0 ):
-        repository = Repository( gitModulesFile, section )
+    for repository, pi in sequence_timer( gitRepositories, info_frequency=0 ):
 
         if not g_is_already_running:
             raise ImportError( "Stopping the process as this Python module was reloaded!" )
@@ -412,37 +411,36 @@ def create_repositories_list(all_packages, last_channel_file):
         # if index > 3:
         #     break
 
-        if 'Packages' == repository.path[0:8]:
-            index += 1
+        index += 1
 
-            progress = progress_info( pi, set_progress )
-            log( 1, "{:s} Processing {:3d} of {:d} repositories... {:s}".format( progress, index, sections_count, repository.path ) )
+        progress = progress_info( pi, set_progress )
+        log( 1, "{:s} Processing {:3d} of {:d} repositories... {:s}".format( progress, index, sections_count, repository.path ) )
 
-            if repository.name in all_packages:
-                repository.info = all_packages[repository.name]
+        if repository.name in all_packages:
+            repository.info = all_packages[repository.name]
 
-            else:
-                repository.info['details'] = repository.url
+        else:
+            repository.info['details'] = repository.url
 
-            repository.release_data['platforms']    = "*"
-            repository.release_data['sublime_text'] = ">=3126"
+        repository.release_data['platforms']    = "*"
+        repository.release_data['sublime_text'] = ">=3126"
 
-            # Must to be called after setting `release_data{}`
-            repository.setVersioningTag( last_channel_file, command_line_interface )
-            fix_sublime_text_release( repository, repositories, dependencies )
+        # Must to be called after setting `release_data{}`
+        repository.setVersioningTag( last_channel_file, command_line_interface )
+        fix_sublime_text_release( repository, repositories, dependencies )
 
-            user_forker = get_user_name( repository.url )
-            repository.ensureAuthorName( user_forker )
+        user_forker = get_user_name( repository.url )
+        repository.ensureAuthorName( user_forker )
 
-            # Must to be called after `setVersioningTag()`
-            tagged_releases = repository.getOldCompatibleVersions( command_line_interface )
-            tagged_releases.insert( 0, repository.release_data )
-            tagged_releases = sort_dictionaries_on_list( tagged_releases )
+        # Must to be called after `setVersioningTag()`
+        tagged_releases = repository.getOldCompatibleVersions( command_line_interface )
+        tagged_releases.insert( 0, repository.release_data )
+        tagged_releases = sort_dictionaries_on_list( tagged_releases )
 
-            repository.info['name']     = repository.name
-            repository.info['releases'] = tagged_releases
+        repository.info['name']     = repository.name
+        repository.info['releases'] = tagged_releases
 
-    return sort_list_of_dictionaries( repositories), sort_list_of_dictionaries( dependencies )
+    return sort_list_of_dictionaries( repositories ), sort_list_of_dictionaries( dependencies )
 
 
 def get_last_tag_fixed(absolute_path, last_dictionary, command_line_interface, force_tag_update=False, severity_level=1):
@@ -826,16 +824,30 @@ def get_git_version(release_date):
     return "{}.{:0>4}.{}".format( fixed_date[:4], month_day, hour_minute )
 
 
-def count_package_sections(gitModulesFile, sections):
-    sections_count = 0
+def get_git_repositories(gitModulesFile):
+    sections     = gitModulesFile.sections()
+    repositories = []
+
+    if g_channelSettings['PACKAGES_TO_INSTALL_EXCLUSIVELY']:
+
+        def add():
+            name = os.path.basename( path )
+
+            if name in g_channelSettings['PACKAGES_TO_INSTALL_EXCLUSIVELY']:
+                repositories.append( Repository( gitModulesFile, section ) )
+
+    else:
+
+        def add():
+            repositories.append( Repository( gitModulesFile, section ) )
 
     for section in sections:
         path = gitModulesFile.get( section, "path" )
 
         if 'Packages' == path[0:8]:
-            sections_count += 1
+            add()
 
-    return sections_count
+    return repositories
 
 
 def print_some_repositories(all_packages):
