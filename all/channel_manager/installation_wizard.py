@@ -589,8 +589,8 @@ def is_allowed_to_run():
 
 
 def add_channel():
-    package_control    = "Package Control.sublime-settings"
     channel_url = g_channelSettings['CHANNEL_FILE_URL']
+    package_control = "Package Control.sublime-settings"
 
     package_control_settings = sublime.load_settings( package_control )
     channels                 = package_control_settings.get( "channels", [] )
