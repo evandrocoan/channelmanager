@@ -195,11 +195,11 @@ def is_package_dependency(package_name, dependencies, packages):
 def load_repository_file(channel_repository_file, load_dependencies=True):
     repositories_dictionary = load_data_file( channel_repository_file )
 
-    packages_list = get_dictionary_key( repositories_dictionary, 'packages', {} )
+    packages_list = get_dictionary_key( repositories_dictionary, 'packages', [] )
     last_packages_dictionary = {}
 
     if load_dependencies:
-        dependencies_list = get_dictionary_key( repositories_dictionary, 'dependencies', {} )
+        dependencies_list = get_dictionary_key( repositories_dictionary, 'dependencies', [] )
         packages_list.extend( dependencies_list )
 
     for package in packages_list:
