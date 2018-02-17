@@ -138,6 +138,7 @@ def load_data_file(file_path, wait_on_error=True):
             raise ValueError( "file_path: %s" % ( file_path ) )
 
     else:
+
         if sublime:
 
             try:
@@ -150,10 +151,15 @@ def load_data_file(file_path, wait_on_error=True):
                 return json.loads( resource_bytes.decode('utf-8'), object_pairs_hook=OrderedDict )
 
             except IOError as error:
-                log( 1, "Error on load_data_file(1), the file '%s' does not exists! %s" % ( file_path, error ) )
+                log.exception( "Error on load_data_file(1), the file '%s' does not exists! %s" % ( file_path, error ) )
 
         else:
-            log( 1, "Error on load_data_file(1), the file '%s' does not exists!" % file_path )
+
+            try:
+                raise IOError( "Error on load_data_file(1), the file '%s' does not exists!" % file_path )
+
+            except IOError:
+                log.exception( "" )
 
     return channel_dictionary
 
@@ -276,7 +282,7 @@ def look_for_invalid_default_ignored_packages(installed_packages):
     for package_name in ignored_packages:
 
         if package_name not in installed_packages:
-            log( 1, "Warning: The package `%-30s` on your User `ignored_packages` setting was not found installed!" % package_name )
+            log( 1, "Warning: The package `%s` on your User `ignored_packages` setting was not found installed!" % package_name )
 
 
 def look_for_invalid_development_ignored_packages(channel_settings, installed_packages, setting_name):
