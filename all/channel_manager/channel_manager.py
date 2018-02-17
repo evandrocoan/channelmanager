@@ -937,14 +937,14 @@ class Repository():
         if main_branch:
             self.release_data['is_branched_tag'] = True
 
-            self.release_data['date']    = release_date
-            self.release_data['version'] = date_tag
             self.release_data['git_tag'] = main_branch
+            self.release_data['version'] = date_tag
 
         else:
-            self.release_data['date']    = release_date
-            self.release_data['version'] = date_tag
             self.release_data['git_tag'] = git_tag
+            self.release_data['version'] = date_tag
+
+        self.release_data['date'] = release_date
 
     def getMainVersionBranch(self):
         """
