@@ -49,7 +49,7 @@ implemented two different bundle of package bounded by `.gitmodules` files. The
 
 1. **AmxxChannel** This is a smaller channel of packages with about 20 packages focused on just for
    programming for AMX Mod X Pawn language at
-   [SublimeAmxxSimpleIDE](https://github.com/evandrocoan/SublimeAmxxSimpleIDE)
+   [AmxxSimpleIDE](https://github.com/evandrocoan/AmxxSimpleIDE)
 
 The channel creation is based on the existence of a
 [.gitmodules](https://git-scm.com/docs/gitmodules) file on the root of your Sublime Text Data
