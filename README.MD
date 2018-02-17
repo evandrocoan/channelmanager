@@ -456,7 +456,11 @@ as you usually do with the default `Package Control` channel.
    {
        "windows": {
            ">3000": [
-               "python-pywin32"
+               "python-pywin32",
+               "PortalockerFiles",
+               "ConcurrentLogHandler",
+               "DebugTools",
+               "EstimatedTimeLeft"
            ]
        },
        "*": {
