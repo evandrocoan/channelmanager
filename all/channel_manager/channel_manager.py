@@ -750,6 +750,7 @@ def get_git_tag_date(absolute_path, command_line_interface, tag):
 
     if output is False:
         g_failed_repositories.append( (command, absolute_path) )
+        raise ValueError("Git could not find the last git tag date!")
 
     return output[0:19]
 
@@ -932,7 +933,12 @@ class Repository():
         main_branch     = self.getMainVersionBranch()
         last_dictionary = get_dictionary_key( last_channel_file, self.name, {} )
 
-        git_tag, date_tag, release_date = get_last_tag_fixed( self.absolute_path, last_dictionary, command_line_interface )
+        try:
+            git_tag, date_tag, release_date = get_last_tag_fixed( self.absolute_path, last_dictionary, command_line_interface )
+
+        except ValueError as error:
+            log( 1, "Warning: Skipping tag... %s" % error )
+            main_branch = "master"
 
         if main_branch:
             self.release_data['is_branched_tag'] = True
@@ -1009,14 +1015,13 @@ class Repository():
 
                 try:
                     tag_interger = int( tag )
+                    tag_date     = get_git_tag_date( self.absolute_path, command_line_interface, tag )
 
                 except ValueError as error:
                     log( 1, "Warning: Skipping tag... %s" % error )
                     continue
 
                 release_data = OrderedDict()
-                tag_date     = get_git_tag_date( self.absolute_path, command_line_interface, tag )
-
                 release_data['platforms']    = "*"
                 release_data['sublime_text'] = "<=%s" % tag
 
