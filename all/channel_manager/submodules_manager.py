@@ -640,7 +640,9 @@ class RunGitForEachSubmodulesThread(threading.Thread):
 
         # Continue looping over submodules with the “git submodule foreach” command after a non-zero exit
         # https://stackoverflow.com/questions/19728933/continue-looping-over-submodules-with-the-git-submodule-foreach-command-after
-        command += "'date && %s && printf \"\n\" || printf \"%s\n\n\n\n\n\"'" % ( git_command, error_string )
+        command += "\"date && %s && printf '\\n' || printf '%s\\n\\n\\n\\n\\n'\"" % ( git_command, error_string )
+
+        log( 1, "Command: %s", [command] )
 
         if sublime:
             command_line_interface = cmd.Cli( None, False )
