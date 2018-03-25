@@ -48,7 +48,7 @@ try:
     from . import settings as g_settings
 
 except( ImportError, ValueError):
-    import settings
+    import settings as g_settings
 
 
 BASE_FILE_FOLDER          = os.path.join( g_settings.PACKAGE_ROOT_DIRECTORY, "all", "channel_manager", "base_file" )
