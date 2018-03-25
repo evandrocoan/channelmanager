@@ -164,7 +164,8 @@ def main(command=None):
                 "The upstream data in on the `.gitmodules` file on: Sublime Text `Data` folder" )
 
         argumentParser.add_argument( "-p", "--pull", action="store_true",
-                help="Perform a git pull from the remote repositories" )
+                help="Checkout on all submodules master branch and perform a git pull "
+                "from the remote repositories" )
 
         argumentParser.add_argument( "-t", "--push-tags", action="store_true",
                 help="Perform a git push for all submodules tags to their respective remote repository" )
