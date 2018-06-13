@@ -30,6 +30,7 @@
 import os
 import sys
 import json
+
 import stat
 import shutil
 
@@ -367,8 +368,10 @@ def _configure_channel_runner_file(channel_package_name, channel_package_directo
         text = file.read()
         text = text.replace( "MyBrandNewChannel", pascal_case_name )
 
-        with open( destine_file, "w", newline='\n', encoding='utf-8' ) as file:
-            file.write( text )
+        if not compare_text_with_file( text, destine_file ):
+
+            with open( destine_file, "w", newline='\n', encoding='utf-8' ) as file:
+                file.write( text )
 
 
 def _configure_channel_menu_file(channel_package_name, channel_package_directory):
@@ -380,12 +383,13 @@ def _configure_channel_menu_file(channel_package_name, channel_package_directory
 
     with open( base_file, "r", encoding='utf-8' ) as file:
         text = file.read()
-
         text = text.replace( "MyBrandNewChannel", channel_package_name )
         text = text.replace( "my_brand_new_channel", snake_case_name )
 
-        with open( destine_file, "w", newline='\n', encoding='utf-8' ) as file:
-            file.write( text )
+        if not compare_text_with_file( text, destine_file ):
+
+            with open( destine_file, "w", newline='\n', encoding='utf-8' ) as file:
+                file.write( text )
 
 
 def _configure_channel_commands_file(channel_package_name, channel_package_directory):
@@ -397,12 +401,23 @@ def _configure_channel_commands_file(channel_package_name, channel_package_direc
 
     with open( base_file, "r", encoding='utf-8' ) as file:
         text = file.read()
-
         text = text.replace( "MyBrandNewChannel", channel_package_name )
         text = text.replace( "my_brand_new_channel", snake_case_name )
 
-        with open( destine_file, "w", newline='\n', encoding='utf-8' ) as file:
-            file.write( text )
+        if not compare_text_with_file( text, destine_file ):
+
+            with open( destine_file, "w", newline='\n', encoding='utf-8' ) as file:
+                file.write( text )
+
+
+def compare_text_with_file(input_text, file):
+    """
+        Return `True` when the provided text and the `file` contents are equal.
+    """
+
+    with open( file, "r", encoding='utf-8' ) as file:
+        text = file.read()
+        return input_text == text
 
 
 def print_all_variables_for_debugging(dictionary):
