@@ -111,6 +111,15 @@ def write_data_file(file_path, channel_dictionary):
         json.dump( channel_dictionary, output_file, indent=4, separators=(',', ': ') )
 
 
+def load_package_file_as_binary(file_path):
+    packages_start = file_path.find( "Packages" )
+    packages_relative_path = file_path[packages_start:].replace( "\\", "/" )
+
+    log( 1, "load_data_file, packages_relative_path: " + str( packages_relative_path ) )
+    resource_bytes = sublime.load_binary_resource( packages_relative_path )
+    return resource_bytes
+
+
 def load_data_file(file_path, wait_on_error=True):
     """
         Attempt to read the file some times when there is a value error. This could happen when the
@@ -143,12 +152,7 @@ def load_data_file(file_path, wait_on_error=True):
         if sublime:
 
             try:
-                packages_start = file_path.find( "Packages" )
-                packages_relative_path = file_path[packages_start:].replace( "\\", "/" )
-
-                log( 1, "load_data_file, packages_relative_path: " + str( packages_relative_path ) )
-                resource_bytes = sublime.load_binary_resource( packages_relative_path )
-
+                resource_bytes = load_package_file_as_binary( file_path )
                 return json.loads( resource_bytes.decode('utf-8'), object_pairs_hook=OrderedDict )
 
             except IOError as error:
