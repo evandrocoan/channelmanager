@@ -13,6 +13,7 @@
                 [
                     {
                         "caption": "MyBrandNewChannel",
+                        "id": "MyBrandNewChannel",
                         "children":
                         [
                             { "caption": "Generate Channel File",
