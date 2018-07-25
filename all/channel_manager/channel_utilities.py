@@ -109,6 +109,7 @@ def write_data_file(file_path, channel_dictionary):
 
     with open( file_path, 'w', newline='\n', encoding='utf-8' ) as output_file:
         json.dump( channel_dictionary, output_file, indent=4, separators=(',', ': ') )
+        output_file.write("\n")  # Add newline cause Py JSON does not
 
 
 def load_package_file_as_binary(file_path):
