@@ -271,15 +271,20 @@ class RunBackstrokeThread(threading.Thread):
 
                 self.run_general_command( CHANNEL_ROOT_DIRECTORY, typeSettings, self.command )
 
-            elif self.command == "create_upstreams" \
-                    or self.command == "delete_remotes" \
-                    or self.command == "fetch_origins" \
-                    or self.command == "pull_origins":
+            elif self.command in ("create_upstreams", "delete_remotes", "fetch_origins", "pull_origins"):
+
+                if self.command in ("delete_remotes", "pull_origins", "fetch_origins"):
+                    gitmodules_directory = self.get_channel_root_from_project()
+
+                else:
+                    gitmodules_directory = CHANNEL_ROOT_DIRECTORY
+
+                log( 1, "gitmodules_directory: %s", gitmodules_directory )
 
                 typeSettings = \
                 {
                     'section_name': "last_create_upstreams_session",
-                    'git_file_path': os.path.join( CHANNEL_ROOT_DIRECTORY, '.gitmodules' ),
+                    'git_file_path': os.path.join( gitmodules_directory, '.gitmodules' ),
                 }
 
                 self.run_general_command( CHANNEL_ROOT_DIRECTORY, typeSettings, self.command )
@@ -291,6 +296,37 @@ class RunBackstrokeThread(threading.Thread):
         g_is_already_running = False
 
         log( 1, "Finished RunBackstrokeThread::run()" )
+
+    @staticmethod
+    def get_channel_root_from_project():
+
+        if sublime:
+            active_window = sublime.active_window()
+
+            def is_valid_folder(folder):
+
+                for file_name in ['.gitmodules', '.gitignore']:
+                    if not os.path.exists( os.path.join( folder, file_name ) ):
+                        break
+
+                # This is only run if all files were found
+                else:
+                    return True
+
+                return False
+
+            for folder in active_window.folders():
+
+                if is_valid_folder( folder ):
+
+                    for root, dirs, files in os.walk( folder ):
+
+                        for file in files:
+
+                            if file.endswith( ".sublime-project" ):
+                                return os.path.abspath( folder )
+
+        return CHANNEL_ROOT_DIRECTORY
 
     def open_last_session_data(self):
         lastSection = configparser.ConfigParser( allow_no_value=True )
