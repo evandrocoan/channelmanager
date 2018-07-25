@@ -98,12 +98,9 @@ name. For example, if you set `tag = master`, the download link will always poin
 This is useful when you are want a package to always be downloaded from the latest version on the
 master branch.
 
-The if the dependency key start with number like `dependency = 50`,
-it would mean that the package `Packages/Notepad++ Color Scheme` would be a dependency with load order of 50.
 You can learn more about dependencies reading [Package Control,
 Docs:
 Dependencies](https://packagecontrol.io/docs/dependencies).
-If it had no key `dependency` then it mean it is just a `Package` instead of a Package Control dependency.
 
 The `upstream` can be empty or not present if you would like to. It is used to set your repository
 `upstream` when the project is a fork of some another project. For example, let us suppose you liked
@@ -343,19 +340,18 @@ as you usually do with the default `Package Control` channel.
        path = Packages/ChannelManager
        url = https://github.com/evandrocoan/SublimeChannelManager
        upstream =
-       dependency = 50
    ```
 
    The packages `ChannelManager` is responsible for generating the channel files,
    installing and uninstalling them.
    As it is set on the `.gitmodules` file,
-   it defines itself as being a dependency with load order of `50`.
    You can read more about the dependency load order on [Package Control, Docs: Dependencies](https://packagecontrol.io/docs/dependencies)
 
    As it is a dependency,
    if you just skip it, i.e.,
    not add this entry to your `.gitmodules` file as `Package Control` will fail to install
-   it when you requires it on the actual package which provides the commands, because:
+   it when you requires it on the actual package which provides the commands,
+   because:
 
       1. The installation could just not work, if the dependency `ChannelManager` and
          `DebugTools` are not available on the `Package Control` default channel.
@@ -383,13 +379,11 @@ as you usually do with the default `Package Control` channel.
        path = Packages/ChannelManager
        url = https://github.com/evandrocoan/SublimeChannelManager
        upstream =
-       dependency = 50
 
    [submodule "Packages/DebugTools"]
        path = Packages/DebugTools
        url = https://github.com/evandrocoan/DebugTools
        upstream =
-       dependency = 49
    ```
 
 1. Now you added the basics, you may notice they were not added as `git submodules` by the commands
@@ -433,13 +427,11 @@ as you usually do with the default `Package Control` channel.
        path = Packages/ChannelManager
        url = https://github.com/evandrocoan/SublimeChannelManager
        upstream =
-       dependency = 50
 
    [submodule "Packages/DebugTools"]
        path = Packages/DebugTools
        url = https://github.com/evandrocoan/DebugTools
        upstream =
-       dependency = 49
 
    [submodule "Packages/MyBrandNewChannel"]
        path = Packages/MyBrandNewChannel

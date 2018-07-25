@@ -901,32 +901,23 @@ class Repository():
         self._setDependenciesList()
 
     def _setDependenciesList(self):
-        self.load_order          = None
+        self.load_order = None
         self.isPackageDependency = False
 
-        if self.gitModulesFile.has_option( self.section, "dependency" ):
-            self.dependency_list = string_convert_list( self.gitModulesFile.get( self.section, "dependency" ) )
+        sublime_dependency_path = os.path.join( self.absolute_path, ".sublime-dependency" )
+        # log( 1, "sublime_dependency_path: %s", sublime_dependency_path )
 
-            if len( self.dependency_list ) > 0:
+        if os.path.exists( sublime_dependency_path ):
+            self.isPackageDependency = True
 
-                try:
-                    int( self.dependency_list[0] )
-                    self.load_order = self.dependency_list[0]
+            try:
+                with open( sublime_dependency_path, "r", encoding='utf-8' ) as file:
+                    text = file.read()
+                    text = text.strip( " " ).strip( "\n" )
+                    self.load_order = text
 
-                    self.isPackageDependency = True
-                    del self.dependency_list[0]
-
-                except ValueError:
-                    pass
-
-        else:
-            self.dependency_list = []
-
-    def getDependenciesCount(self):
-        return len( self.dependency_list )
-
-    def getDependenciesList(self):
-        return self.dependency_list
+            except Exception:
+                log.exception( "Could not process: %s", sublime_dependency_path )
 
     def getSupposedUrl(self):
         return get_download_url( self.url, self.release_data['git_tag'] )
@@ -1040,43 +1031,12 @@ class Repository():
         return tagged_releases
 
     def configureDependenciesFiles(self, repositories, dependencies):
-        dependencies_json_path  = os.path.join( g_channelSettings['CHANNEL_ROOT_DIRECTORY'], self.path, "dependencies.json" )
-        sublime_dependency_path = os.path.join( g_channelSettings['CHANNEL_ROOT_DIRECTORY'], self.path, ".sublime-dependency" )
 
         if self.isPackageDependency:
             self._addToDependenciesList( dependencies )
-            self._createSublimeDependencyFile( sublime_dependency_path )
 
         else:
             self._addToRepositoriesList( repositories )
-            # self._deleteSublimeDependencyFile( sublime_dependency_path )
-
-        # if self.getDependenciesCount() > 0:
-        #     self.release_data['dependencies'] = self.dependency_list
-        #     self._createDependenciesJson( dependencies_json_path )
-
-        # else:
-        #     self._deleteDependenciesJson( dependencies_json_path )
-
-    def _deleteSublimeDependencyFile(self, sublime_dependency_path):
-        remove_only_if_exists( sublime_dependency_path )
-
-    def _createSublimeDependencyFile(self, sublime_dependency_path):
-
-        with open( sublime_dependency_path, "w", newline='\n' ) as text_file:
-            text_file.write( "%s\n" % self.load_order )
-
-    def _deleteDependenciesJson(self, dependencies_json_path):
-        remove_only_if_exists( dependencies_json_path )
-
-    def _createDependenciesJson(self, dependencies_json_path):
-        dependencies_json = {}
-        platforms_versions_dependencies = [("*", "*", self.dependency_list)]
-
-        for platform, sublime_version, dependency_list in platforms_versions_dependencies:
-            dependencies_json[platform] = {sublime_version: dependency_list}
-
-        write_data_file( dependencies_json_path, dependencies_json )
 
     def _addToDependenciesList(self, dependencies):
         """
