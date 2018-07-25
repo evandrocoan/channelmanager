@@ -400,6 +400,7 @@ def create_repositories_list(all_packages, last_channel_file):
     sections_count  = len( gitRepositories )
 
     index = 0
+    log( 1, "gitModulesFile: %s", gitFilePath )
     log( 1, "Total repositories to parse: " + str( sections_count ) )
 
     for repository, pi in sequence_timer( gitRepositories, info_frequency=0 ):
@@ -830,6 +831,7 @@ def get_git_repositories(gitModulesFile):
     repositories = []
 
     if g_channelSettings['PACKAGES_TO_INSTALL_EXCLUSIVELY']:
+        log( 1, "PACKAGES_TO_INSTALL_EXCLUSIVELY: %s", g_channelSettings['PACKAGES_TO_INSTALL_EXCLUSIVELY'] )
 
         def add():
             name = os.path.basename( path )
