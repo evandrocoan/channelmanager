@@ -86,21 +86,7 @@ channel files. Currently there are implemented the following keys:
     path = Packages/Notepad++ Color Scheme
     url = https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme
     upstream =
-    tags = 3143, 3147
 ```
-
-The `tags` is a comma separated list of remote tags and the version of Sublime they are aimed to be
-used. For example, `tags = 3143, 3147` indicates the repository `Notepad++ Color Scheme` has the
-following git tags called `3143` and `3147`.
-
-Note, if some value of the `tag` option is not an integer, the download/url link will point to that
-name. For example, if you set `tag = master`, the download link will always point the master branch.
-This is useful when you are want a package to always be downloaded from the latest version on the
-master branch.
-
-You can learn more about dependencies reading [Package Control,
-Docs:
-Dependencies](https://packagecontrol.io/docs/dependencies).
 
 The `upstream` can be empty or not present if you would like to. It is used to set your repository
 `upstream` when the project is a fork of some another project. For example, let us suppose you liked
@@ -111,6 +97,27 @@ set the `upstream` key pointing to the original repository and the `url` key for
 
 
 ### Tags Management <sub><sub>[Go to Top](#channel-manager)</sub></sub>
+
+You can create specific settings for each repository on the file `settings.json`,
+which should be put on the aimed repository root directory of repository.
+See this `settings.json` file example, on the root of `Notepad++ Color Scheme` package:
+```json
+{
+    "tags":
+    [
+        "3144"
+    ]
+}
+```
+
+The `tags` is a list of remote tags and the version of Sublime they are aimed to be
+used. For example, `tags = 3143, 3147` indicates the repository `Notepad++ Color Scheme` has the
+following git tags called `3143` and `3147`.
+
+Note, if some value of the `tag` option is not an integer, the download/url link will point to that
+name. For example, if you set `tag = master`, the download link will always point the master branch.
+This is useful when you are want a package to always be downloaded from the latest version on the
+master branch.
 
 Settings tags like `3143` is useful when a package has ceased working for old build of Sublime Text.
 For example, on Sublime Text development build `3147`, the package `Notepad++ Color Scheme` stopped
@@ -192,7 +199,6 @@ look like:
     path = Packages/Notepad++ Color Scheme
     url = https://github.com/your_user_name/SublimeNotepadPlusPlusTheme
     upstream = https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme
-    tags = 3143, 3147
 ```
 
 Sadly, this feature is not implemented yet. However, the `upstream` key is used by the plugin
@@ -437,7 +443,6 @@ as you usually do with the default `Package Control` channel.
        path = Packages/MyBrandNewChannel
        url = https://github.com/your_user_name/MyBrandNewChannel
        upstream =
-       tags = master
    ```
 
    * Note: Due Package Control currently not accept dependencies requiring dependencies, we also
@@ -717,13 +722,13 @@ installed the Development Version of the channel:
 
 1. **YourChannelName: Select Packages to Update Git Tag** Before running this command, you must have
    already called `Generate Channel File` to create the channel files, as this commands just load
-   those files and create a git tag as performed on the command `Generate Channel File and Tags`,
+   those files and create a git tag as performed on the command `Generate Channel File`,
    however the tag is only created if it does not already exists a tag for the current/latest
    commit. Also, the tag is immediately pushed to origin.
 
 1. **YourChannelName: Update All Packages Git Tag** Similar to the last command `Select Package
-   to Update Git Tag`, but it create tags for each repository on based on the date of the last
-   commit. If there is no tags, a first tag is created as `1.0.0`. If already there are tags, its
+   to Update Git Tag`, but it create git tags for each repository on based on the date of the last
+   commit. If there is no git tags, a first tag is created as `1.0.0`. If already there are git tags, its
    patch component (or major.minor.patch) is incremented in one.
 
 1. **YourChannelName: Run Backstroke Requests** Backstroke is a Github bot to keep repository forks up
@@ -922,7 +927,7 @@ ___
    manually.
 
 1. If the latest existent tag is on the form `3144`, the command which automatically update the tag
-   will not fail to increment/create new tags after it, as they fetch the latest tags available from
+   will fail to increment/create new tags after it, as they fetch the latest tags available from
    the repository. Currently it is not implemented the code to automatically figure out such tags
    and then try the get some older tag on the correct format.
 

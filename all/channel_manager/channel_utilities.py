@@ -125,6 +125,8 @@ def load_data_file(file_path, wait_on_error=True):
     """
         Attempt to read the file some times when there is a value error. This could happen when the
         file is currently being written by Sublime Text.
+
+        @return a dictionary object with the JSON file data
     """
     channel_dictionary = {}
 

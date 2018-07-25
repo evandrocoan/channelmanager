@@ -899,6 +899,7 @@ class Repository():
 
         # the dictionary with the current  information
         self._setDependenciesList()
+        self._loadSettingsFile()
 
     def _setDependenciesList(self):
         self.load_order = None
@@ -918,6 +919,19 @@ class Repository():
 
             except Exception:
                 log.exception( "Could not process: %s", sublime_dependency_path )
+
+    def _loadSettingsFile(self):
+        self.settings = {}
+        repository_settings_path = os.path.join( self.absolute_path, "settings.json" )
+        # log( 1, "repository_settings_path: %s", repository_settings_path )
+
+        if os.path.exists( repository_settings_path ):
+
+            try:
+                self.settings = load_data_file( repository_settings_path )
+
+            except Exception:
+                log.exception( "Could not process: %s", repository_settings_path )
 
     def getSupposedUrl(self):
         return get_download_url( self.url, self.release_data['git_tag'] )
@@ -950,9 +964,9 @@ class Repository():
             @return None when not branch is found.
         """
         main_branch = None
+        tags_list = self.settings.get( "tags" )
 
-        if self.gitModulesFile.has_option( self.section, "tags" ):
-            tags_list = string_convert_list( self.gitModulesFile.get( self.section, "tags" ) )
+        if tags_list:
 
             for tag in tags_list:
 
@@ -1000,9 +1014,9 @@ class Repository():
         """
         greatest_tag    = get_version_number( self.release_data['sublime_text'] )
         tagged_releases = []
+        tags_list       = self.settings.get( "tags" )
 
-        if self.gitModulesFile.has_option( self.section, "tags" ):
-            tags_list = string_convert_list( self.gitModulesFile.get( self.section, "tags" ) )
+        if tags_list:
 
             for tag in tags_list:
 
