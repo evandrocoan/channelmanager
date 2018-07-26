@@ -767,12 +767,19 @@ def save_session_data(last_section, session_file):
 
 
 def is_channel_upgraded(channel_settings):
-    resource_bytes = load_package_file_as_binary( channel_settings['CHANNEL_PACKAGE_METADATA'], 0 )
-    userChannelSettings = load_data_file( channel_settings['CHANNEL_INSTALLATION_DETAILS'] )
-    packageChannelSettings = json.loads( resource_bytes.decode('utf-8'), object_pairs_hook=OrderedDict )
+    package_version = ""
 
-    user_version    = userChannelSettings.get( 'current_version' )
-    package_version = packageChannelSettings.get( 'version' )
+    try:
+        resource_bytes = load_package_file_as_binary( channel_settings['CHANNEL_PACKAGE_METADATA'], 0 )
+        packageChannelSettings = json.loads( resource_bytes.decode('utf-8'), object_pairs_hook=OrderedDict )
+        package_version = packageChannelSettings.get( 'version' )
+
+    except Exception as error:
+        log( 1, "Skipping channel upgrade as could not load `package-metadata.json` due: %s", error )
+        return False
+
+    userChannelSettings = load_data_file( channel_settings['CHANNEL_INSTALLATION_DETAILS'] )
+    user_version = userChannelSettings.get( 'current_version' )
 
     try:
 
