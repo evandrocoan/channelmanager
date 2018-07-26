@@ -51,7 +51,6 @@ from .channel_utilities import write_data_file
 from .channel_utilities import string_convert_list
 from .channel_utilities import load_data_file
 from .channel_utilities import print_data_file
-from .channel_utilities import get_dictionary_key
 from .channel_utilities import dictionary_to_string_by_line
 from .channel_utilities import remove_only_if_exists
 from .channel_utilities import load_repository_file
@@ -168,7 +167,7 @@ class GenerateChannelThread(threading.Thread):
                     progress = progress_info( pi, set_progress )
                     log( 1, "{:s} Processing {:3d} of {:d} repositories... {:s}".format( progress, index, repositories_count, package_name ) )
 
-                    last_dictionary = get_dictionary_key( last_channel_file, package_name, {} )
+                    last_dictionary = last_channel_file.get( package_name, {} )
                     update_repository( last_dictionary, package_name )
 
                 repositories, dependencies = split_repositories_and_depencies( last_channel_file )
@@ -264,7 +263,7 @@ class GenerateChannelThread(threading.Thread):
                 continue
 
             save_items      = True
-            last_dictionary = get_dictionary_key( self.last_channel_file, package_name, {} )
+            last_dictionary = self.last_channel_file.get( package_name, {} )
 
             update_repository( last_dictionary, package_name, self.severity_level )
             log.newline()
@@ -938,7 +937,7 @@ class Repository():
 
     def setVersioningTag(self, last_channel_file, command_line_interface):
         main_branch     = self.getMainVersionBranch()
-        last_dictionary = get_dictionary_key( last_channel_file, self.name, {} )
+        last_dictionary = last_channel_file.get( self.name, {} )
 
         try:
             git_tag, date_tag, release_date = get_last_tag_fixed( self.absolute_path, last_dictionary, command_line_interface )

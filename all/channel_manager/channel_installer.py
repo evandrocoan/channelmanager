@@ -77,7 +77,6 @@ from .channel_utilities import load_data_file
 from .channel_utilities import write_data_file
 from .channel_utilities import string_convert_list
 from .channel_utilities import get_main_directory
-from .channel_utilities import get_dictionary_key
 from .channel_utilities import remove_if_exists
 from .channel_utilities import delete_read_only_file
 from .channel_utilities import _delete_read_only_file
@@ -773,7 +772,7 @@ class ChannelInstaller(threading.Thread):
     def get_packages_to_uninstall(self, is_downgrade):
         filtered_packages     = []
         last_packages         = []
-        packages_to_uninstall = get_dictionary_key( g_channelDetails, 'packages_to_uninstall', [] )
+        packages_to_uninstall = g_channelDetails.get( 'packages_to_uninstall', [] )
 
         if is_downgrade:
             packages_to_not_remove = set()
@@ -902,7 +901,7 @@ class ChannelInstaller(threading.Thread):
         """
         log( 1, "%s of `Default Package` files..." % self.installationType )
 
-        files_installed       = get_dictionary_key( g_channelDetails, 'default_package_files', [] )
+        files_installed       = g_channelDetails.get( 'default_package_files', [] )
         default_packages_path = os.path.join( self.channelSettings['CHANNEL_ROOT_DIRECTORY'], "Packages", "Default" )
 
         for file in files_installed:
@@ -1010,10 +1009,10 @@ class ChannelInstaller(threading.Thread):
         clean_settings['remove_orphaned'] = False
 
         if "remove_orphaned_backup" in g_package_control_settings:
-            clean_settings['remove_orphaned_backup'] = get_dictionary_key( g_package_control_settings, 'remove_orphaned_backup', True )
+            clean_settings['remove_orphaned_backup'] = g_package_control_settings.get( 'remove_orphaned_backup', True )
 
         else:
-            clean_settings['remove_orphaned_backup'] = get_dictionary_key( g_package_control_settings, 'remove_orphaned', True )
+            clean_settings['remove_orphaned_backup'] = g_package_control_settings.get( 'remove_orphaned', True )
 
         clean_settings = sort_dictionary( clean_settings )
         write_data_file( PACKAGE_CONTROL, clean_settings )
@@ -1235,8 +1234,8 @@ class ChannelInstaller(threading.Thread):
         global g_installed_packages
         global g_remove_orphaned_backup
 
-        g_installed_packages     = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
-        g_remove_orphaned_backup = get_dictionary_key( g_package_control_settings, 'remove_orphaned', True )
+        g_installed_packages     = g_package_control_settings.get( 'installed_packages', [] )
+        g_remove_orphaned_backup = g_package_control_settings.get( 'remove_orphaned', True )
 
         if not self.isUpdateInstallation:
             # Temporally stops Package Control from removing orphaned packages, otherwise it will scroll up
@@ -1265,7 +1264,7 @@ class ChannelInstaller(threading.Thread):
 
 
     def remove_channel(self):
-        channels = get_dictionary_key( g_package_control_settings, "channels", [] )
+        channels = g_package_control_settings.get( "channels", [] )
 
         while self.channelSettings['CHANNEL_FILE_URL'] in channels:
             log( 1, "Removing %s channel from Package Control settings: %s" % ( self.channelSettings['CHANNEL_PACKAGE_NAME'], str( channels ) ) )
@@ -1333,7 +1332,7 @@ class ChannelInstaller(threading.Thread):
         """
 
         if "installed_packages" in package_control_settings:
-            installed_packages = get_dictionary_key( package_control_settings, 'installed_packages', [] )
+            installed_packages = package_control_settings.get( 'installed_packages', [] )
             remove_item_if_exists( installed_packages, "Package Control" )
 
             add_item_if_not_exists( installed_packages, "PackagesManager" )
@@ -1588,7 +1587,7 @@ class ChannelInstaller(threading.Thread):
         global g_package_control_settings
 
         if g_package_control_settings and not self.isDevelopment:
-            installed_packages = get_dictionary_key( g_package_control_settings, 'installed_packages', [] )
+            installed_packages = g_package_control_settings.get( 'installed_packages', [] )
             add_item_if_not_exists( installed_packages, package_name )
 
             g_package_control_settings = sort_dictionary( g_package_control_settings )
@@ -1884,13 +1883,13 @@ def load_installation_settings_file(self):
     global g_packages_not_installed
     global g_installation_type
 
-    g_packages_to_uninstall   = get_dictionary_key( g_channelDetails, 'packages_to_uninstall', [] )
-    g_packages_to_unignore    = get_dictionary_key( g_channelDetails, 'packages_to_unignore', [] )
-    g_files_to_uninstall      = get_dictionary_key( g_channelDetails, 'files_to_uninstall', [] )
-    g_folders_to_uninstall    = get_dictionary_key( g_channelDetails, 'folders_to_uninstall', [] )
-    g_next_packages_to_ignore = get_dictionary_key( g_channelDetails, 'next_packages_to_ignore', [] )
-    g_packages_not_installed  = get_dictionary_key( g_channelDetails, 'packages_not_installed', [] )
-    g_installation_type       = get_dictionary_key( g_channelDetails, 'installation_type', channelSettings['INSTALLATION_TYPE'] )
+    g_packages_to_uninstall   = g_channelDetails.get( 'packages_to_uninstall', [] )
+    g_packages_to_unignore    = g_channelDetails.get( 'packages_to_unignore', [] )
+    g_files_to_uninstall      = g_channelDetails.get( 'files_to_uninstall', [] )
+    g_folders_to_uninstall    = g_channelDetails.get( 'folders_to_uninstall', [] )
+    g_next_packages_to_ignore = g_channelDetails.get( 'next_packages_to_ignore', [] )
+    g_packages_not_installed  = g_channelDetails.get( 'packages_not_installed', [] )
+    g_installation_type       = g_channelDetails.get( 'installation_type', channelSettings['INSTALLATION_TYPE'] )
 
     # When the installation was interrupted, there will be ignored packages which are pending to
     # uningored. Then these packages must to be loaded when the installer starts again.

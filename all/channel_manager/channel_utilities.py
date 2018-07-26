@@ -207,11 +207,11 @@ def is_package_dependency(package_name, dependencies, packages):
 def load_repository_file(channel_repository_file, load_dependencies=True):
     repositories_dictionary = load_data_file( channel_repository_file )
 
-    packages_list = get_dictionary_key( repositories_dictionary, 'packages', [] )
+    packages_list = repositories_dictionary.get( 'packages', [] )
     last_packages_dictionary = {}
 
     if load_dependencies:
-        dependencies_list = get_dictionary_key( repositories_dictionary, 'dependencies', [] )
+        dependencies_list = repositories_dictionary.get( 'dependencies', [] )
         packages_list.extend( dependencies_list )
 
     for package in packages_list:
@@ -452,14 +452,6 @@ def print_failed_repositories(failed_repositories):
 
     for package_name in failed_repositories:
         log( 1, "Package: %s" % ( package_name ) )
-
-
-def get_dictionary_key(dictionary, key, default=None):
-
-    if key in dictionary:
-        return dictionary[key]
-
-    return default
 
 
 def add_item_if_not_exists(list_to_append, item):
