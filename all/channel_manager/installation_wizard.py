@@ -62,7 +62,7 @@ except ImportError:
 from debug_tools import getLogger
 
 # Debugger settings: 0 - disabled, 127 - enabled
-log = getLogger( 127, os.path.basename( __file__ ) )
+log = getLogger( 127, __name__ )
 
 # log( 2, "..." )
 # log( 2, "..." )

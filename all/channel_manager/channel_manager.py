@@ -82,7 +82,7 @@ from estimated_time_left import CurrentUpdateProgress
 
 
 # Debugger settings: 0 - disabled, 127 - enabled
-log = getLogger( 127, os.path.basename( __file__ ) )
+log = getLogger( 127, __name__ )
 
 #log.setup( "Debug.txt" )
 #log.clear()

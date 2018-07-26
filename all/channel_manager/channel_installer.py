@@ -126,7 +126,7 @@ except ImportError:
 from debug_tools import getLogger
 
 # Debugger settings: 0 - disabled, 127 - enabled
-log = getLogger( 127, os.path.basename( __file__ ) )
+log = getLogger( 127, __name__ )
 
 def _grade():
     return 1 & ( not IS_UPDATE_INSTALLATION )

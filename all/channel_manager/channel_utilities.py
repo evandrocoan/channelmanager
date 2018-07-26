@@ -101,7 +101,7 @@ except ImportError:
 
 
 # Debugger settings: 0 - disabled, 127 - enabled
-log = getLogger( 127, os.path.basename( __file__ ) )
+log = getLogger( 127, __name__ )
 
 
 def write_data_file(file_path, channel_dictionary):
