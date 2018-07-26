@@ -33,6 +33,7 @@ import json
 
 import stat
 import shutil
+import configparser
 
 import re
 import time
@@ -66,29 +67,32 @@ def assert_path(module):
         sys.path.append( module )
 
 
+try:
+    from package_control.download_manager import downloader
+    from package_control.package_manager import PackageManager
+
+except ImportError:
+
+    try:
+        from PackagesManager.package_control.download_manager import downloader
+        from PackagesManager.package_control.package_manager import PackageManager
+
+    except ImportError:
+        PackageManager = None
+
+
 # Allow using this file on the website where the sublime module is unavailable
 try:
     import sublime
-    import configparser
-
-    try:
-        from package_control.download_manager import downloader
-        from package_control.package_manager import PackageManager
-
-    except ImportError:
-
-        try:
-            from PackagesManager.package_control.download_manager import downloader
-            from PackagesManager.package_control.package_manager import PackageManager
-
-        except ImportError:
-            PackageManager = None
-
-    from debug_tools import getLogger
 
 except ImportError:
     sublime = None
 
+
+try:
+    from debug_tools import getLogger
+
+except ImportError:
     # Import the debugger. It will fail when `debug_tools` is inside a `.sublime-package`,
     # however, this is only meant to be used on the Development version, when `debug_tools` is
     # unpacked at the loose packages folder as a git submodule.
