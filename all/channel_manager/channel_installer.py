@@ -164,23 +164,25 @@ def main(channel_settings, is_forced=False):
 class ChannelInstaller(threading.Thread):
 
     def __init__(self, channel_settings):
-        global IS_UPDATE_INSTALLATION
-
         threading.Thread.__init__(self)
+        self.channelName = channel_settings['CHANNEL_PACKAGE_NAME']
         self.channelSettings = channel_settings
 
         self.package_manager   = PackageManager()
         self.package_disabler  = PackageDisabler()
         self.isExceptionRaised = False
 
-        self.channelName   = self.channelSettings['CHANNEL_PACKAGE_NAME']
-        self.isDevelopment = self.channelSettings['INSTALLATION_TYPE'] == "development"
-
         self.failedRepositories       = []
         self.commandLineInterface     = cmd.Cli( None, True )
         self.uningoredPackagesToFlush = 0
 
-        if self.channelSettings['INSTALLER_TYPE'] == 'installation':
+        self.ensure_packages_manager_on_last_positoin()
+
+    def _setupData(self):
+        global IS_UPDATE_INSTALLATION
+        self.isDevelopment = self.channelSettings['INSTALLATION_TYPE'] == "development"
+
+        if self.channelSettings['INSTALLER_TYPE'] == "installer":
             self.isUpdateInstallation = self.channelSettings['INSTALLATION_TYPE'] == "upgrade"
             self.setupInstaller()
 
@@ -189,9 +191,7 @@ class ChannelInstaller(threading.Thread):
             self.setupUninstaller()
 
         IS_UPDATE_INSTALLATION = self.isUpdateInstallation
-
         load_installation_settings_file( self )
-        self.ensure_packages_manager_on_last_positoin()
 
         if not self.isInstaller:
             self.load_package_control_settings()
@@ -200,7 +200,6 @@ class ChannelInstaller(threading.Thread):
         log( 1, "INSTALLER_TYPE:         " + str( self.channelSettings['INSTALLER_TYPE'] ) )
         log( 1, "INSTALLATION_TYPE:      " + str( self.channelSettings['INSTALLATION_TYPE'] ) )
         log( 1, "IS_UPDATE_INSTALLATION: " + str( IS_UPDATE_INSTALLATION ) )
-
 
     def setupInstaller(self):
         self.word_prefix  = ""
@@ -236,7 +235,6 @@ class ChannelInstaller(threading.Thread):
 
         self.packagesInformations = packagesInformations
 
-
     def setupUninstaller(self):
         self.word_prefix  = "un"
         self.word_Prefix  = "Un"
@@ -271,7 +269,6 @@ class ChannelInstaller(threading.Thread):
 
         self.packagesInformations = packagesInformations
 
-
     def run(self):
         """
             The installation is not complete when the user cancelled the installation process or
@@ -282,20 +279,43 @@ class ChannelInstaller(threading.Thread):
         """
 
         if is_allowed_to_run():
+            channelSettings = self.channelSettings
 
-            if self.isInstaller:
-                self.setupThread( self.installerProcedements )
+            if channelSettings['INSTALLATION_TYPE'] == "upgrade":
+                channelSettings['INSTALLER_TYPE']    = "installer"
+                self._run()
+
+                channelSettings['INSTALLATION_TYPE'] = "downgrade"
+                channelSettings['INSTALLER_TYPE']    = "uninstaller"
+                self._run()
+                self.update_user_channel_version()
 
             else:
-                self.setupThread( self.uninstallerProcedements )
+                self._run()
 
-            self.save_default_settings()
+    def update_user_channel_version(self):
+        packageChannelSettings = load_data_file( self.channelSettings['CHANNEL_PACKAGE_METADATA'] )
+        userChannelSettings = load_data_file( self.channelSettings['CHANNEL_INSTALLATION_DETAILS'] )
+        next_user_version = packageChannelSettings.get( 'version', '0.0.0' )
 
-            if not self.isExceptionRaised and not self.isUpdateInstallation:
-                # Wait PackagesManager to load the found dependencies, before announcing it to the user
-                sublime.set_timeout_async( self.check_installed_packages, 10000 )
-                sublime.set_timeout_async( self.check_installed_packages_alert, 1000 )
+        userChannelSettings['current_version'] = next_user_version
+        write_data_file( self.channelSettings['CHANNEL_INSTALLATION_DETAILS'], userChannelSettings )
 
+    def _run(self):
+        self._setupData()
+
+        if self.isInstaller:
+            self.setupThread( self.installerProcedements )
+
+        else:
+            self.setupThread( self.uninstallerProcedements )
+
+        # Wait PackagesManager to load the found dependencies, before announcing it to the user
+        self.save_default_settings()
+
+        if not self.isExceptionRaised and not self.isUpdateInstallation:
+            sublime.set_timeout_async( self.check_installed_packages, 10000 )
+            sublime.set_timeout_async( self.check_installed_packages_alert, 1000 )
 
     def setupThread(self, targetFunction):
 
@@ -826,15 +846,15 @@ class ChannelInstaller(threading.Thread):
             # We cannot uninstall the `User` and `Default` package by Package Control
             if package_name == "Default":
                 self.uninstall_default_package()
-                self.remove_packages_from_list( package_name )
 
+                self.remove_packages_from_list( package_name )
                 self.accumulative_unignore_user_packages( package_name )
                 continue
 
             if package_name == "User":
                 log( 1, "Warning: We cannot touch the `User` package as is it is now filled with new settings." )
-                self.failedRepositories.append( package_name )
 
+                self.failedRepositories.append( package_name )
                 self.remove_packages_from_list( package_name )
                 continue
 
@@ -848,6 +868,9 @@ class ChannelInstaller(threading.Thread):
             if self.package_manager.remove_package( package_name, is_dependency ) is False:
                 log( 1, "Error: Failed to uninstall the repository `%s`!" % package_name )
                 self.failedRepositories.append( package_name )
+
+                if self.isUpdateInstallation:
+                    self.remove_packages_from_list( package_name )
 
             else:
                 self.remove_packages_from_list( package_name )
@@ -1832,7 +1855,7 @@ def save_sublime_settings():
 
 
 def load_installation_settings_file(self):
-    channel_settings = self.channelSettings
+    channelSettings = self.channelSettings
 
     global PACKAGE_CONTROL
     global PACKAGESMANAGER
@@ -1843,14 +1866,14 @@ def load_installation_settings_file(self):
     g_package_control_name = "Package Control.sublime-settings"
     g_packages_manager_name = "PackagesManager.sublime-settings"
 
-    PACKAGESMANAGER = os.path.join( channel_settings['USER_FOLDER_PATH'], g_packages_manager_name )
-    PACKAGE_CONTROL = os.path.join( channel_settings['USER_FOLDER_PATH'], g_package_control_name )
+    PACKAGESMANAGER = os.path.join( channelSettings['USER_FOLDER_PATH'], g_packages_manager_name )
+    PACKAGE_CONTROL = os.path.join( channelSettings['USER_FOLDER_PATH'], g_package_control_name )
 
     global g_channelDetails
     global g_default_ignored_packages
 
     # Contains the original user's ignored packages.
-    g_channelDetails = load_data_file( channel_settings['CHANNEL_INSTALLATION_DETAILS'] )
+    g_channelDetails = load_data_file( channelSettings['CHANNEL_INSTALLATION_DETAILS'] )
     log( _grade(), "Loaded g_channelDetails: " + str( g_channelDetails ) )
 
     global g_packages_to_uninstall
@@ -1867,14 +1890,14 @@ def load_installation_settings_file(self):
     g_folders_to_uninstall    = get_dictionary_key( g_channelDetails, 'folders_to_uninstall', [] )
     g_next_packages_to_ignore = get_dictionary_key( g_channelDetails, 'next_packages_to_ignore', [] )
     g_packages_not_installed  = get_dictionary_key( g_channelDetails, 'packages_not_installed', [] )
-    g_installation_type       = get_dictionary_key( g_channelDetails, 'installation_type', channel_settings['INSTALLATION_TYPE'] )
+    g_installation_type       = get_dictionary_key( g_channelDetails, 'installation_type', channelSettings['INSTALLATION_TYPE'] )
 
     # When the installation was interrupted, there will be ignored packages which are pending to
     # uningored. Then these packages must to be loaded when the installer starts again.
     log( _grade(), "load_installation_settings_file, unignoring initial packages... " )
     g_default_ignored_packages = self.setup_packages_ignored_list( packages_to_remove=g_next_packages_to_ignore )
 
-    log( _grade(), "load_installation_settings_file, g_default_ignored_packages:        " + str( g_default_ignored_packages ) )
-    log( _grade(), "load_installation_settings_file, PACKAGES_TO_IGNORE_ON_DEVELOPMENT: "
-            + str( channel_settings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT'] ) )
+    log( _grade(), "load_installation_settings_file, g_default_ignored_packages:        %s", g_default_ignored_packages )
+    log( _grade(), "load_installation_settings_file, PACKAGES_TO_IGNORE_ON_DEVELOPMENT: %s",
+            channelSettings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT'] )
 

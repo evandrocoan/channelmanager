@@ -112,16 +112,16 @@ def write_data_file(file_path, channel_dictionary):
         output_file.write("\n")  # Add newline cause Py JSON does not
 
 
-def load_package_file_as_binary(file_path):
+def load_package_file_as_binary(file_path, log_level=1):
     packages_start = file_path.find( "Packages" )
     packages_relative_path = file_path[packages_start:].replace( "\\", "/" )
 
-    log( 1, "load_data_file, packages_relative_path: " + str( packages_relative_path ) )
+    log( log_level, "load_data_file, packages_relative_path: " + str( packages_relative_path ) )
     resource_bytes = sublime.load_binary_resource( packages_relative_path )
     return resource_bytes
 
 
-def load_data_file(file_path, wait_on_error=True):
+def load_data_file(file_path, wait_on_error=True, log_level=1):
     """
         Attempt to read the file some times when there is a value error. This could happen when the
         file is currently being written by Sublime Text.
@@ -155,7 +155,7 @@ def load_data_file(file_path, wait_on_error=True):
         if sublime:
 
             try:
-                resource_bytes = load_package_file_as_binary( file_path )
+                resource_bytes = load_package_file_as_binary( file_path, log_level )
                 return json.loads( resource_bytes.decode('utf-8'), object_pairs_hook=OrderedDict )
 
             except IOError as error:
@@ -327,6 +327,7 @@ def run_channel_setup(channel_settings, channel_package_file):
 
     channel_settings['USER_FOLDER_PATH']   = user_folder
     channel_settings['USER_SETTINGS_FILE'] = "Preferences.sublime-settings"
+    channel_settings['CHANNEL_PACKAGE_METADATA'] = os.path.join( "Packages", channel_package_name, "package-metadata.json" )
 
     channel_settings['CHANNEL_PACKAGE_NAME']    = channel_package_name
     channel_settings['CHANNEL_ROOT_DIRECTORY']  = channel_directory
@@ -762,13 +763,27 @@ def save_session_data(last_section, session_file):
 
 
 def is_channel_upgraded(channel_settings):
-    channelSettings     = load_data_file( channel_settings['CHANNEL_REPOSITORY_FILE'] )
+    resource_bytes = load_package_file_as_binary( channel_settings['CHANNEL_PACKAGE_METADATA'], 0 )
     userChannelSettings = load_data_file( channel_settings['CHANNEL_INSTALLATION_DETAILS'] )
+    packageChannelSettings = json.loads( resource_bytes.decode('utf-8'), object_pairs_hook=OrderedDict )
 
-    current_version      = get_dictionary_key( channelSettings, 'current_version', '0.0.0' )
-    user_current_version = get_dictionary_key( userChannelSettings, 'current_version', '0.0.0' )
+    user_version    = userChannelSettings.get( 'current_version' )
+    package_version = packageChannelSettings.get( 'version' )
 
-    return LooseVersion( current_version ) > LooseVersion( user_current_version )
+    try:
+
+        if not user_version:
+            raise Exception( "There is not old version available for updating." )
+
+        return LooseVersion( package_version ) > LooseVersion( user_version )
+
+    except Exception:
+        log.exception( "Error: Could not check for the channel upgrade: `%s` - `%s`", package_version, user_version )
+
+        userChannelSettings['current_version'] = "0.0.0"
+        write_data_file( channel_settings['CHANNEL_INSTALLATION_DETAILS'], userChannelSettings )
+
+    return False
 
 
 class NoPackagesAvailable(Exception):
