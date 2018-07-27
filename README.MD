@@ -38,8 +38,8 @@ ___
 ChannelManager is dependency which manages the packages installed by git as submodules. It allows to
 create the channel files required by Package Control to list and install packages. It is Currently
 implemented two different bundle of package bounded by `.gitmodules` files. The
-[StudioChannel](https://github.com/evandrocoan/SublimeStudioChannel) and the
-[AmxxChannel](https://github.com/evandrocoan/SublimeAmxxChannel).
+[StudioChannel](https://github.com/evandrocoan/StudioChannel) and the
+[AmxxChannel](https://github.com/evandrocoan/AmxxChannel).
 
 1. **StudioChannel** This is one of the first channels implemented using the `ChannelManager`. It
    contains about 100 packages for the stable version and 150 for the development version. It has a
