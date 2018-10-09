@@ -494,9 +494,8 @@ as you usually do with the default `Package Control` channel.
    import sublime
 
    # from channel_manager.channel_utilities import print_all_variables_for_debugging
-   # print_all_variables_for_debugging( g_channelSettings )
-   # import sublime_plugin
-   # sublime_plugin.reload_plugin( "channel_manager.channel_utilities" )
+   # if 'g_channelSettings' in globals(): print_all_variables_for_debugging( g_channelSettings )
+   # import sublime_plugin; sublime_plugin.reload_plugin( "channel_manager.channel_utilities" )
 
    from channel_manager.channel_utilities import clean_urljoin
    from channel_manager.channel_utilities import run_channel_setup
