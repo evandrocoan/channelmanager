@@ -286,6 +286,8 @@ def look_for_invalid_packages(channel_settings, installed_packages):
     look_for_invalid_development_ignored_packages( channel_settings, installed_packages, "PACKAGES_TO_NOT_INSTALL_STABLE" )
     look_for_invalid_development_ignored_packages( channel_settings, installed_packages, "PACKAGES_TO_NOT_INSTALL_DEVELOPMENT" )
 
+    look_for_inconsistent_ignored_packages( channel_settings )
+
 
 def look_for_invalid_default_ignored_packages(installed_packages):
     user_settings    = sublime.load_settings( "Preferences.sublime-settings" )
@@ -305,6 +307,33 @@ def look_for_invalid_development_ignored_packages(channel_settings, installed_pa
         if package_name not in installed_packages:
             log( 1, "%s Warning: The package `%s` on the `%s` setting was found not installed!" % (
                     channel_settings['CHANNEL_PACKAGE_NAME'], package_name, setting_name ) )
+
+
+def look_for_inconsistent_ignored_packages(channel_settings):
+    user_settings = sublime.load_settings( "Preferences.sublime-settings" )
+    user_ignored_packages = user_settings.get( "ignored_packages", [] )
+    channel_ignored_packages = channel_settings["PACKAGES_TO_IGNORE_ON_DEVELOPMENT"]
+
+    def message1(package_name):
+        log( 1, "Warning: The package `%s` was not found on PACKAGES_TO_IGNORE_ON_DEVELOPMENT!" % package_name )
+
+    def message2(package_name):
+        log( 1, "Warning: The package `%s` was not found on your Packages/User ignored_packages!" % package_name )
+
+    def call_message(from_list, to_list, message):
+
+        # If the `to_list` has no elements, then we should not attempt to match otherwise we would
+        # produce a bunch of non-existent warnings when the PACKAGES_TO_INSTALL_EXCLUSIVELY setting
+        # is used
+        if to_list:
+
+            for package_name in from_list:
+
+                if package_name not in to_list:
+                    message(package_name)
+
+    call_message(user_ignored_packages, channel_ignored_packages, message1)
+    call_message(channel_ignored_packages, user_ignored_packages, message2)
 
 
 def run_channel_setup(channel_settings, channel_package_file):
