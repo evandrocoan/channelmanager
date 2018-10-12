@@ -67,8 +67,8 @@ try:
     import configparser
 
     from debug_tools import getLogger
-    from estimated_time_left import sequence_timer
-    from estimated_time_left import progress_info
+    from debug_tools.estimated_time_left import sequence_timer
+    from debug_tools.estimated_time_left import progress_info
 
     # When there is an ImportError, means that Package Control is installed instead of PackagesManager.
     # Which means we cannot do nothing as this is only compatible with PackagesManager.
@@ -89,12 +89,11 @@ except( ImportError, ValueError ):
     assert_path( os.path.join( g_settings.PACKAGE_ROOT_DIRECTORY, 'all' ) )
     assert_path( os.path.join( os.path.dirname( g_settings.PACKAGE_ROOT_DIRECTORY ), 'PackagesManager' ) )
     assert_path( os.path.join( os.path.dirname( g_settings.PACKAGE_ROOT_DIRECTORY ), 'DebugTools', 'all' ) )
-    assert_path( os.path.join( os.path.dirname( g_settings.PACKAGE_ROOT_DIRECTORY ), 'EstimatedTimeLeft', 'all' ) )
 
     from six.moves import configparser
     from package_control import cmd
     from debug_tools import getLogger
-    from estimated_time_left import sequence_timer
+    from debug_tools.estimated_time_left import sequence_timer
 
 
 # # https://stackoverflow.com/questions/9079036/detect-python-version-at-runtime

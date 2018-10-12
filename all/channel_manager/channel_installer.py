@@ -58,9 +58,9 @@ ALL_RUNNING_CONTROL_FLAGS    = CLEAN_PACKAGESMANAGER_FLAG | RESTORE_REMOVE_ORPHA
 
 
 from collections import OrderedDict
-from estimated_time_left import sequence_timer
-from estimated_time_left import progress_info
-from estimated_time_left import CurrentUpdateProgress
+from debug_tools.estimated_time_left import sequence_timer
+from debug_tools.estimated_time_left import progress_info
+from debug_tools.estimated_time_left import CurrentUpdateProgress
 
 from . import settings as g_settings
 

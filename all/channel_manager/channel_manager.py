@@ -73,12 +73,12 @@ except ImportError:
 
 # # How to reload a Sublime Text dependency?
 # # https://github.com/randy3k/AutomaticPackageReloader/issues/12
-# sublime_plugin.reload_plugin( "estimated_time_left" )
+# sublime_plugin.reload_plugin( "debug_tools.estimated_time_left" )
 
 from debug_tools import getLogger
-from estimated_time_left import sequence_timer
-from estimated_time_left import progress_info
-from estimated_time_left import CurrentUpdateProgress
+from debug_tools.estimated_time_left import sequence_timer
+from debug_tools.estimated_time_left import progress_info
+from debug_tools.estimated_time_left import CurrentUpdateProgress
 
 
 # Debugger settings: 0 - disabled, 127 - enabled

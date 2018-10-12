@@ -456,16 +456,14 @@ as you usually do with the default `Package Control` channel.
                "python-pywin32",
                "PortalockerFiles",
                "ConcurrentLogHandler",
-               "DebugTools",
-               "EstimatedTimeLeft"
+               "DebugTools"
            ]
        },
        "*": {
            "*": [
                "PortalockerFiles",
                "ConcurrentLogHandler",
-               "DebugTools",
-               "EstimatedTimeLeft"
+               "DebugTools"
            ]
        }
    }
