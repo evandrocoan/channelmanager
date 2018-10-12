@@ -451,16 +451,13 @@ def get_last_tag_fixed(absolute_path, last_dictionary, command_line_interface, f
         @param severity_level   3 - Patch, 2 - Minor, 1 - Major
         @param force_tag_update if True, the tag will be created and also push the created tag to origin.
     """
-    git_tag      = get_git_latest_tag( absolute_path, command_line_interface )
-    release_date = get_git_tag_date( absolute_path, command_line_interface, git_tag )
-    date_tag     = get_git_version( release_date )
+    git_tag = get_git_latest_tag( absolute_path, command_line_interface )
 
     # # Delete all local tags not present on the remote
     # # https://stackoverflow.com/questions/1841341/remove-local-tags-that-are-no-longer
     # command = shlex.split( 'git fetch --prune origin "+refs/tags/*:refs/tags/*"' )
     # output  = command_line_interface.execute( command, absolute_path, short_errors=True )
     # log( 1, "output: " + str( output ) )
-
     if force_tag_update:
 
         # If it does not exists, it means this is the first time and there was not previous data
@@ -513,6 +510,9 @@ def get_last_tag_fixed(absolute_path, last_dictionary, command_line_interface, f
                         else:
                             log( 1, "Error: The tag `%s` could not be incremented for the package: %s" % ( next_git_tag, absolute_path ) )
                             g_failed_repositories.append( ("", absolute_path) )
+
+    release_date = get_git_tag_date( absolute_path, command_line_interface, git_tag )
+    date_tag     = get_git_version( release_date )
 
     return git_tag, date_tag, release_date
 
