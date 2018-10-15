@@ -61,6 +61,8 @@ log = getLogger( 127, __name__ )
 # log( 2, "..." )
 # log( 2, "Debugging" )
 # log( 2, "PACKAGE_ROOT_DIRECTORY: " + g_settings.PACKAGE_ROOT_DIRECTORY )
+command_line_interface = cmd.Cli( None, True )
+packages_file_name = "Default.sublime-package"
 
 
 def main(default_package_files=[], is_forced=False):
@@ -86,27 +88,32 @@ class CopyFilesThread(threading.Thread):
     def run(self):
         log( 2, "Entering on run(1)" )
 
-        package_path  = os.path.join( os.path.dirname( sublime.executable_path() ), "Packages", "Default.sublime-package" )
-        output_folder = os.path.join( os.path.dirname( sublime.packages_path() ), "Default.sublime-package" )
+        package_path = os.path.join( os.path.dirname( sublime.executable_path() ), "Packages", packages_file_name )
+        output_directory = os.path.join( os.path.dirname( sublime.packages_path() ), packages_file_name )
 
         log( 2, "run, package_path:  " + package_path )
-        log( 2, "run, output_folder: " + output_folder )
+        log( 2, "run, output_directory: " + output_directory )
 
-        extract_package( package_path, output_folder )
-        create_git_ignore_file( output_folder, self.default_package_files )
-        create_version_setting_file( output_folder )
+        extract_package( package_path, output_directory )
+        create_git_ignore_file( output_directory, self.default_package_files )
+        create_version_setting_file( output_directory )
 
 
-def create_version_setting_file(output_folder):
-    command_line_interface = cmd.Cli( None, True )
-    latest_git_tag = get_git_latest_tag( output_folder, command_line_interface )
+def run_command(command, output_directory):
+    command = shlex.split( command )
+    output = command_line_interface.execute( command, output_directory, short_errors=True )
+    return output
+
+
+def create_version_setting_file(output_directory):
+    latest_git_tag = get_git_latest_tag( output_directory, command_line_interface )
 
     # https://stackoverflow.com/questions/10345182/log-first-10-in-git
-    command = shlex.split( "git log -10 --pretty=oneline" )
-    output = command_line_interface.execute( command, output_folder, short_errors=True )
+    output = run_command( "git log -10 --pretty=oneline", output_directory )
 
     # log( 1, 'Fetched the latest git history: \n%s', output )
     version_found = 0
+
     latest_git_tag = int( latest_git_tag )
     version_regex = re.compile( r'(?:version|build)\s*(\d\d\d\d)', re.IGNORECASE )
 
@@ -124,14 +131,28 @@ def create_version_setting_file(output_folder):
     log( 1, 'latest_git_tag: %s', latest_git_tag )
 
     if version_found:
-        command = shlex.split( "git tag %s" % version_found )
-        output = command_line_interface.execute( command, output_folder, short_errors=True )
+        output = run_command( "git tag %s" % ( version_found ), output_directory )
+        cloned_package_path = os.path.join( sublime.packages_path(), 'Default' )
+        log( 1, 'Created git tag `%s`:\n%s', version_found, output )
 
-        log( 1, 'Creating git tag `%s`. Console results from git:\n%s', version_found, output )
-        version_settings_path = os.path.join( output_folder, 'settings.json' )
+        local_packages_fork = "%s/../../%s" % ( cloned_package_path, packages_file_name )
+        local_packages_fork_name = "local_packages_fork"
 
-        version_settings_file = load_data_file( version_settings_path )
+        remotes = run_command( "git remote", cloned_package_path )
+
+        if local_packages_fork_name in remotes:
+            log( 1, "Skipping `%s` remote creation as it already exists: \n%s", local_packages_fork_name, remotes )
+
+        else:
+            output = run_command( "git remote add %s %s" % ( local_packages_fork_name, local_packages_fork ), cloned_package_path )
+            log( 1, 'Created local remote on: \n%s\n%s', os.path.abspath( local_packages_fork ), output )
+
+        output = run_command( "git fetch %s --tags --force" % ( local_packages_fork_name ), cloned_package_path )
+        log( 1, 'Fetched local remote: \n%s', output )
+
         version_found = str( version_found )
+        version_settings_path = os.path.join( output_directory, 'settings.json' )
+        version_settings_file = load_data_file( version_settings_path )
 
         if version_found not in version_settings_file['tags']:
             version_settings_file['tags'].append( str( version_found ) )
@@ -144,9 +165,9 @@ def create_version_setting_file(output_folder):
         log( 1, 'No new Sublime Text version was found.' )
 
 
-def create_git_ignore_file(output_folder, default_package_files):
+def create_git_ignore_file(output_directory, default_package_files):
 
-    gitignore_file = os.path.join( output_folder, ".gitignore" )
+    gitignore_file = os.path.join( output_directory, ".gitignore" )
     lines_to_write = \
     [
         "",
