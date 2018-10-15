@@ -31,14 +31,26 @@ import sublime
 import configparser
 
 import os
+import re
 import sys
+import shlex
+
 import zipfile
 import threading
 import contextlib
 
 from . import settings as g_settings
+from .channel_manager import get_git_latest_tag
+
+from .channel_utilities import load_data_file
+from .channel_utilities import write_data_file
 from .channel_utilities import is_sublime_text_upgraded
 
+try:
+    from PackagesManager.package_control import cmd
+
+except ImportError:
+    pass
 
 from debug_tools import getLogger
 
@@ -82,6 +94,54 @@ class CopyFilesThread(threading.Thread):
 
         extract_package( package_path, output_folder )
         create_git_ignore_file( output_folder, self.default_package_files )
+        create_version_setting_file( output_folder )
+
+
+def create_version_setting_file(output_folder):
+    command_line_interface = cmd.Cli( None, True )
+    latest_git_tag = get_git_latest_tag( output_folder, command_line_interface )
+
+    # https://stackoverflow.com/questions/10345182/log-first-10-in-git
+    command = shlex.split( "git log -10 --pretty=oneline" )
+    output = command_line_interface.execute( command, output_folder, short_errors=True )
+
+    # log( 1, 'Fetched the latest git history: \n%s', output )
+    version_found = 0
+    latest_git_tag = int( latest_git_tag )
+    version_regex = re.compile( r'(?:version|build)\s*(\d\d\d\d)', re.IGNORECASE )
+
+    for line in output.split('\n'):
+        version_match = version_regex.search(line)
+
+        if version_match:
+            version_match = int( version_match.group(1) )
+
+            if version_match > latest_git_tag:
+                version_found = version_match
+                break
+
+    log( 1, 'version_found: %s', version_found )
+    log( 1, 'latest_git_tag: %s', latest_git_tag )
+
+    if version_found:
+        command = shlex.split( "git tag %s" % version_found )
+        output = command_line_interface.execute( command, output_folder, short_errors=True )
+
+        log( 1, 'Creating git tag `%s`. Console results from git:\n%s', version_found, output )
+        version_settings_path = os.path.join( output_folder, 'settings.json' )
+
+        version_settings_file = load_data_file( version_settings_path )
+        version_found = str( version_found )
+
+        if version_found not in version_settings_file['tags']:
+            version_settings_file['tags'].append( str( version_found ) )
+            write_data_file(version_settings_path, version_settings_file)
+
+        else:
+            log( 1, 'Warning: The version `%s` was already found on: %s', version_found, version_settings_path )
+
+    else:
+        log( 1, 'No new Sublime Text version was found.' )
 
 
 def create_git_ignore_file(output_folder, default_package_files):
