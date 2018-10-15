@@ -46,6 +46,7 @@ from distutils.version import LooseVersion
 
 from . import settings as g_settings
 g_is_already_running = False
+g_failed_repositories = []
 
 from .channel_utilities import write_data_file
 from .channel_utilities import string_convert_list
@@ -725,6 +726,8 @@ def get_git_commit_date(absolute_path, command_line_interface):
     """
         Get timestamp of the last commit in git repository
         https://gist.github.com/bitrut/1494315
+
+        @return release_date `2017-04-13 16:44:14`
     """
     # command = shlex.split( "git log -1 --date=iso" )
     command = shlex.split( "git log -1 --pretty=format:%ci" )
@@ -742,7 +745,7 @@ def get_git_tag_date(absolute_path, command_line_interface, tag):
         Get timestamp of the specified tag in git repository
         https://gist.github.com/bitrut/1494315
 
-        @return release_date `2018-02-16 01:40:11 -0200`
+        @return release_date `2018-02-16 01:40:11`
     """
     # command = shlex.split( "git log -1 --date=iso" )
     command = shlex.split( "git log -1 --pretty=format:%ci {}".format( tag ) )
