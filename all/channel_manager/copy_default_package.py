@@ -86,10 +86,6 @@ class CopyFilesThread(threading.Thread):
 
 def create_git_ignore_file(output_folder, default_package_files):
 
-    if len( default_package_files ) < 1:
-        log( 1, "Skipping creating `.gitignore` file as not files are passed to the main function." )
-        return
-
     gitignore_file = os.path.join( output_folder, ".gitignore" )
     lines_to_write = \
     [
@@ -98,15 +94,11 @@ def create_git_ignore_file(output_folder, default_package_files):
         "# To change this file contents, edit the package `%s/%s`" % ( g_settings.CURRENT_PACKAGE_NAME, os.path.basename( __file__ ) ),
         "",
         "",
-        "# Ignore everything",
-        "*",
-        "**",
-        "",
-        "# Only accept the unchanged files, need to add new files here manually",
+        "*.png",
     ]
 
     for file in default_package_files:
-        lines_to_write.append( "!" + file )
+        lines_to_write.append( "/" + file )
 
     lines_to_write.append("\n")
     log( 1, "Writing to gitignore_file: " + str( gitignore_file ) )

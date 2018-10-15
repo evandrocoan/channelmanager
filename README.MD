@@ -638,7 +638,7 @@ as you usually do with the default `Package Control` channel.
       * Packages which must not be installed on the stable version and must be disabled by default on
         the development version, i.e., added to the `ignored_packages` list setting.
    1. DEFAULT_PACKAGE_FILES:
-      * The files of the `Default.sublime-package` you are installing
+      * The files of the `Default.sublime-package` you want to ignore
    1. PACKAGES_TO_INSTALL_EXCLUSIVELY
       * If this list variable has length greater than 0, it will only add the packages which are listed
         on it when installing the channel. This is useful to maintain two or more channels within the
