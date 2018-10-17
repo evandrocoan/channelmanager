@@ -48,6 +48,8 @@ from .channel_utilities import is_sublime_text_upgraded
 
 try:
     from PackagesManager.package_control import cmd
+    command_line_interface = cmd.Cli( None, True )
+
 
 except ImportError:
     pass
@@ -61,7 +63,6 @@ log = getLogger( 127, __name__ )
 # log( 2, "..." )
 # log( 2, "Debugging" )
 # log( 2, "PACKAGE_ROOT_DIRECTORY: " + g_settings.PACKAGE_ROOT_DIRECTORY )
-command_line_interface = cmd.Cli( None, True )
 packages_file_name = "Default.sublime-package"
 
 
