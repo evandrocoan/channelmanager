@@ -700,7 +700,8 @@ def get_user_name(url, regular_expression="github\.com\/(.+)/(.+)", allow_recurs
 
 
 def get_download_url(url, tag):
-    url_fixed = url.replace("//github.com/", "//codeload.github.com/") + "/zip/" + tag
+    url_fixed = re.sub(r'\.git/?$', '', url)
+    url_fixed = url_fixed.replace("//github.com/", "//codeload.github.com/") + "/zip/" + tag
 
     # log( 1, "get_download_url, url_fixed: " + url_fixed )
     return url_fixed
