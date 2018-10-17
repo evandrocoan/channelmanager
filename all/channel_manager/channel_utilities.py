@@ -163,12 +163,12 @@ def load_data_file(file_path, wait_on_error=True, log_level=1):
                 return json.loads( resource_bytes.decode('utf-8'), object_pairs_hook=OrderedDict )
 
             except IOError as error:
-                log.exception( "Error on load_data_file(1), the file '%s' does not exists! %s" % ( file_path, error ) )
+                log.exception( "Error: The file '%s' does not exists! %s" % ( file_path, error ) )
 
         else:
 
             try:
-                raise IOError( "Error on load_data_file(1), the file '%s' does not exists!" % file_path )
+                raise IOError( "Error: The file '%s' does not exists!" % file_path )
 
             except IOError:
                 log.exception( "" )
@@ -790,9 +790,8 @@ def is_channel_upgraded(channel_settings):
     package_version = ""
 
     try:
-        resource_bytes = load_package_file_as_binary( channel_settings['CHANNEL_PACKAGE_METADATA'], 0 )
-        packageChannelSettings = json.loads( resource_bytes.decode('utf-8'), object_pairs_hook=OrderedDict )
-        package_version = packageChannelSettings.get( 'version' )
+        packageChannelSettings = load_data_file( channel_settings['CHANNEL_PACKAGE_METADATA'], log_level=0 )
+        package_version = packageChannelSettings.get( 'version', "" )
 
     except Exception as error:
         log( 1, "Skipping channel upgrade as could not load `package-metadata.json` due: %s", error )
@@ -804,7 +803,7 @@ def is_channel_upgraded(channel_settings):
     try:
 
         if not user_version:
-            raise Exception( "There is not old version available for updating." )
+            raise Exception( "There is no old version available for update checking." )
 
         return LooseVersion( package_version ) > LooseVersion( user_version )
 
