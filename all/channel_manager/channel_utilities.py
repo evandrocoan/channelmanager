@@ -348,7 +348,6 @@ def run_channel_setup(channel_settings, channel_package_file):
     channel_settings['INSTALLER_TYPE']    = ""
     channel_settings['INSTALLATION_TYPE'] = ""
 
-    channel_settings['DEFAULT_PACKAGE_FILES'].sort()
     channel_settings['FORBIDDEN_PACKAGES'].sort()
     channel_settings['PACKAGES_TO_INSTALL_EXCLUSIVELY'].sort()
     channel_settings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT'].sort()

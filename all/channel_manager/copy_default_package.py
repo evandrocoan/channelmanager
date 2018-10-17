@@ -65,7 +65,7 @@ command_line_interface = cmd.Cli( None, True )
 packages_file_name = "Default.sublime-package"
 
 
-def main(default_package_files=[], is_forced=False):
+def main(is_forced=False):
 
     # We can only run this when we are using the development version of the channel. And when there
     # is a `.git` folder, we are running the `Development Version` of the channel.
@@ -76,14 +76,13 @@ def main(default_package_files=[], is_forced=False):
     # on the `Stable Version` of the channel.
     if is_forced or os.path.exists( main_git_path ) and is_sublime_text_upgraded( "copy_default_package" ):
         log( 1, "Entering on CopyFilesThread(1)" )
-        CopyFilesThread( default_package_files ).start()
+        CopyFilesThread().start()
 
 
 class CopyFilesThread(threading.Thread):
 
-    def __init__(self, default_package_files):
+    def __init__(self):
         threading.Thread.__init__(self)
-        self.default_package_files = default_package_files
 
     def run(self):
         log( 2, "Entering on run(1)" )
@@ -95,7 +94,7 @@ class CopyFilesThread(threading.Thread):
         log( 2, "run, output_directory: " + output_directory )
 
         extract_package( package_path, output_directory )
-        create_git_ignore_file( output_directory, self.default_package_files )
+        create_git_ignore_file( output_directory )
         create_version_setting_file( output_directory )
 
 
@@ -165,7 +164,7 @@ def create_version_setting_file(output_directory):
         log( 1, 'No new Sublime Text version was found.' )
 
 
-def create_git_ignore_file(output_directory, default_package_files):
+def create_git_ignore_file(output_directory):
 
     gitignore_file = os.path.join( output_directory, ".gitignore" )
     lines_to_write = \
@@ -177,9 +176,6 @@ def create_git_ignore_file(output_directory, default_package_files):
         "",
         "*.png",
     ]
-
-    for file in default_package_files:
-        lines_to_write.append( "/" + file )
 
     lines_to_write.append("\n")
     log( 1, "Writing to gitignore_file: " + str( gitignore_file ) )

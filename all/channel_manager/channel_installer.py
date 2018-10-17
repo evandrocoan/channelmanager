@@ -635,7 +635,6 @@ class ChannelInstaller(threading.Thread):
         #     # ('Notepad++ Color Scheme', 'https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme', 'Packages/Notepad++ Color Scheme'),
         #     ('PackagesManager', 'https://github.com/evandrocoan/package_control', 'Packages/PackagesManager'),
         #     ('Toggle Words', 'https://github.com/evandrocoan/ToggleWords', 'Packages/Toggle Words'),
-        #     ('Default', 'https://github.com/evandrocoan/SublimeDefault', 'Packages/Default'),
         #     ('User', 'https://github.com/evandrocoan/User', 'Packages/User'),
         # ]
 
@@ -842,14 +841,6 @@ class ChannelInstaller(threading.Thread):
             silence_error_message_box( 61.0 )
             self.ignore_next_packages( package_name, packages_names )
 
-            # We cannot uninstall the `User` and `Default` package by Package Control
-            if package_name == "Default":
-                self.uninstall_default_package()
-
-                self.remove_packages_from_list( package_name )
-                self.accumulative_unignore_user_packages( package_name )
-                continue
-
             if package_name == "User":
                 log( 1, "Warning: We cannot touch the `User` package as is it is now filled with new settings." )
 
@@ -893,24 +884,6 @@ class ChannelInstaller(threading.Thread):
             all_packages = set( self.package_manager.list_packages( list_everything=True ) )
 
         return all_packages, dependencies
-
-
-    def uninstall_default_package(self):
-        """
-            Uninstall all the Default.sublime-packages files.
-        """
-        log( 1, "%s of `Default Package` files..." % self.installationType )
-
-        files_installed       = g_channelDetails.get( 'default_package_files', [] )
-        default_packages_path = os.path.join( self.channelSettings['CHANNEL_ROOT_DIRECTORY'], "Packages", "Default" )
-
-        for file in files_installed:
-            file_path = os.path.join( default_packages_path, file )
-            remove_only_if_exists( file_path )
-
-        default_git_folder = os.path.join( default_packages_path, ".git" )
-        remove_git_folder( default_git_folder, default_packages_path )
-
 
     def uninstall_files(self):
         git_folders = []
@@ -1157,9 +1130,6 @@ class ChannelInstaller(threading.Thread):
         # https://stackoverflow.com/questions/9264763/unboundlocalerror-in-python
         # UnboundLocalError in Python
         global g_channelDetails
-
-        if 'Default' in g_packages_to_uninstall:
-            g_channelDetails['default_package_files'] = self.channelSettings['DEFAULT_PACKAGE_FILES']
 
         g_packages_to_uninstall.sort()
         g_packages_to_unignore.sort()
@@ -1445,10 +1415,6 @@ class ChannelInstaller(threading.Thread):
             last_ignored_packages = packages_list.index( package_name )
             g_next_packages_to_ignore.extend( packages_list[last_ignored_packages : last_ignored_packages+PACKAGES_COUNT_TO_IGNORE_AHEAD+1] )
 
-            if "Default" in g_next_packages_to_ignore:
-                log( 1, "Warning: We never can ignore the Default package, otherwise several errors/anomalies show up." )
-                g_next_packages_to_ignore.remove( "Default" )
-
             # If the package is already on the users' `ignored_packages` settings, it means either that
             # the package was disabled by the user or the package is one of the development disabled
             # packages. Therefore we must not unignore it later when unignoring them.
@@ -1484,10 +1450,6 @@ class ChannelInstaller(threading.Thread):
             self.clearNextIgnoredPackages()
 
         else:
-            if package_name in ("Default"):
-                log( 1, "Warning: The default package was never ignored." )
-                return
-
             log( 1, "Adding package to unignore list: %s" % str( package_name ) )
             self.uningoredPackagesToFlush += 1
 
