@@ -205,7 +205,7 @@ def calculate_next_step( sublime_dialog ):
 
 def show_goodbye_message():
     ok_button_text = "Return to the wizard"
-    ask_later_text = "Ask me later"
+    negative_button_text = "Ask me later"
 
     lines = \
     [
@@ -224,14 +224,14 @@ def show_goodbye_message():
 
         If you wish to install the {channel_name} later, after uninstalling it, you can just install
         this package again.
-        """.format( ok_button=ok_button_text, ask_later=ask_later_text, installation_type=g_installation_command,
+        """.format( ok_button=ok_button_text, ask_later=negative_button_text, installation_type=g_installation_command,
                 channel_name=CHANNEL_PACKAGE_NAME ) ),
     ]
 
     channelDetailsPath = g_channelSettings['CHANNEL_INSTALLATION_DETAILS']
 
     channelDetails = load_data_file( channelDetailsPath )
-    sublime_dialog = sublime.yes_no_cancel_dialog( "\n".join( lines ), ok_button_text, ask_later_text )
+    sublime_dialog = sublime.yes_no_cancel_dialog( "\n".join( lines ), ok_button_text, negative_button_text )
 
     if sublime_dialog == sublime.DIALOG_YES:
         return True
@@ -239,7 +239,11 @@ def show_goodbye_message():
     elif sublime_dialog == sublime.DIALOG_NO:
         channelDetails['automatically_show_installation_wizard'] = True
 
+    elif sublime_dialog == sublime.DIALOG_CANCEL:
+        channelDetails['automatically_show_installation_wizard'] = True
+
     else:
+        log(1, "Error: The option `%s` is a invalid return value from `sublime.yes_no_cancel_dialog`!", sublime_dialog )
         channelDetails['automatically_show_installation_wizard'] = False
 
     write_data_file( channelDetailsPath, channelDetails )
