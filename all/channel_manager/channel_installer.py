@@ -43,6 +43,7 @@ import threading
 import configparser
 
 g_is_running = False
+g_installer_thread = None
 g_is_package_control_installed = False
 
 # How many packages to ignore and unignore in batch to fix the ignored packages bug error
@@ -145,6 +146,8 @@ def main(channel_settings, is_forced=False):
         Also the current `Package Control` cache must be cleaned, ensuring it is downloading and
         using the Channel repositories/channel list.
     """
+    global g_installer_thread
+
     # We can only run this when we are using the stable version of the channel. And when there is
     # not a `.git` folder, we are running the `Development Version` of the channel.
     main_git_path = os.path.join( g_settings.PACKAGE_ROOT_DIRECTORY, ".git" )
@@ -154,7 +157,6 @@ def main(channel_settings, is_forced=False):
     # git itself to install or remove packages.
     if is_forced or not os.path.exists( main_git_path ) and is_channel_upgraded( channel_settings ):
         log( 1, "Entering on %s main(0)" % g_settings.CURRENT_PACKAGE_NAME )
-        global g_installer_thread
 
         g_installer_thread = ChannelInstaller( channel_settings )
         g_installer_thread.start()
