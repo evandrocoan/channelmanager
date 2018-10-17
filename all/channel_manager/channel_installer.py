@@ -132,6 +132,11 @@ log = getLogger( 127, __name__ )
 def _grade():
     return 1 & ( not IS_UPDATE_INSTALLATION )
 
+old_error_message = sublime.error_message
+
+def silent_error_message(string):
+    log(1, "Sublime Error Message: \n%s", string)
+
 # log( 2, "..." )
 # log( 2, "..." )
 # log( 2, "Debugging" )
@@ -323,11 +328,13 @@ class ChannelInstaller(threading.Thread):
     def setupThread(self, targetFunction):
 
         try:
+            sublime.error_message = silent_error_message
+
             ThreadProgress( self, self.setProgress, self.installerMessage )
             targetFunction()
 
         finally:
-            pass
+            sublime.error_message = old_error_message
 
 
     def installerProcedements(self):
@@ -1775,7 +1782,7 @@ class ChannelInstaller(threading.Thread):
             sublime.set_timeout_async( lambda: self.check_installed_packages( maximum_attempts ), 1000 )
 
         else:
-            sublime.error_message( end_user_message( """\
+            sublime.old_error_message( end_user_message( """\
                     The {channel_name} {type} could NOT be successfully completed.
 
                     Check you Sublime Text Console for more information.
