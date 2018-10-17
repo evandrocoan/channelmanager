@@ -159,6 +159,8 @@ def main(channel_settings, is_forced=False):
         g_installer_thread = ChannelInstaller( channel_settings )
         g_installer_thread.start()
 
+    return g_installer_thread
+
 
 class ChannelInstaller(threading.Thread):
 
@@ -1626,6 +1628,11 @@ class ChannelInstaller(threading.Thread):
 
 
     def ask_user_for_which_packages_to_install(self, packages_names, packages_infos=[], non_packages_names=[]):
+
+        if 'SKIP_INSTALLATION_QUESTIONS' in self.channelSettings:
+            log( 1, "Skip installation questions: %s", self.channelSettings['SKIP_INSTALLATION_QUESTIONS'] )
+            return
+
         can_continue  = [False]
         was_cancelled = [False]
         active_window = sublime.active_window()
