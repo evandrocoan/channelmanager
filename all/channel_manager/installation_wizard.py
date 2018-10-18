@@ -204,8 +204,8 @@ def calculate_next_step( sublime_dialog ):
 
 
 def show_goodbye_message():
-    ok_button_text = "Return to the wizard"
-    negative_button_text = "Ask me later"
+    ok_button_text = "Ask me later"
+    negative_button_text = "Never ask again"
 
     lines = \
     [
@@ -219,13 +219,13 @@ def show_goodbye_message():
 
         If you wish to install the {installation_type} later, you can go to the menu `Preferences ->
         Packages -> {channel_name}` and select the option `{installation_type}`, to run this
-        Installer Wizard again. Or select the button `{ask_later}` to show this Wizard on the next
-        time you start Sublime Text.
+        Installer Wizard again. Or select the button `{negative_button_text}` to show this Wizard on
+        the next time you start Sublime Text.
 
         If you wish to install the {channel_name} later, after uninstalling it, you can just install
         this package again.
-        """.format( ok_button=ok_button_text, ask_later=negative_button_text, installation_type=g_installation_command,
-                channel_name=CHANNEL_PACKAGE_NAME ) ),
+        """.format( ok_button=ok_button_text, negative_button_text=negative_button_text,
+                installation_type=g_installation_command, channel_name=CHANNEL_PACKAGE_NAME ) ),
     ]
 
     channelDetailsPath = g_channelSettings['CHANNEL_INSTALLATION_DETAILS']
@@ -237,9 +237,10 @@ def show_goodbye_message():
         return True
 
     elif sublime_dialog == sublime.DIALOG_NO:
-        channelDetails['automatically_show_installation_wizard'] = True
+        channelDetails['automatically_show_installation_wizard'] = False
 
     elif sublime_dialog == sublime.DIALOG_CANCEL:
+        # When pressing escape key, it returns to DIALOG_CANCEL
         channelDetails['automatically_show_installation_wizard'] = True
 
     else:
