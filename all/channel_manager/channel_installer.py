@@ -174,6 +174,7 @@ class ChannelInstaller(threading.Thread):
     def __init__(self, channel_settings):
         threading.Thread.__init__(self)
         self.channelName = channel_settings['CHANNEL_PACKAGE_NAME']
+        self.wasCancelled =  False
         self.channelSettings = channel_settings
 
         self.package_manager   = PackageManager()
@@ -281,6 +282,15 @@ class ChannelInstaller(threading.Thread):
         self.packagesInformations = packagesInformations
 
 
+    def update_user_channel_version(self):
+        packageChannelSettings = load_data_file( self.channelSettings['CHANNEL_PACKAGE_METADATA'] )
+        userChannelSettings = load_data_file( self.channelSettings['CHANNEL_INSTALLATION_DETAILS'] )
+        next_user_version = packageChannelSettings.get( 'version', '0.0.0' )
+
+        userChannelSettings['current_version'] = next_user_version
+        write_data_file( self.channelSettings['CHANNEL_INSTALLATION_DETAILS'], userChannelSettings )
+
+
     def run(self):
         """
             The installation is not complete when the user cancelled the installation process or
@@ -300,22 +310,14 @@ class ChannelInstaller(threading.Thread):
                 channelSettings['INSTALLATION_TYPE'] = "downgrade"
                 channelSettings['INSTALLER_TYPE']    = "uninstaller"
                 self._run()
-                self.update_user_channel_version()
 
-                global g_is_running
-                g_is_running = False
+                if not self.wasCancelled:
+                    self.update_user_channel_version()
+
+                _unlock_installer( self, is_forced=True )
 
             else:
                 self._run()
-
-
-    def update_user_channel_version(self):
-        packageChannelSettings = load_data_file( self.channelSettings['CHANNEL_PACKAGE_METADATA'] )
-        userChannelSettings = load_data_file( self.channelSettings['CHANNEL_INSTALLATION_DETAILS'] )
-        next_user_version = packageChannelSettings.get( 'version', '0.0.0' )
-
-        userChannelSettings['current_version'] = next_user_version
-        write_data_file( self.channelSettings['CHANNEL_INSTALLATION_DETAILS'], userChannelSettings )
 
 
     def _run(self):
@@ -356,13 +358,18 @@ class ChannelInstaller(threading.Thread):
         try:
             self.install_modules()
 
-        except ( InstallationCancelled, NoPackagesAvailable ) as error:
+        except InstallationCancelled as error:
             self.isExceptionRaised = True
-            log( 1, str( error ) )
+            self.wasCancelled = True
 
-            # Set the flag as completed, to signalize the installation has ended
-            global g_is_running
-            g_is_running = False
+            log( 1, str( error ) )
+            _unlock_installer( self )
+
+        except NoPackagesAvailable as error:
+            self.isExceptionRaised = True
+
+            log( 1, str( error ) )
+            _unlock_installer( self )
 
         if not self.isUpdateInstallation:
             self.uninstall_package_control()
@@ -389,13 +396,18 @@ class ChannelInstaller(threading.Thread):
             if not self.isUpdateInstallation:
                 self.uninstall_list_of_packages( [(self.channelSettings['CHANNEL_PACKAGE_NAME'], False)] )
 
-        except ( InstallationCancelled, NoPackagesAvailable ) as error:
+        except InstallationCancelled as error:
             self.isExceptionRaised = True
-            log( 1, str( error ) )
+            self.wasCancelled = True
 
-            # Set the flag as completed, to signalize the installation has ended
-            global g_is_running
-            g_is_running = 0
+            log( 1, str( error ) )
+            _unlock_installer( self )
+
+        except NoPackagesAvailable as error:
+            self.isExceptionRaised = True
+
+            log( 1, str( error ) )
+            _unlock_installer( self )
 
 
     def install_modules(self):
@@ -991,10 +1003,7 @@ class ChannelInstaller(threading.Thread):
 
         else:
             log( 1, "Warning: PackagesManager is was not installed on the system!" )
-
-            # Clean right away the PackagesManager successful flag, was it was not installed
-            global g_is_running
-            g_is_running = False
+            _unlock_installer( self )
 
 
     def delete_package_control_settings(self, maximum_attempts=3):
@@ -1024,9 +1033,7 @@ class ChannelInstaller(threading.Thread):
         clean_settings = sort_dictionary( clean_settings )
         write_data_file( PACKAGE_CONTROL, clean_settings )
 
-        # Set the flag as completed, to signalize the this part of the installation was successful
-        global g_is_running
-        g_is_running = False
+        _unlock_installer( self )
 
 
     def attempt_to_uninstall_packages_manager(self, packages_to_uninstall):
@@ -1042,9 +1049,7 @@ class ChannelInstaller(threading.Thread):
             self.restore_remove_orphaned_setting()
 
         else:
-            # Clean right away the PackagesManager successful flag, was it was not installed
-            global g_is_running
-            g_is_running &= ~CLEAN_PACKAGESMANAGER_FLAG
+            _unlock_installer_flag( CLEAN_PACKAGESMANAGER_FLAG )
 
 
     def restore_remove_orphaned_setting(self):
@@ -1058,9 +1063,7 @@ class ChannelInstaller(threading.Thread):
 
         self.save_package_control_settings()
 
-        # Set the flag as completed, to signalize the this part of the installation was successful
-        global g_is_running
-        g_is_running &= ~RESTORE_REMOVE_ORPHANED_FLAG
+        _unlock_installer_flag( RESTORE_REMOVE_ORPHANED_FLAG )
 
 
     def install_package_control(self):
@@ -1124,9 +1127,7 @@ class ChannelInstaller(threading.Thread):
             sublime.set_timeout_async( lambda: self.clean_packages_manager_settings( maximum_attempts ), 2000 )
             return
 
-        # Set the flag as completed, to signalize the this part of the installation was successful
-        global g_is_running
-        g_is_running &= ~CLEAN_PACKAGESMANAGER_FLAG
+        _unlock_installer_flag( CLEAN_PACKAGESMANAGER_FLAG )
 
 
     def uninstall_list_of_packages(self, packages_infos):
@@ -1823,7 +1824,9 @@ class ChannelInstaller(threading.Thread):
 
 
 def end_user_message(message):
-    # This is here because it is almost the last thing to be done
+    """
+        This is here because it is almost the last thing to be done
+    """
     global g_is_running
     g_is_running = False
 
@@ -1831,6 +1834,23 @@ def end_user_message(message):
     log.clean( 1, message )
 
     return wrap_text( message )
+
+
+def _unlock_installer_flag(flag):
+    """
+        Set the `flag` as completed, to signalize the its respective part of the installation was successful.
+    """
+    global g_is_running
+    g_is_running &= ~flag
+
+
+def _unlock_installer(self, is_forced=False):
+    """
+        Set the flag as completed, to signalize the installation has ended.
+    """
+    if is_forced or not self.isUpdateInstallation:
+        global g_is_running
+        g_is_running = 0
 
 
 def is_allowed_to_run():
