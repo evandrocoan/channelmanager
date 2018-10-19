@@ -431,7 +431,7 @@ class ChannelInstaller(threading.Thread):
 
         packages_to_install    = {}
         install_exclusively    = self.channelSettings['PACKAGES_TO_INSTALL_EXCLUSIVELY']
-        is_exclusively_install = not not len( install_exclusively )
+        is_exclusively_install = len( install_exclusively )
 
         repositories_loaded = load_repository_file( self.channelSettings['CHANNEL_REPOSITORY_FILE'], {} )
         log( _grade(), "get_stable_packages, packages_tonot_install: " + str( packages_tonot_install ) )
@@ -447,8 +447,8 @@ class ChannelInstaller(threading.Thread):
         else:
             packages_to_install = repositories_loaded
 
+        log( 2, "get_stable_packages, packages_to_install: %s" % [name for name in packages_to_install] )
         for package_name in packages_to_install:
-            log( 2, "get_stable_packages, package_name: " + package_name )
 
             # # For quick testing
             # current_index += 1
@@ -785,20 +785,33 @@ class ChannelInstaller(threading.Thread):
         packages_to_uninstall = g_channelDetails.get( 'packages_to_uninstall', [] )
 
         if is_downgrade:
-            packages_to_not_remove = set()
-            repositories_loaded    = load_repository_file( self.channelSettings['CHANNEL_REPOSITORY_FILE'], {} )
+            repositories_loaded    = set( load_repository_file( self.channelSettings['CHANNEL_REPOSITORY_FILE'], {} ) )
+            all_installed_packages = set( packages_to_uninstall + g_packages_not_installed )
 
-            install_exclusively    = self.channelSettings['PACKAGES_TO_INSTALL_EXCLUSIVELY']
-            is_exclusively_install = not not len( install_exclusively )
+            install_exclusively    = set( self.channelSettings['PACKAGES_TO_INSTALL_EXCLUSIVELY'] )
+            is_exclusively_install = len( install_exclusively )
 
             if is_exclusively_install:
+                packages_to_uninstall = all_installed_packages - install_exclusively
 
-                for package_name in repositories_loaded:
+            else:
+                packages_to_uninstall = all_installed_packages - repositories_loaded
 
-                    if package_name in install_exclusively:
-                        packages_to_not_remove.add( package_name )
+            # Remove from the stable version the new packages added to the stable version ignore lists
+            if not self.isDevelopment:
+                packages_to_not_install_stable = set( self.channelSettings['PACKAGES_TO_NOT_INSTALL_STABLE'] )
+                packages_to_ignore_on_development = set( self.channelSettings['PACKAGES_TO_IGNORE_ON_DEVELOPMENT'] )
+                extra_packages_to_ignore = packages_to_not_install_stable | packages_to_ignore_on_development
+                to_remove = set()
 
-            packages_to_uninstall = set( packages_to_uninstall + g_packages_not_installed ) - packages_to_not_remove
+                # Only attempt to remove packages which were actually installed
+                for package_name in extra_packages_to_ignore:
+
+                    if package_name not in all_installed_packages:
+                        to_remove.add( package_name )
+
+                extra_packages_to_ignore = extra_packages_to_ignore - to_remove
+                packages_to_uninstall = packages_to_uninstall | extra_packages_to_ignore
 
         for package_name in PACKAGES_TO_UNINSTALL_FIRST:
 
