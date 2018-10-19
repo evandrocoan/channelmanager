@@ -186,6 +186,7 @@ class ChannelInstaller(threading.Thread):
 
         self.ensure_packages_manager_on_last_positoin()
 
+
     def _setupData(self):
         global IS_UPDATE_INSTALLATION
         self.isDevelopment = self.channelSettings['INSTALLATION_TYPE'] == "development"
@@ -208,6 +209,7 @@ class ChannelInstaller(threading.Thread):
         log( 1, "INSTALLER_TYPE:         " + str( self.channelSettings['INSTALLER_TYPE'] ) )
         log( 1, "INSTALLATION_TYPE:      " + str( self.channelSettings['INSTALLATION_TYPE'] ) )
         log( 1, "IS_UPDATE_INSTALLATION: " + str( IS_UPDATE_INSTALLATION ) )
+
 
     def setupInstaller(self):
         self.word_prefix  = ""
@@ -243,6 +245,7 @@ class ChannelInstaller(threading.Thread):
 
         self.packagesInformations = packagesInformations
 
+
     def setupUninstaller(self):
         self.word_prefix  = "un"
         self.word_Prefix  = "Un"
@@ -277,6 +280,7 @@ class ChannelInstaller(threading.Thread):
 
         self.packagesInformations = packagesInformations
 
+
     def run(self):
         """
             The installation is not complete when the user cancelled the installation process or
@@ -298,8 +302,12 @@ class ChannelInstaller(threading.Thread):
                 self._run()
                 self.update_user_channel_version()
 
+                global g_is_running
+                g_is_running = False
+
             else:
                 self._run()
+
 
     def update_user_channel_version(self):
         packageChannelSettings = load_data_file( self.channelSettings['CHANNEL_PACKAGE_METADATA'] )
@@ -308,6 +316,7 @@ class ChannelInstaller(threading.Thread):
 
         userChannelSettings['current_version'] = next_user_version
         write_data_file( self.channelSettings['CHANNEL_INSTALLATION_DETAILS'], userChannelSettings )
+
 
     def _run(self):
         self._setupData()
@@ -324,6 +333,7 @@ class ChannelInstaller(threading.Thread):
         if not self.isExceptionRaised and not self.isUpdateInstallation:
             sublime.set_timeout_async( self.check_installed_packages, 10000 )
             sublime.set_timeout_async( self.check_installed_packages_alert, 1000 )
+
 
     def setupThread(self, targetFunction):
 
