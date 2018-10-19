@@ -311,16 +311,26 @@ def update_repository(last_dictionary, package_name, severity_level=3):
     release_data['date']    = release_date
     release_data['version'] = date_tag
 
+    # Only push the new tag, if it is not created yet.
+    if release_data['git_tag'] != git_tag:
+        command = "git push origin %s" % git_tag
+        command_line_interface.execute( shlex.split( command ), absolute_path, live_output=True, short_errors=True )
+
     # Check this to do not erase the tagged branch
     if 'is_branched_tag' not in release_data:
         release_data['url'] = release_data['url'].replace( release_data['git_tag'], git_tag )
 
-        # Only push the new tag, if it is not created yet.
         if release_data['git_tag'] != git_tag:
             release_data['git_tag'] = git_tag
 
-            command = "git push origin %s" % git_tag
-            command_line_interface.execute( shlex.split( command ), absolute_path, live_output=True, short_errors=True )
+    if package_name == 'PackagesManager':
+        package_metadata_json = os.path.join( g_channelSettings['CHANNEL_ROOT_DIRECTORY'],
+                "Packages", package_name, "package-metadata.json" )
+
+        package_metadata = load_data_file( package_metadata_json )
+        package_metadata['version'] = date_tag
+
+        write_data_file( package_metadata_json, package_metadata )
 
 
 def print_failed_repositories():
