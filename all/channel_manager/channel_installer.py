@@ -1018,7 +1018,7 @@ class ChannelInstaller(threading.Thread):
         if maximum_attempts > 0:
             sublime.set_timeout_async( lambda: self.delete_package_control_settings( maximum_attempts ), 2000 )
 
-            write_data_file( PACKAGE_CONTROL, clean_settings )
+            write_data_file( g_package_control_path, clean_settings )
             return
 
         clean_settings['bootstrapped']    = False
@@ -1031,7 +1031,7 @@ class ChannelInstaller(threading.Thread):
             clean_settings['remove_orphaned_backup'] = g_package_control_settings.get( 'remove_orphaned', True )
 
         clean_settings = sort_dictionary( clean_settings )
-        write_data_file( PACKAGE_CONTROL, clean_settings )
+        write_data_file( g_package_control_path, clean_settings )
 
         _unlock_installer( self )
 
@@ -1117,10 +1117,10 @@ class ChannelInstaller(threading.Thread):
         log( 1, "Finishing PackagesManager %s... maximum_attempts: " % self.installationType + str( maximum_attempts ) )
 
         if maximum_attempts == 3:
-            write_data_file( PACKAGESMANAGER, {} )
+            write_data_file( g_packagesmanager_path, {} )
 
         # If we do not write nothing to package_control file, Sublime Text will create another
-        remove_only_if_exists( PACKAGESMANAGER )
+        remove_only_if_exists( g_packagesmanager_path )
         maximum_attempts -= 1
 
         if maximum_attempts > 0:
@@ -1230,11 +1230,11 @@ class ChannelInstaller(threading.Thread):
         global g_package_control_settings
 
         # Allow to not override the Package Control file when PackagesManager does exists
-        if os.path.exists( PACKAGESMANAGER ):
-            g_package_control_settings = load_data_file( PACKAGESMANAGER )
+        if os.path.exists( g_packagesmanager_path ):
+            g_package_control_settings = load_data_file( g_packagesmanager_path )
 
         else:
-            g_package_control_settings = load_data_file( PACKAGE_CONTROL )
+            g_package_control_settings = load_data_file( g_package_control_path )
 
         global g_installed_packages
         global g_remove_orphaned_backup
@@ -1286,7 +1286,7 @@ class ChannelInstaller(threading.Thread):
         g_package_control_settings['installed_packages'] = g_installed_packages
         g_package_control_settings = sort_dictionary( g_package_control_settings )
 
-        write_data_file( PACKAGE_CONTROL, g_package_control_settings )
+        write_data_file( g_package_control_path, g_package_control_settings )
 
 
     def remove_packages_from_list(self, package_name):
@@ -1322,13 +1322,13 @@ class ChannelInstaller(threading.Thread):
         log( 1, "Calling sync_package_control_and_manager..." )
 
         global g_package_control_settings
-        g_package_control_settings = load_data_file( PACKAGE_CONTROL )
+        g_package_control_settings = load_data_file( g_package_control_path )
 
         log( 2, "sync_package_control_and_manager, package_control: " + str( g_package_control_settings ) )
         self.ensure_installed_packages_name( g_package_control_settings )
 
         g_package_control_settings = sort_dictionary( g_package_control_settings )
-        write_data_file( PACKAGESMANAGER, g_package_control_settings )
+        write_data_file( g_packagesmanager_path, g_package_control_settings )
 
 
     def ensure_installed_packages_name(self, package_control_settings):
@@ -1588,7 +1588,7 @@ class ChannelInstaller(threading.Thread):
             add_item_if_not_exists( installed_packages, package_name )
 
             g_package_control_settings = sort_dictionary( g_package_control_settings )
-            write_data_file( PACKAGESMANAGER, g_package_control_settings )
+            write_data_file( g_packagesmanager_path, g_package_control_settings )
 
         add_item_if_not_exists( g_packages_to_uninstall, package_name )
         self.save_default_settings()
@@ -1877,17 +1877,14 @@ def save_sublime_settings():
 def load_installation_settings_file(self):
     channelSettings = self.channelSettings
 
-    global PACKAGE_CONTROL
-    global PACKAGESMANAGER
+    g_package_control_file = "Package Control.sublime-settings"
+    g_packages_manager_file = "PackagesManager.sublime-settings"
 
-    global g_package_control_name
-    global g_packages_manager_name
+    global g_package_control_path
+    global g_packagesmanager_path
 
-    g_package_control_name = "Package Control.sublime-settings"
-    g_packages_manager_name = "PackagesManager.sublime-settings"
-
-    PACKAGESMANAGER = os.path.join( channelSettings['USER_FOLDER_PATH'], g_packages_manager_name )
-    PACKAGE_CONTROL = os.path.join( channelSettings['USER_FOLDER_PATH'], g_package_control_name )
+    g_packagesmanager_path = os.path.join( channelSettings['USER_FOLDER_PATH'], g_packages_manager_file )
+    g_package_control_path = os.path.join( channelSettings['USER_FOLDER_PATH'], g_package_control_file )
 
     global g_channelDetails
     global g_default_ignored_packages
