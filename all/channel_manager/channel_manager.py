@@ -166,6 +166,7 @@ class GenerateChannelThread(threading.Thread):
                     #     break
 
                     progress = progress_info( pi, set_progress )
+                    log.newline()
                     log( 1, "{:s} Processing {:3d} of {:d} repositories... {:s}".format( progress, index, repositories_count, package_name ) )
 
                     last_dictionary = last_channel_file.get( package_name, {} )
@@ -484,13 +485,11 @@ def get_last_tag_fixed(absolute_path, last_dictionary, command_line_interface, f
             # if LooseVersion( date_tag ) > LooseVersion( last_date_tag ):
             if True:
                 next_git_tag, is_incremented, unprefixed_tag = increment_tag_version( git_tag, force_tag_update, severity_level )
-                current_tags = get_current_cummit_tags( absolute_path, command_line_interface )
+                current_tags = get_current_commit_tags( absolute_path, command_line_interface )
 
                 if len( current_tags ) > 0:
                     tags_list = current_tags.split( "\n" )
-
                     log( 1, "Error: The current HEAD commit already has the following tags(s): %s" % str( current_tags ) )
-                    log.newline()
 
                     # For now, disable all tag prefixes, i.e., tags which are not strictly "0.0.0",
                     # because we cannot handle repositories which have a tag prefix for each
@@ -554,7 +553,7 @@ def delete_tags_list(absolute_path, tags_list, command_line_interface):
         )
 
 
-def get_current_cummit_tags(absolute_path, command_line_interface):
+def get_current_commit_tags(absolute_path, command_line_interface):
     command = shlex.split( "git tag -l --points-at HEAD" )
     output = command_line_interface.execute( command, absolute_path, short_errors=True )
 
