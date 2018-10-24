@@ -135,7 +135,6 @@ def load_data_file(file_path, wait_on_error=True, log_level=1):
     channel_dictionary = {}
 
     if os.path.exists( file_path ):
-        error = None
         maximum_attempts = 10
 
         while maximum_attempts > 0:
@@ -167,6 +166,7 @@ def load_data_file(file_path, wait_on_error=True, log_level=1):
 
         else:
 
+            # Force an exception to be logged by the logging module
             try:
                 raise IOError( "Error: The file '%s' does not exists!" % file_path )
 
@@ -455,9 +455,11 @@ def compare_text_with_file(input_text, file):
         Return `True` when the provided text and the `file` contents are equal.
     """
 
-    with open( file, "r", encoding='utf-8' ) as file:
-        text = file.read()
-        return input_text == text
+    if os.path.exists( file ):
+
+        with open( file, "r", encoding='utf-8' ) as file:
+            text = file.read()
+            return input_text == text
 
 
 def print_all_variables_for_debugging(dictionary):
