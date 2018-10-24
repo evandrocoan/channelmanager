@@ -40,9 +40,9 @@ import shlex
 import subprocess
 import configparser
 
+from contextlib import contextmanager
 from collections import OrderedDict
 from distutils.version import LooseVersion
-
 
 from . import settings as g_settings
 g_is_already_running = False
@@ -122,7 +122,8 @@ class GenerateChannelThread(threading.Thread):
     def run(self):
         log( 2, "Entering on run(1)" )
 
-        if is_allowed_to_run():
+        with lock_context_manager() as is_allowed:
+            if not is_allowed: return
             global g_failed_repositories
 
             unpack_settings( self.channel_settings )
@@ -275,11 +276,6 @@ class GenerateChannelThread(threading.Thread):
             self.save_log_file( repositories, dependencies )
 
 
-def free_mutex_lock():
-    global g_is_already_running
-    g_is_already_running = False
-
-
 def split_repositories_and_depencies(repositories_dictionary):
     packages_list     = []
     dependencies_list = []
@@ -344,7 +340,30 @@ def print_failed_repositories():
         log( 1, "Command: %s (%s)" % ( command, repository ) )
 
 
+def free_mutex_lock():
+    global g_is_already_running
+    g_is_already_running = False
+
+
+@contextmanager
+def lock_context_manager():
+    """
+        https://stackoverflow.com/questions/12594148/skipping-execution-of-with-block
+        https://stackoverflow.com/questions/27071524/python-context-manager-not-cleaning-up
+        https://stackoverflow.com/questions/10447818/python-context-manager-conditionally-executing-body
+        https://stackoverflow.com/questions/34775099/why-does-contextmanager-throws-a-runtime-error-generator-didnt-stop-after-thro
+    """
+    try:
+        yield is_allowed_to_run()
+
+    finally:
+        free_mutex_lock()
+
+
 def is_allowed_to_run():
+    """
+        Returns `True` when it is allowed to run the channel manager, `False` otherwise.
+    """
     global g_is_already_running
 
     if g_is_already_running:
