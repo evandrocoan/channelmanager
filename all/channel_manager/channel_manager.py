@@ -160,7 +160,7 @@ class GenerateChannelThread(threading.Thread):
                     index += 1
 
                     if not g_is_already_running:
-                        raise ImportError( "Stopping the process as this Python module was reloaded!" )
+                        raise RuntimeError( "Stopping the process as this Python module was reloaded!" )
 
                     # # For quick testing
                     # if index > 5:
@@ -436,7 +436,7 @@ def create_repositories_list(all_packages, last_channel_file):
     for repository, pi in sequence_timer( gitRepositories, info_frequency=0 ):
 
         if not g_is_already_running:
-            raise ImportError( "Stopping the process as this Python module was reloaded!" )
+            raise RuntimeError( "Stopping the process as this Python module was reloaded!" )
 
         # # For quick testing
         # if index > 3:
@@ -851,9 +851,10 @@ def get_git_version(release_date):
         @return 2018.0216.0140
     """
     fixed_date = release_date.replace("-", ".")
-    month_day = fixed_date[6:10].replace(".", "")
+    month_day = fixed_date[4:10].replace(".", "").strip()
     hour_minute = fixed_date[11:16].replace(":", "")
 
+    # log('fixed_date', fixed_date, ', month_day', month_day, ', hour_minute', hour_minute )
     return "{}.{:0>4}.{}".format( fixed_date[:4], month_day, hour_minute )
 
 
