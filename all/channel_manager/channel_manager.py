@@ -208,7 +208,7 @@ class GenerateChannelThread(threading.Thread):
                 show_quick_panel( sublime.active_window(), self.repositories_list, self.on_done )
 
             else:
-                severity_options = ["Go Back", "Cancel", "Patch", "Minor", "Major"]
+                severity_options = ["Go Back", "Cancel", "No Changes", "Patch", "Minor", "Major"]
 
                 def on_done_severity(picked_index):
 
@@ -218,10 +218,25 @@ class GenerateChannelThread(threading.Thread):
 
                     if picked_index == 0:
                         show_quick_panel( sublime.active_window(), self.repositories_list, self.on_done )
+                        return
+
+                    if picked_index == 2: # No Changes
+                        self.severity_level = 4
+
+                    elif picked_index == 3: # Patch
+                        self.severity_level = 3
+
+                    elif picked_index == 4: # Minor
+                        self.severity_level = 2
+
+                    elif picked_index == 5: # Major
+                        self.severity_level = 1
+
+                    else:
+                        self.severity_level = picked_index
 
                     # See the function get_last_tag_fixed() for the severity leves available
-                    self.severity_level = 3 if picked_index == 2 else 2 if picked_index == 3 else 1
-                    log( 1, "severity_level: %s", self.severity_level )
+                    log( 1, "picked_index: %s, severity_level: %s", picked_index, self.severity_level )
 
                     thread = threading.Thread( target=self.on_done_async )
                     thread.start()
@@ -482,7 +497,7 @@ def get_last_tag_fixed(absolute_path, last_dictionary, command_line_interface, f
         This is a entry point to do some batch operation on each git submodule. We can temporarily
         insert the code we want to run with `command_line_interface` and remove later.
 
-        @param severity_level   3 - Patch, 2 - Minor, 1 - Major
+        @param severity_level   4 - Do nothing, 3 - Increments Patch, 2 - Minor, 1 - Major
         @param force_tag_update if True, the tag will be created and also push the created tag to origin.
     """
     git_tag = get_git_latest_tag( absolute_path, command_line_interface )
@@ -591,9 +606,15 @@ def increment_tag_version(git_tag, force_tag_update=False, severity_level=1):
         @return new_tag_name       the new incremented tag if it was incremented, or the original
                                    value or some other valid value otherwise.
 
-        @return is_incremented     False, when the tag was not incremented, True otherwise.
+        @return (next_git_tag, is_incremented, unprefixed_tag)
+                `next_git_tag` is the new incremented and created tag.
+                `is_incremented` False, when the tag was not incremented.
+                `unprefixed_tag` the tag on the standard format `v.v.v`.
     """
+
     # log( 2, "Incrementing %s (%s)" % ( str( git_tag ), str( force_tag_update ) ) )
+    if severity_level == 4:
+        return git_tag, False, git_tag
 
     # if the tag is just an integer, it should be a Sublime Text build as 3147
     try:
