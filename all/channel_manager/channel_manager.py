@@ -176,6 +176,9 @@ class GenerateChannelThread(threading.Thread):
                 repositories, dependencies = split_repositories_and_depencies( last_channel_file )
                 self.save_log_file( repositories, dependencies )
 
+            elif self.command == "cancel_operation":
+                free_mutex_lock()
+
             else:
                 log( 1, "Invalid command: " + str( self.command ) )
 

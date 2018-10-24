@@ -720,6 +720,10 @@ installed the Development Version of the channel:
    commit. If there is no git tags, a first tag is created as `1.0.0`. If already there are git tags, its
    patch component (or major.minor.patch) is incremented in one.
 
+1. **YourChannelName: Cancel Current Operation** If there is some operation currently running, it
+   will be cancelled some time after this command is called. Please, do not call cancel and immediately
+   call some other operation. Wait a a few seconds until the operation stops.
+
 1. **YourChannelName: Run Backstroke Requests** Backstroke is a Github bot to keep repository forks up
    to date with their upstream. Therefore, if you setup your own list of Backstroke URLs, you can
    run this command to ping all your URLs, so their upstreams are checked whether there are some

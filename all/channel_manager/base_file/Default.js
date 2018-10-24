@@ -11,6 +11,10 @@
             "command": "my_brand_new_channel_generate_channel_file",
             "args": {"command": "git_tag_all" } },
 
+    { "caption": "MyBrandNewChannel: Cancel Current Operation",
+            "command": "my_brand_new_channel_generate_channel_file",
+            "args": {"command": "cancel_operation" } },
+
     { "caption": "MyBrandNewChannel: Run Installation Wizard",
             "command": "my_brand_new_channel_run_installation" },
 
