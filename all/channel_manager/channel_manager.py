@@ -32,6 +32,7 @@ import sublime_plugin
 
 import os
 import sys
+import time
 import json
 import threading
 
@@ -208,7 +209,7 @@ class GenerateChannelThread(threading.Thread):
                 show_quick_panel( sublime.active_window(), self.repositories_list, self.on_done )
 
             else:
-                severity_options = ["Go Back", "Cancel", "No Changes", "Patch", "Minor", "Major"]
+                severity_options = ["Go Back", "Cancel", "Custom", "No Changes", "Patch", "Minor", "Major"]
 
                 def on_done_severity(picked_index):
 
@@ -216,23 +217,64 @@ class GenerateChannelThread(threading.Thread):
                         free_mutex_lock()
                         return
 
-                    if picked_index == 0:
+                    elif picked_index == 0:
                         show_quick_panel( sublime.active_window(), self.repositories_list, self.on_done )
                         return
 
-                    if picked_index == 2: # No Changes
+                    elif picked_index == 2:
+                        can_continue = [False]
+                        active_window = sublime.active_window()
+                        active_window_panel = active_window.active_panel()
+
+                        def restore_last_actived_panel():
+
+                            if active_window_panel:
+                                sublime.active_window().run_command( "show_panel", {"panel": active_window_panel, "toggle": False} )
+
+                        def on_done(answer):
+                            can_continue[0] = True
+                            self.severity_level = answer
+                            restore_last_actived_panel()
+
+                            log( 1, "picked_index: %s, severity_level: %s", picked_index, self.severity_level )
+                            thread = threading.Thread( target=self.on_done_async )
+                            thread.start()
+
+                        def on_cancel():
+                            free_mutex_lock()
+                            restore_last_actived_panel()
+                            can_continue[0] = True
+                            return
+
+                        def get_user_input():
+                            widget_view = active_window.show_input_panel(
+                                    "Type the next version tag",
+                                    "1.0.0", on_done, None, on_cancel )
+
+                            widget_view.run_command( "select_all" )
+
+                            # show_input_panel is a non-blocking function, but we can only continue after on_done being called
+                            while not can_continue[0]:
+                                time.sleep( 0.5 )
+
+                        thread = threading.Thread( target=get_user_input )
+                        thread.start()
+                        return
+
+                    elif picked_index == 3: # No Changes
                         self.severity_level = 4
 
-                    elif picked_index == 3: # Patch
+                    elif picked_index == 4: # Patch
                         self.severity_level = 3
 
-                    elif picked_index == 4: # Minor
+                    elif picked_index == 5: # Minor
                         self.severity_level = 2
 
-                    elif picked_index == 5: # Major
+                    elif picked_index == 6: # Major
                         self.severity_level = 1
 
                     else:
+                        raise RuntimeError( "Invalid option picked: %s - %s" % ( picked_index, self.severity_level ) )
                         self.severity_level = picked_index
 
                     # See the function get_last_tag_fixed() for the severity leves available
@@ -497,7 +539,7 @@ def get_last_tag_fixed(absolute_path, last_dictionary, command_line_interface, f
         This is a entry point to do some batch operation on each git submodule. We can temporarily
         insert the code we want to run with `command_line_interface` and remove later.
 
-        @param severity_level   4 - Do nothing, 3 - Increments Patch, 2 - Minor, 1 - Major
+        @param severity_level   4 - Do nothing, 3 - Increments Patch, 2 - Minor, 1 - Major, or a git tag as "2.5.8"
         @param force_tag_update if True, the tag will be created and also push the created tag to origin.
     """
     git_tag = get_git_latest_tag( absolute_path, command_line_interface )
@@ -616,6 +658,18 @@ def increment_tag_version(git_tag, force_tag_update=False, severity_level=1):
     if severity_level == 4:
         return git_tag, False, git_tag
 
+    try:
+        int( severity_level )
+
+    except ValueError:
+        matches = re.search( r"(\d+)\.(\d+)\.(\d+)", severity_level )
+
+        if matches:
+            return severity_level, True, severity_level
+
+        else:
+            raise RuntimeError( "Invalid Tag `%s` passed. It must on the format `1.0.0`" % severity_level )
+
     # if the tag is just an integer, it should be a Sublime Text build as 3147
     try:
         if int( git_tag ) > 3000:
@@ -628,7 +682,7 @@ def increment_tag_version(git_tag, force_tag_update=False, severity_level=1):
         pass
 
     fixed_tag, matched_tag = fix_semantic_version( git_tag )
-    matches = re.search( "(\d+)\.(\d+)\.(\d+)", fixed_tag )
+    matches = re.search( r"(\d+)\.(\d+)\.(\d+)", fixed_tag )
 
     def determine_update_level(group):
 
