@@ -33,6 +33,7 @@ import sublime_plugin
 import os
 import sys
 import time
+import datetime
 import json
 import threading
 
@@ -379,15 +380,6 @@ def update_repository(last_dictionary, package_name, severity_level=3):
 
         if release_data['git_tag'] != git_tag:
             release_data['git_tag'] = git_tag
-
-    if package_name == 'PackagesManager':
-        package_metadata_json = os.path.join( g_channelSettings['CHANNEL_ROOT_DIRECTORY'],
-                "Packages", package_name, "package-metadata.json" )
-
-        package_metadata = load_data_file( package_metadata_json )
-        package_metadata['version'] = date_tag
-
-        write_data_file( package_metadata_json, package_metadata )
 
 
 def print_failed_repositories():
@@ -831,8 +823,7 @@ def fix_semantic_version(tag):
 
 def get_git_commit_date(absolute_path, command_line_interface):
     """
-        Get timestamp of the last commit in git repository
-        https://gist.github.com/bitrut/1494315
+        Get the date of the latest commit git tag.
 
         @return release_date `2017-04-13 16:44:14`
     """
@@ -906,7 +897,39 @@ def get_git_latest_tag(absolute_path, command_line_interface):
     return clean_tag
 
 
+def create_packages_manager_tag(absolute_path, date_tag, command_line_interface):
+    """
+        Create the `date_tag` as the current time because we cannot call get_git_tag_date() because
+        we did not created the tag neither the commit yet.
+    """
+    package_name = os.path.basename( absolute_path )
+
+    if package_name == 'PackagesManager':
+        # 2017-04-13 16:44:14
+        # https://stackoverflow.com/questions/32490629/getting-todays-date-in-yyyy-mm-dd-in-python
+        release_date = datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')
+        date_tag     = get_git_version( release_date )
+
+        package_metadata_json = os.path.join( g_channelSettings['CHANNEL_ROOT_DIRECTORY'],
+                "Packages", package_name, "package-metadata.json" )
+
+        package_metadata = load_data_file( package_metadata_json )
+        package_metadata['version'] = date_tag
+
+        write_data_file( package_metadata_json, package_metadata )
+
+        # https://stackoverflow.com/questions/7239333/how-do-i-commit-only-some-files
+        command = 'git commit --only "%s" -m "Updated package-metadata.json version to %s"' % ( package_metadata_json, date_tag )
+        command_line_interface.execute( shlex.split( command ), absolute_path, live_output=True, short_errors=True )
+
+        # https://stackoverflow.com/questions/14031970/git-push-current-branch-shortcut
+        command = "git push origin HEAD"
+        command_line_interface.execute( shlex.split( command ), absolute_path, live_output=True, short_errors=True )
+
+
 def create_git_tag(absolute_path, new_tag_name, command_line_interface):
+    create_packages_manager_tag( absolute_path, new_tag_name, command_line_interface )
+
     command = shlex.split( "git tag %s" % new_tag_name )
     output = command_line_interface.execute( command, absolute_path, short_errors=True )
 
