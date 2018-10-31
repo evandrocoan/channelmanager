@@ -392,11 +392,6 @@ def print_failed_repositories():
         log( 1, "Command: %s (%s)" % ( command, repository ) )
 
 
-def free_mutex_lock():
-    global g_is_already_running
-    g_is_already_running = False
-
-
 @contextmanager
 def lock_context_manager():
     """
@@ -410,6 +405,11 @@ def lock_context_manager():
 
     finally:
         free_mutex_lock()
+
+
+def free_mutex_lock():
+    global g_is_already_running
+    g_is_already_running = False
 
 
 def is_allowed_to_run():
