@@ -63,6 +63,7 @@ log = getLogger( 127, __name__ )
 # log( 2, "Debugging" )
 # log( 2, "PACKAGE_ROOT_DIRECTORY: " + g_settings.PACKAGE_ROOT_DIRECTORY )
 packages_upstream_name = "Default.sublime-package"
+g_is_already_running = False
 
 
 def main(is_forced=False):
@@ -87,15 +88,20 @@ class CopyFilesThread(threading.Thread):
     def run(self):
         log( 2, "Entering on run(1)" )
 
-        package_path = os.path.join( os.path.dirname( sublime.executable_path() ), "Packages", packages_upstream_name )
-        upstream_directory = os.path.join( os.path.dirname( sublime.packages_path() ), packages_upstream_name )
+        with lock_context_manager() as is_allowed:
+            if not is_allowed: return
 
-        log( 2, "run, package_path:  " + package_path )
-        log( 2, "run, upstream_directory: " + upstream_directory )
+            package_path = os.path.join( os.path.dirname( sublime.executable_path() ), "Packages", packages_upstream_name )
+            upstream_directory = os.path.join( os.path.dirname( sublime.packages_path() ), packages_upstream_name )
 
-        extract_package( package_path, upstream_directory )
-        create_git_ignore_file( upstream_directory )
-        create_version_setting_file( upstream_directory )
+            log( 2, "run, package_path:  " + package_path )
+            log( 2, "run, upstream_directory: " + upstream_directory )
+
+            extract_package( package_path, upstream_directory )
+            create_git_ignore_file( upstream_directory )
+
+            create_version_setting_file( upstream_directory )
+            free_mutex_lock()
 
 
 def run_command(command, upstream_directory):
@@ -226,6 +232,40 @@ def extract_package(package_path, destine_folder):
             return
 
         log( 1, "The file '%s' was successfully extracted." % package_path )
+
+
+@contextmanager
+def lock_context_manager():
+    """
+        https://stackoverflow.com/questions/12594148/skipping-execution-of-with-block
+        https://stackoverflow.com/questions/27071524/python-context-manager-not-cleaning-up
+        https://stackoverflow.com/questions/10447818/python-context-manager-conditionally-executing-body
+        https://stackoverflow.com/questions/34775099/why-does-contextmanager-throws-a-runtime-error-generator-didnt-stop-after-thro
+    """
+    try:
+        yield is_allowed_to_run()
+
+    finally:
+        free_mutex_lock()
+
+
+def free_mutex_lock():
+    global g_is_already_running
+    g_is_already_running = False
+
+
+def is_allowed_to_run():
+    """
+        Returns `True` when it is allowed to run the channel manager, `False` otherwise.
+    """
+    global g_is_already_running
+
+    if g_is_already_running:
+        print( "You are already running a command. Wait until it finishes or restart Sublime Text" )
+        return False
+
+    g_is_already_running = True
+    return True
 
 
 if __name__ == "__main__":
