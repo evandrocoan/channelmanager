@@ -234,7 +234,7 @@ def extract_package(package_path, destine_folder):
         log( 1, "The file '%s' was successfully extracted." % package_path )
 
 
-@contextmanager
+@contextlib.contextmanager
 def lock_context_manager():
     """
         https://stackoverflow.com/questions/12594148/skipping-execution-of-with-block

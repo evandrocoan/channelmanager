@@ -41,8 +41,8 @@ import re
 import shlex
 import subprocess
 import configparser
+import contextlib
 
-from contextlib import contextmanager
 from collections import OrderedDict
 from distutils.version import LooseVersion
 
@@ -392,7 +392,7 @@ def print_failed_repositories():
         log( 1, "Command: %s (%s)" % ( command, repository ) )
 
 
-@contextmanager
+@contextlib.contextmanager
 def lock_context_manager():
     """
         https://stackoverflow.com/questions/12594148/skipping-execution-of-with-block
