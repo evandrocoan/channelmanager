@@ -1456,7 +1456,7 @@ class ChannelInstaller(threading.Thread):
             for package_name in list( g_next_packages_to_ignore ):
 
                 if package_name in g_default_ignored_packages:
-                    log( 1, "Warning: The package `%s` could be ignored because it already ignored." % package_name )
+                    log( 1, "Warning: The package `%s` could not be ignored because it already ignored." % package_name )
                     g_next_packages_to_ignore.remove( package_name )
 
             g_next_packages_to_ignore.sort()
