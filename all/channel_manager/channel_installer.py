@@ -349,14 +349,10 @@ class ChannelInstaller(threading.Thread):
             sublime.error_message = old_error_message
 
 
-    def installerProcedements(self):
-        log( _grade(), "Entering on %s run(1)" % self.__class__.__name__ )
-
-        self.gitExecutablePath = self.commandLineInterface.find_binary( "git.exe" if os.name == 'nt' else "git" )
-        log( _grade(), "run, gitExecutablePath: " + str( self.gitExecutablePath ) )
+    def handleSetupOperation(self, operationHandler):
 
         try:
-            self.install_modules()
+            operationHandler()
 
         except InstallationCancelled as error:
             self.isExceptionRaised = True
@@ -370,6 +366,15 @@ class ChannelInstaller(threading.Thread):
 
             log( 1, str( error ) )
             _unlock_installer( self )
+
+
+    def installerProcedements(self):
+        log( _grade(), "Entering on %s run(1)" % self.__class__.__name__ )
+
+        self.gitExecutablePath = self.commandLineInterface.find_binary( "git.exe" if os.name == 'nt' else "git" )
+        log( _grade(), "run, gitExecutablePath: " + str( self.gitExecutablePath ) )
+
+        self.handleSetupOperation( self.install_modules )
 
         if not self.isUpdateInstallation:
             self.uninstall_package_control()
@@ -378,36 +383,26 @@ class ChannelInstaller(threading.Thread):
     def uninstallerProcedements(self):
         log( _grade(), "Entering on %s run(1)" % self.__class__.__name__ )
 
-        try:
-            packages_to_uninstall     = self.get_packages_to_uninstall( self.isUpdateInstallation )
-            non_packages_to_uninstall = self.get_non_packages_to_uninstall()
+        self.handleSetupOperation( self.uninstall_modules )
 
-            log( _grade(), "Packages to %s: " % self.installationType + str( packages_to_uninstall ) )
-            self.uninstall_packages( packages_to_uninstall, non_packages_to_uninstall )
 
-            if not self.isUpdateInstallation:
-                self.remove_channel()
+    def uninstall_modules(self):
+        packages_to_uninstall     = self.get_packages_to_uninstall( self.isUpdateInstallation )
+        non_packages_to_uninstall = self.get_non_packages_to_uninstall()
 
-                self.uninstall_files()
-                self.uninstall_folders()
+        log( _grade(), "Packages to %s: " % self.installationType + str( packages_to_uninstall ) )
+        self.uninstall_packages( packages_to_uninstall, non_packages_to_uninstall )
 
-            self.attempt_to_uninstall_packages_manager( packages_to_uninstall )
+        if not self.isUpdateInstallation:
+            self.remove_channel()
 
-            if not self.isUpdateInstallation:
-                self.uninstall_list_of_packages( [(self.channelSettings['CHANNEL_PACKAGE_NAME'], False)] )
+            self.uninstall_files()
+            self.uninstall_folders()
 
-        except InstallationCancelled as error:
-            self.isExceptionRaised = True
-            self.wasCancelled = True
+        self.attempt_to_uninstall_packages_manager( packages_to_uninstall )
 
-            log( 1, str( error ) )
-            _unlock_installer( self )
-
-        except NoPackagesAvailable as error:
-            self.isExceptionRaised = True
-
-            log( 1, str( error ) )
-            _unlock_installer( self )
+        if not self.isUpdateInstallation:
+            self.uninstall_list_of_packages( [(self.channelSettings['CHANNEL_PACKAGE_NAME'], False)] )
 
 
     def install_modules(self):
