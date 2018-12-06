@@ -331,6 +331,13 @@ class ChannelInstaller(threading.Thread):
                 if not self.wasCancelled or 'CHANNEL_UPGRADE_SKIP' in channelSettings:
                     self.update_user_channel_version()
 
+                    if 'CHANNEL_UPGRADE_SKIP' not in channelSettings:
+                        sublime.message_dialog( end_user_message( """\
+                                The {channel_name} Upgrade Wizard was successfully completed.
+
+                                Check you Sublime Text Console for more information.
+                                """.format( channel_name=self.channelSettings['CHANNEL_PACKAGE_NAME'] )
+                                ) )
                 _unlock_installer( self, is_forced=True )
 
             else:
