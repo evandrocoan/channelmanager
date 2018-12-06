@@ -63,6 +63,7 @@ from debug_tools.estimated_time_left import sequence_timer
 from debug_tools.estimated_time_left import progress_info
 from debug_tools.estimated_time_left import CurrentUpdateProgress
 
+from . import upgrade_wizard
 from . import settings as g_settings
 
 from .channel_utilities import add_item_if_not_exists
@@ -185,7 +186,7 @@ class ChannelInstaller(threading.Thread):
         self.commandLineInterface     = cmd.Cli( None, True )
         self.uningoredPackagesToFlush = 0
 
-        self.ensure_packages_manager_on_last_positoin()
+        self.ensure_packagesmanager_on_last_positoin()
 
 
     def _setupData(self):
@@ -291,6 +292,18 @@ class ChannelInstaller(threading.Thread):
         write_data_file( self.channelSettings['CHANNEL_INSTALLATION_DETAILS'], userChannelSettings )
 
 
+    def _runUpgradeWizard(self):
+        self._setupData()
+        self.setup_packages_to_uninstall_last()
+
+        packages_to_install = self.get_stable_packages()
+        packages_to_uninstall = self.get_packages_to_uninstall( True )
+
+        upgrade_wizard.main( packages_to_install, packages_to_uninstall, self )
+        self.packages_to_install = packages_to_install
+        self.packages_to_uninstall = packages_to_uninstall
+
+
     def run(self):
         """
             The installation is not complete when the user cancelled the installation process or
@@ -304,14 +317,18 @@ class ChannelInstaller(threading.Thread):
             channelSettings = self.channelSettings
 
             if channelSettings['INSTALLATION_TYPE'] == "upgrade":
-                channelSettings['INSTALLER_TYPE']    = "installer"
-                self._run()
-
-                channelSettings['INSTALLATION_TYPE'] = "downgrade"
-                channelSettings['INSTALLER_TYPE']    = "uninstaller"
-                self._run()
+                channelSettings['INSTALLER_TYPE'] = "installer"
+                self.handleSetupOperation( self._runUpgradeWizard )
 
                 if not self.wasCancelled:
+                    self._run()
+
+                if not self.wasCancelled:
+                    channelSettings['INSTALLATION_TYPE'] = "downgrade"
+                    channelSettings['INSTALLER_TYPE'] = "uninstaller"
+                    self._run()
+
+                if not self.wasCancelled or 'CHANNEL_UPGRADE_SKIP' in channelSettings:
                     self.update_user_channel_version()
 
                 _unlock_installer( self, is_forced=True )
@@ -329,10 +346,10 @@ class ChannelInstaller(threading.Thread):
         else:
             self.setupThread( self.uninstallerProcedements )
 
-        # Wait PackagesManager to load the found dependencies, before announcing it to the user
         self.save_default_settings()
 
         if not self.isExceptionRaised and not self.isUpdateInstallation:
+            # Wait PackagesManager to load the found dependencies, before announcing it to the user
             sublime.set_timeout_async( self.check_installed_packages, 10000 )
             sublime.set_timeout_async( self.check_installed_packages_alert, 1000 )
 
@@ -387,10 +404,21 @@ class ChannelInstaller(threading.Thread):
 
 
     def uninstall_modules(self):
-        packages_to_uninstall     = self.get_packages_to_uninstall( self.isUpdateInstallation )
+
+        if self.isUpdateInstallation:
+            packages_to_uninstall = self.packages_to_uninstall
+
+            if len( packages_to_uninstall ) < 1:
+                raise NoPackagesAvailable( "There are 0 packages available to uninstall!" )
+
+            log( 1, "New packages packages to uninstall found... %s", packages_to_uninstall )
+
+        else:
+            packages_to_uninstall = self.get_packages_to_uninstall( False )
+
         non_packages_to_uninstall = self.get_non_packages_to_uninstall()
 
-        log( _grade(), "Packages to %s: " % self.installationType + str( packages_to_uninstall ) )
+        log( _grade(), "Packages to %s: %s", self.installationType,  packages_to_uninstall )
         self.uninstall_packages( packages_to_uninstall, non_packages_to_uninstall )
 
         if not self.isUpdateInstallation:
@@ -399,7 +427,7 @@ class ChannelInstaller(threading.Thread):
             self.uninstall_files()
             self.uninstall_folders()
 
-        self.attempt_to_uninstall_packages_manager( packages_to_uninstall )
+        self.attempt_to_uninstall_packagesmanager( packages_to_uninstall )
 
         if not self.isUpdateInstallation:
             self.uninstall_list_of_packages( [(self.channelSettings['CHANNEL_PACKAGE_NAME'], False)] )
@@ -415,7 +443,18 @@ class ChannelInstaller(threading.Thread):
             self.install_development_packages( packages_to_install, non_packages_to_uninstall )
 
         else:
-            packages_to_install = self.get_stable_packages()
+            if self.isUpdateInstallation:
+                packages_to_install = self.packages_to_install
+
+            else:
+                packages_to_install = self.get_stable_packages()
+
+            if len( packages_to_install ) < 1:
+                raise NoPackagesAvailable( "There are 0 packages available to install!" )
+
+            if self.isUpdateInstallation:
+                log( 1, "New packages packages to install found... %s", packages_to_install )
+
             self.install_stable_packages( packages_to_install )
 
 
@@ -505,12 +544,6 @@ class ChannelInstaller(threading.Thread):
         #     ('ChannelRepositoryTools', False),
         #     ('Better CoffeeScript', False),
         # ]
-
-        if len( filtered_packages ) < 1:
-            raise NoPackagesAvailable( "There are 0 packages available to install!" )
-
-        if self.isUpdateInstallation:
-            log( 1, "New packages packages to install found... " + str( filtered_packages ) )
 
         return filtered_packages
 
@@ -852,14 +885,7 @@ class ChannelInstaller(threading.Thread):
         # Finally add the last packages to the full list
         unique_list_append( filtered_packages, last_packages )
 
-        if is_downgrade:
-
-            # Allow to uninstall only the channel package when there is no other packages installed
-            if len( filtered_packages ) < 1:
-                raise NoPackagesAvailable( "There are 0 packages available to uninstall!" )
-
-            log( 1, "New packages packages to uninstall found... " + str( filtered_packages ) )
-
+        # Allow to uninstall only the channel package when there is no other packages installed
         return filtered_packages
 
 
@@ -1031,7 +1057,7 @@ class ChannelInstaller(threading.Thread):
         _unlock_installer( self )
 
 
-    def attempt_to_uninstall_packages_manager(self, packages_to_uninstall):
+    def attempt_to_uninstall_packagesmanager(self, packages_to_uninstall):
 
         if "PackagesManager" in packages_to_uninstall:
             silence_error_message_box( 620.0 )
@@ -1084,27 +1110,27 @@ class ChannelInstaller(threading.Thread):
             log.newline( count=2 )
 
             log( 1, "Finishing PackagesManager %s..." % self.installationType )
-            self.uninstall_list_of_packages( [("PackagesManager", False), ("0_packages_manager_loader", None)] )
+            self.uninstall_list_of_packages( [("PackagesManager", False), ("0_packagesmanager_loader", None)] )
 
-            self.remove_0_package_dependency_loader( "0_packages_manager_loader" )
-            self.clean_packages_manager_settings()
+            self.remove_0_package_dependency_loader( "0_packagesmanager_loader" )
+            self.clean_packagesmanager_settings()
 
 
     def remove_0_package_dependency_loader(self, loader_name):
         """
-            Most times the 0_packages_manager_loader is not being deleted/removed, then try again.
+            Most times the 0_packagesmanager_loader is not being deleted/removed, then try again.
         """
-        packages_manager_loader_path     = os.path.join(
+        packagesmanager_loader_path     = os.path.join(
                 self.channelSettings['CHANNEL_ROOT_DIRECTORY'], "Installed Packages", "%s.sublime-package" % loader_name )
 
-        packages_manager_loader_path_new = os.path.join(
+        packagesmanager_loader_path_new = os.path.join(
                 self.channelSettings['CHANNEL_ROOT_DIRECTORY'], "Installed Packages", "%s.sublime-package-new" % loader_name )
 
-        remove_only_if_exists( packages_manager_loader_path )
-        remove_only_if_exists( packages_manager_loader_path_new )
+        remove_only_if_exists( packagesmanager_loader_path )
+        remove_only_if_exists( packagesmanager_loader_path_new )
 
 
-    def clean_packages_manager_settings(self, maximum_attempts=3):
+    def clean_packagesmanager_settings(self, maximum_attempts=3):
         """
             Clean it a few times because PackagesManager is kinda running and still flushing stuff down
             to its settings file.
@@ -1119,7 +1145,7 @@ class ChannelInstaller(threading.Thread):
         maximum_attempts -= 1
 
         if maximum_attempts > 0:
-            sublime.set_timeout_async( lambda: self.clean_packages_manager_settings( maximum_attempts ), 2000 )
+            sublime.set_timeout_async( lambda: self.clean_packagesmanager_settings( maximum_attempts ), 2000 )
             return
 
         _unlock_installer_flag( CLEAN_PACKAGESMANAGER_FLAG )
@@ -1292,7 +1318,7 @@ class ChannelInstaller(threading.Thread):
         self.save_package_control_settings()
 
 
-    def ensure_packages_manager_on_last_positoin(self):
+    def ensure_packagesmanager_on_last_positoin(self):
         """
             Garantes `PackagesManager` to be on the list of PACKAGES_TO_INSTALL_LAST, and for it
             to be on the last position.
@@ -1661,6 +1687,20 @@ class ChannelInstaller(threading.Thread):
             log( 1, "Skip installation questions: %s", self.channelSettings['SKIP_INSTALLATION_QUESTIONS'] )
             return
 
+        if self.isUpdateInstallation:
+            log( 1, "Skip installation questions because it is a update installation." )
+            return
+
+        self._ask_user_for_which_packages_to_install( packages_names, packages_infos, non_packages_names )
+        self.save_default_settings()
+
+
+    def _ask_user_for_which_packages_to_install(self, packages_names, packages_infos=[], non_packages_names=[]):
+
+        if len( packages_names ) < 1:
+            log( 1, "There are no packages available for picking up!" )
+            return
+
         can_continue  = [False]
         was_cancelled = [False]
         active_window = sublime.active_window()
@@ -1741,8 +1781,6 @@ class ChannelInstaller(threading.Thread):
 
             if len( packages_infos ):
                 del packages_infos[target_index]
-
-        self.save_default_settings()
 
 
     def check_installed_packages_alert(self, maximum_attempts=10):
@@ -1873,12 +1911,12 @@ def load_installation_settings_file(self):
     channelSettings = self.channelSettings
 
     g_package_control_file = "Package Control.sublime-settings"
-    g_packages_manager_file = "PackagesManager.sublime-settings"
+    g_packagesmanager_file = "PackagesManager.sublime-settings"
 
     global g_package_control_path
     global g_packagesmanager_path
 
-    g_packagesmanager_path = os.path.join( channelSettings['USER_FOLDER_PATH'], g_packages_manager_file )
+    g_packagesmanager_path = os.path.join( channelSettings['USER_FOLDER_PATH'], g_packagesmanager_file )
     g_package_control_path = os.path.join( channelSettings['USER_FOLDER_PATH'], g_package_control_file )
 
     global g_channelDetails
