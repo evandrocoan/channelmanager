@@ -360,7 +360,7 @@ as you usually do with the default `Package Control` channel.
    because:
 
       1. The installation could just not work, if the dependency `ChannelManager` and
-         `DebugTools` are not available on the `Package Control` default channel.
+         `debugtools` are not available on the `Package Control` default channel.
       1. You cannot use all the features available because currently it is dependent on git
          submodules and Package Control cannot clone the submodules together yet. Therefore, cannot
          use the features dependent on the submodules as the `find_forks` command.
@@ -371,7 +371,7 @@ as you usually do with the default `Package Control` channel.
    repository or for a fork of yours at GitHub.
 
    Therefore as you may notice,
-   was skipped the addition of the dependency `DebugTools`,
+   was skipped the addition of the dependency `debugtools`,
    as it is not dependent on git submodules and there is not much room for improvement or changes on it.
    However,
    if you like you can also add it as a package.
@@ -386,9 +386,9 @@ as you usually do with the default `Package Control` channel.
        url = https://github.com/evandrocoan/SublimeChannelManager
        upstream =
 
-   [submodule "Packages/DebugTools"]
-       path = Packages/DebugTools
-       url = https://github.com/evandrocoan/DebugTools
+   [submodule "Packages/debugtools"]
+       path = Packages/debugtools
+       url = https://github.com/evandrocoan/debugtools
        upstream =
    ```
 
@@ -434,9 +434,9 @@ as you usually do with the default `Package Control` channel.
        url = https://github.com/evandrocoan/SublimeChannelManager
        upstream =
 
-   [submodule "Packages/DebugTools"]
-       path = Packages/DebugTools
-       url = https://github.com/evandrocoan/DebugTools
+   [submodule "Packages/debugtools"]
+       path = Packages/debugtools
+       url = https://github.com/evandrocoan/debugtools
        upstream =
 
    [submodule "Packages/MyBrandNewChannel"]
@@ -456,22 +456,22 @@ as you usually do with the default `Package Control` channel.
                "python-pywin32",
                "PortalockerFiles",
                "ConcurrentLogHandler",
-               "DebugTools"
+               "debugtools"
            ]
        },
        "*": {
            "*": [
                "PortalockerFiles",
                "ConcurrentLogHandler",
-               "DebugTools"
+               "debugtools"
            ]
        }
    }
    ```
 
      On this case,
-     we added the dependency `DebugTools` to the `MyBrandNewChannel` dependencies list,
-     as `ChannelManager` requires the `DebugTools` as dependency.
+     we added the dependency `debugtools` to the `MyBrandNewChannel` dependencies list,
+     as `ChannelManager` requires the `debugtools` as dependency.
      See the following issue for details about when this should be correctly supported by `Package Control`:
 
      1. [package_control#1300](https://github.com/wbond/package_control/issues/1300) If a dependency has a dependency, its dependencies are not installed
@@ -904,7 +904,7 @@ ___
 ## Development Problems
 ___
 
-1. The Development Version currently cannot install the dependencies `DebugTools` and
+1. The Development Version currently cannot install the dependencies `debugtools` and
    `ChannelManager` as Package Control always unpack package dependencies. Because to install the
    development packages, it required to they do not exists on the user loose `Packages` folder. But
    as Package Control unpacks them when installing the required dependencies, the installer cannot
@@ -912,7 +912,7 @@ ___
 
    The solution to this problem is to Package Control accept some dependencies to be installed
    inside a `sublime-package`. There is a open pull request for Package Control allowing this
-   feature: [Pull$1291](https://github.com/wbond/package_control/pull/1291) Allowed DebugTools
+   feature: [Pull$1291](https://github.com/wbond/package_control/pull/1291) Allowed debugtools
    to be import from a .sublime-package file.
 
    The work around to fix this, is after the Development Version installation process to be
