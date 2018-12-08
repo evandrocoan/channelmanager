@@ -193,7 +193,8 @@ def main(command=None):
         RunGitForEachSubmodulesThread( "git push --tags" ).start()
 
     elif command == "-p" or argumentsNamespace and argumentsNamespace.pull:
-        RunGitForEachSubmodulesThread( "git checkout master && git pull --rebase" ).start()
+        RunGitForEachSubmodulesThread( "git checkout master && "
+                "git branch --set-upstream-to=origin/master master && git pull --rebase" ).start()
 
     elif command == "-o" or argumentsNamespace and argumentsNamespace.pull_origins:
         RunBackstrokeThread("pull_origins").start()
