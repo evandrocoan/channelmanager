@@ -455,14 +455,14 @@ as you usually do with the default `Package Control` channel.
            ">3000": [
                "python-pywin32",
                "portalockerfiles",
-               "ConcurrentLogHandler",
+               "concurrentloghandler",
                "debugtools"
            ]
        },
        "*": {
            "*": [
                "portalockerfiles",
-               "ConcurrentLogHandler",
+               "concurrentloghandler",
                "debugtools"
            ]
        }
