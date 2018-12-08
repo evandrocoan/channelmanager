@@ -35,16 +35,16 @@ threads for more information about the `Package Control` channel and repository 
 ___
 ## Introduction <sub><sub>[Go to Top](#channel-manager)</sub></sub>
 
-ChannelManager is dependency which manages the packages installed by git as submodules. It allows to
+channelmanager is dependency which manages the packages installed by git as submodules. It allows to
 create the channel files required by Package Control to list and install packages. It is Currently
 implemented two different bundle of package bounded by `.gitmodules` files. The
 [StudioChannel](https://github.com/evandrocoan/StudioChannel) and the
 [AmxxChannel](https://github.com/evandrocoan/AmxxChannel).
 
-1. **StudioChannel** This is one of the first channels implemented using the `ChannelManager`. It
+1. **StudioChannel** This is one of the first channels implemented using the `channelmanager`. It
    contains about 100 packages for the stable version and 150 for the development version. It has a
    custom installation wizard to guide you through the installation steps and therefore call the
-   `ChannelManager`'s installer passing the required configurations for the
+   `channelmanager`'s installer passing the required configurations for the
    [SublimeStudio](https://github.com/evandrocoan/SublimeStudio).
 
 1. **AmxxChannel** This is a smaller channel of packages with about 20 packages focused on just for
@@ -249,8 +249,8 @@ uninstallation of the of all the channel packages by the `Package Control` when 
 Stable Version, or by `git` when installing the Development Version of the channel.
 
 Currently the installer has some hard coded configurations which are implemented directly on the
-code. But futurely they should be moved on from the dependency `ChannelManager` to the package which
-actually is using the dependency `ChannelManager` to do the channel administration.
+code. But futurely they should be moved on from the dependency `channelmanager` to the package which
+actually is using the dependency `channelmanager` to do the channel administration.
 
 
 
@@ -336,19 +336,19 @@ as you usually do with the default `Package Control` channel.
    ```
 
    With this setup, you can customize your file adding the required information to build up the channel.
-   Let us start by adding the keys for the `ChannelManager` installer & uninstaller:
+   Let us start by adding the keys for the `channelmanager` installer & uninstaller:
    ```java
    [submodule "Packages/GitGutter"]
        path = Packages/GitGutter
        url = https://github.com/jisaacks/GitGutter
 
-   [submodule "Packages/ChannelManager"]
-       path = Packages/ChannelManager
+   [submodule "Packages/channelmanager"]
+       path = Packages/channelmanager
        url = https://github.com/evandrocoan/SublimeChannelManager
        upstream =
    ```
 
-   The packages `ChannelManager` is responsible for generating the channel files,
+   The packages `channelmanager` is responsible for generating the channel files,
    installing and uninstalling them.
    As it is set on the `.gitmodules` file,
    You can read more about the dependency load order on [Package Control, Docs: Dependencies](https://packagecontrol.io/docs/dependencies)
@@ -359,14 +359,14 @@ as you usually do with the default `Package Control` channel.
    it when you requires it on the actual package which provides the commands,
    because:
 
-      1. The installation could just not work, if the dependency `ChannelManager` and
+      1. The installation could just not work, if the dependency `channelmanager` and
          `debugtools` are not available on the `Package Control` default channel.
       1. You cannot use all the features available because currently it is dependent on git
          submodules and Package Control cannot clone the submodules together yet. Therefore, cannot
          use the features dependent on the submodules as the `find_forks` command.
 
-   But also, you can add `ChannelManager` to enforce the policy of development, adding
-   `ChannelManager` here allow you to easily edit its code, fix bugs or improve whatever it is doing
+   But also, you can add `channelmanager` to enforce the policy of development, adding
+   `channelmanager` here allow you to easily edit its code, fix bugs or improve whatever it is doing
    as you already have a full git repository at hand, you just need to change the remote to a new
    repository or for a fork of yours at GitHub.
 
@@ -381,8 +381,8 @@ as you usually do with the default `Package Control` channel.
        path = Packages/GitGutter
        url = https://github.com/jisaacks/GitGutter
 
-   [submodule "Packages/ChannelManager"]
-       path = Packages/ChannelManager
+   [submodule "Packages/channelmanager"]
+       path = Packages/channelmanager
        url = https://github.com/evandrocoan/SublimeChannelManager
        upstream =
 
@@ -394,7 +394,7 @@ as you usually do with the default `Package Control` channel.
 
 1. Now you added the basics, you may notice they were not added as `git submodules` by the commands
    `git clone --recursive repo_url` and `git submodule add -- repo_url "Packages/package_name"`.
-   Moreover you can or cannot do so if you like. The `ChannelManager` only requires to the file
+   Moreover you can or cannot do so if you like. The `channelmanager` only requires to the file
    `.gitmodules` to exists in the pre-configured location, which we are about do to. Other than
    that, you do not need to have a parent repository which holds a valid `.gitmodules` file by your
    `git` client.
@@ -407,10 +407,10 @@ as you usually do with the default `Package Control` channel.
 
    ![git client Graphic Interface](https://i.imgur.com/Q3DngpF.png)
 
-   To create the channel you need the configuration loader for the dependency `ChannelManager`. This
-   configuration loader would be a Sublime Text Package which requires the `ChannelManager` as a
+   To create the channel you need the configuration loader for the dependency `channelmanager`. This
+   configuration loader would be a Sublime Text Package which requires the `channelmanager` as a
    dependency and call its installer, uninstaller and commands available passing the configuration
-   required by the `ChannelManager` dependency to run its operations.
+   required by the `channelmanager` dependency to run its operations.
 
    First of all let us create the folder for our new channel, you can name it as you like as long as
    there is no other package installed with the same. Assuming you still have the command line
@@ -429,8 +429,8 @@ as you usually do with the default `Package Control` channel.
        path = Packages/GitGutter
        url = https://github.com/jisaacks/GitGutter
 
-   [submodule "Packages/ChannelManager"]
-       path = Packages/ChannelManager
+   [submodule "Packages/channelmanager"]
+       path = Packages/channelmanager
        url = https://github.com/evandrocoan/SublimeChannelManager
        upstream =
 
@@ -446,7 +446,7 @@ as you usually do with the default `Package Control` channel.
    ```
 
    * Note: Due Package Control currently not accept dependencies requiring dependencies, we also
-     need to add the `ChannelManager` dependencies to the `MyBrandNewChannel` dependencies list:
+     need to add the `channelmanager` dependencies to the `MyBrandNewChannel` dependencies list:
 
    **dependencies.json**
    ```javascript
@@ -471,20 +471,20 @@ as you usually do with the default `Package Control` channel.
 
      On this case,
      we added the dependency `debugtools` to the `MyBrandNewChannel` dependencies list,
-     as `ChannelManager` requires the `debugtools` as dependency.
+     as `channelmanager` requires the `debugtools` as dependency.
      See the following issue for details about when this should be correctly supported by `Package Control`:
 
      1. [package_control#1300](https://github.com/wbond/package_control/issues/1300) If a dependency has a dependency, its dependencies are not installed
 
    * Note: We need to add the entry `tag = master` on the `MyBrandNewChannel` repository entry due
-     the `ChannelManager` installer get the packages names list to install from the current
+     the `channelmanager` installer get the packages names list to install from the current
      installed version of `MyBrandNewChannel` repository. Then if we only download the latest tag
      for `MyBrandNewChannel`, we will miss installing the latest added packages, unless the
      `MyBrandNewChannel` is re-tagged right after the creation of the `channel.json` and
      `repository.json` files.
 
 1. Now on this new package called `Packages/MyBrandNewChannel`,
-   you need to create the plugin to call the `ChannelManager` passing the required configurations.
+   you need to create the plugin to call the `channelmanager` passing the required configurations.
    In the following we may see a full example configuration file,
    you can save it inside the folder `Packages/MyBrandNewChannel` with the name you like most as `settings.py`:
    ```python
@@ -667,7 +667,7 @@ The second usage is when you intend to share with our work colleagues or friends
 packages for Sublime Text. You can just pass the channel URL for them to add it to the Package
 Control channel's list, then they can install your channel and run its installer.
 
-When the user finish the installation of the channel, the `ChannelManager` dependency will show up a
+When the user finish the installation of the channel, the `channelmanager` dependency will show up a
 message dialog informing whether the installation was successful or not:
 
 ![Successful Installation Message Dialog](https://i.imgur.com/GcGa2MY.png)
@@ -677,7 +677,7 @@ message dialog informing whether the installation was successful or not:
 
 You can install as many Stable Versions of the channels as you want to. However, the Development
 Version due its nature can only have one installed. If you attempt to install a second Development
-Version, the `ChannelManager` will not let you. But it stills installing the packages which are not
+Version, the `channelmanager` will not let you. But it stills installing the packages which are not
 present on the current installed channel.
 
 Despite you cannot install multiple Development Versions, you can still install one Development
@@ -688,7 +688,7 @@ Package C, the implementation of the Package C, by the Channel A, will be overri
 implementation of the Channel B, i.e., they are overridden accordingly to the order of the most
 recent channel installation.
 
-It is also implemented on the `ChannelManager` dependency, an short installation wizard which should
+It is also implemented on the `channelmanager` dependency, an short installation wizard which should
 allow you to choose which packages of Channel you do not want to install. Therefore you could select
 which of these packages you would like to install over the packages you already has installed.
 However, this list limited by the setting `FORBIDDEN_PACKAGES` which specify packages which must be
@@ -905,7 +905,7 @@ ___
 ___
 
 1. The Development Version currently cannot install the dependencies `debugtools` and
-   `ChannelManager` as Package Control always unpack package dependencies. Because to install the
+   `channelmanager` as Package Control always unpack package dependencies. Because to install the
    development packages, it required to they do not exists on the user loose `Packages` folder. But
    as Package Control unpacks them when installing the required dependencies, the installer cannot
    clone and install the files.
