@@ -142,13 +142,14 @@ class GenerateChannelThread(threading.Thread):
                 self.save_log_file( repositories, dependencies )
 
             elif self.command == "git_tag":
-                self.repositories_list = ["Select this fist item to start the updating... (0 items selected)"]
+                self.repositories_list = ["Select this first item to start the updating... (0 items selected)"]
                 self.last_channel_file = last_channel_file
 
                 for package_name in last_channel_file:
                     self.repositories_list.append( package_name )
 
                 self.exclusion_flag   = " (excluded)"
+                self.inclusion_flag   = " (selected)"
                 self.last_picked_item = 0
 
                 self.last_excluded_items = 0
@@ -291,9 +292,12 @@ class GenerateChannelThread(threading.Thread):
             if picked_index <= self.last_picked_item:
                 picked_package = self.repositories_list[picked_index]
 
+                if picked_package.endswith( self.inclusion_flag ):
+                    picked_package = picked_package[:-len( self.inclusion_flag )]
+
                 if picked_package.endswith( self.exclusion_flag ):
                     self.last_excluded_items -= 1
-                    self.repositories_list[picked_index] = picked_package.strip( self.exclusion_flag )
+                    self.repositories_list[picked_index] = picked_package[:-len( self.exclusion_flag )] + self.inclusion_flag
 
                 else:
                     self.last_excluded_items += 1
@@ -301,9 +305,11 @@ class GenerateChannelThread(threading.Thread):
 
             else:
                 self.last_picked_item += 1
+                self.repositories_list[picked_index] = self.repositories_list[picked_index] + self.inclusion_flag
 
             self.update_start_item_name()
             self.repositories_list.insert( 1, self.repositories_list.pop( picked_index ) )
+
             show_quick_panel( sublime.active_window(), self.repositories_list, self.on_done )
 
     def update_start_item_name(self):
@@ -325,6 +331,9 @@ class GenerateChannelThread(threading.Thread):
             if package_name.endswith( self.exclusion_flag ):
                 log( 1, "Skipping `%s`..." % package_name )
                 continue
+
+            if package_name.endswith( self.inclusion_flag ):
+                package_name = package_name[:-len( self.inclusion_flag )]
 
             save_items      = True
             last_dictionary = self.last_channel_file.get( package_name, {} )
