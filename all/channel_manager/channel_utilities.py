@@ -125,7 +125,7 @@ def load_package_file_as_binary(file_path, log_level=1):
     return resource_bytes
 
 
-def load_data_file(file_path, wait_on_error=True, log_level=1):
+def load_data_file(file_path, wait_on_error=True, log_level=1, exceptions=False):
     """
         Attempt to read the file some times when there is a value error. This could happen when the
         file is currently being written by Sublime Text.
@@ -152,6 +152,7 @@ def load_data_file(file_path, wait_on_error=True, log_level=1):
 
         if maximum_attempts < 1:
             log.exception( "Could not open the file_path: %s" % ( file_path ) )
+            if exceptions: raise
 
     else:
 
@@ -163,6 +164,7 @@ def load_data_file(file_path, wait_on_error=True, log_level=1):
 
             except IOError as error:
                 log.exception( "Error: The file '%s' does not exists! %s" % ( file_path, error ) )
+                if exceptions: raise
 
         else:
 
@@ -172,6 +174,7 @@ def load_data_file(file_path, wait_on_error=True, log_level=1):
 
             except IOError:
                 log.exception( "" )
+                if exceptions: raise
 
     return channel_dictionary
 
@@ -792,11 +795,22 @@ def is_channel_upgraded(channel_settings):
     package_version = ""
 
     try:
-        packageChannelSettings = load_data_file( channel_settings['CHANNEL_PACKAGE_METADATA'], log_level=0 )
+        packageChannelSettings = load_data_file( channel_settings['CHANNEL_PACKAGE_METADATA'], log_level=0, exceptions=True )
         package_version = packageChannelSettings.get( 'version', "" )
 
     except Exception as error:
         log( 1, "Skipping channel upgrade as could not load `package-metadata.json` due: %s", error )
+
+        write_data_file( os.path.join( os.path.dirname( sublime.packages_path() ), channel_settings['CHANNEL_PACKAGE_METADATA'] ),
+            {
+                "dependencies": [],
+                "description": "No description available.",
+                "platforms": "*",
+                "sublime_text": ">3114",
+                "url": "https://github.com/evandrocoan/StudioChannel",
+                "version": "0.0.0"
+            }
+        )
         return False
 
     userChannelSettings = load_data_file( channel_settings['CHANNEL_INSTALLATION_DETAILS'] )
