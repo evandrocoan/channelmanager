@@ -83,7 +83,7 @@ def show_program_description():
 
     lines = [ "Welcome to the {channel} {wizard}.".format( channel=CHANNEL_PACKAGE_NAME, wizard=g_installation_type ), "", ]
 
-    def format_packages_list(packages_list):
+    def format_packages_list(packages_list, maximum_length=500):
         length = 0
         contents = []
 
@@ -91,9 +91,9 @@ def show_program_description():
             contents.append( "%s. %s" % ( index + 1, name ) )
             length += len( contents[-1] )
 
-            if length > 500:
+            if length > maximum_length:
                 remaining = len( packages_list ) - index - 1
-                if remaining > 0: contents.append( ", and more {} packages!".format(  ) )
+                if remaining > 0: contents.append( "and more {} packages!".format( remaining ) )
                 break
 
         return ", ".join( contents )
