@@ -989,8 +989,17 @@ def get_git_repositories(gitModulesFile):
     for section in sections:
         path = gitModulesFile.get( section, "path" )
 
-        if 'Packages' == path[0:8]:
+        if path and path[0] in ("'", '"'):
+            log( 1, "Stripping path: %s", path )
+
+            path = path.strip('"').strip("'")
+            gitModulesFile.set( section, "path", path )
+
+        if path.startswith('Packages'):
             add()
+
+        else:
+            log( 1, "Skipping: %s", path )
 
     return repositories
 
