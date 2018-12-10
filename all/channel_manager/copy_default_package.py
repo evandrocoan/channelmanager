@@ -197,7 +197,7 @@ def create_git_ignore_file(upstream_directory):
     lines_to_write.append("\n")
     log( 1, "Writing to gitignore_file: " + str( gitignore_file ) )
 
-    with open( gitignore_file, "w" ) as text_file:
+    with open( gitignore_file, "w", newline='\n', encoding='utf-8' ) as text_file:
         text_file.write( "\n".join( lines_to_write ) )
 
 
