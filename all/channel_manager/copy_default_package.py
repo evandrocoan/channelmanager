@@ -64,6 +64,7 @@ log = getLogger( 127, __name__ )
 # log( 2, "PACKAGE_ROOT_DIRECTORY: " + g_settings.PACKAGE_ROOT_DIRECTORY )
 packages_upstream_name = "Default.sublime-package"
 g_is_already_running = False
+MAXIMUM_COMMITS_TO_SEARCH = 10
 
 
 def main(is_forced=False):
@@ -118,7 +119,7 @@ def create_version_setting_file(upstream_directory):
     latest_git_tag = int( latest_git_tag )
 
     # https://stackoverflow.com/questions/10345182/log-first-10-in-git
-    output = run_command( "git log -10 --pretty=oneline", upstream_directory )
+    output = run_command( "git log -%s --pretty=oneline" % MAXIMUM_COMMITS_TO_SEARCH, upstream_directory )
 
     # log( 1, 'Fetched the latest git history: \n%s', output )
     version_found = 0
@@ -176,7 +177,7 @@ def create_version_setting_file(upstream_directory):
             log( 1, 'Warning: No new updates to commit on: %s', upstream_full_path )
 
     else:
-        log( 1, 'Error: No new Sublime Text version was found on the last 10 commits on the git history.' )
+        log( 1, 'Error: No new Sublime Text version was found on the last %s commits on the git history.', MAXIMUM_COMMITS_TO_SEARCH )
 
 
 def create_git_ignore_file(upstream_directory):
