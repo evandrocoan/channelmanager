@@ -104,12 +104,12 @@ except ImportError:
 log = getLogger( 127, __name__ )
 
 
-def write_data_file(file_path, channel_dictionary):
+def write_data_file(file_path, channel_dictionary, debug=1):
     """
         Python - json without whitespaces
         https://stackoverflow.com/questions/16311562/python-json-without-whitespaces
     """
-    log( 1, "Writing to the data file: " + str( file_path ) )
+    log( 1 & debug, "Writing to the data file: " + str( file_path ) )
 
     with open( file_path, 'w', newline='\n', encoding='utf-8' ) as output_file:
         json.dump( channel_dictionary, output_file, indent=4, separators=(',', ': ') )
