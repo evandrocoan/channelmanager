@@ -446,10 +446,10 @@ class RunBackstrokeThread(threading.Thread):
             if command == "find_forks":
                 # https://docs.python.org/3/library/configparser.html#configparser.ConfigParser.get
                 forkUrl  = self.get_section_option( section, "url", generalSettingsConfigs )
-                forkPath = self.get_section_option( section, "path", generalSettingsConfigs )
+                forkpath = self.get_section_option( section, "path", generalSettingsConfigs )
                 upstream = self.get_section_option( section, "upstream", generalSettingsConfigs )
 
-                # log( 1, "forkPath: " + forkPath )
+                # log( 1, "forkpath: " + forkpath )
                 # log( 1, "upstream: " + upstream )
                 if len( upstream ) > 20:
                     successful_resquests += 1
@@ -460,14 +460,14 @@ class RunBackstrokeThread(threading.Thread):
                     run_command_line(
                         command_line_interface,
                         shlex.split( "python %s --user=%s --repo=%s" % ( FIND_FORKS_PATH, user, repository ) ),
-                        os.path.join( base_root_directory, forkPath ),
+                        os.path.join( base_root_directory, forkpath ),
                     )
 
                     # Clean duplicate branches
                     run_command_line(
                         command_line_interface,
                         shlex.split( "sh %s/remove_duplicate_branches.sh %s" % ( FIND_FORKS_PATH, forkUser ) ),
-                        os.path.join( base_root_directory, forkPath ),
+                        os.path.join( base_root_directory, forkpath ),
                     )
 
                 else:
@@ -516,7 +516,7 @@ class RunBackstrokeThread(threading.Thread):
                     log( 1, "Missing backstroke key for upstream: " + upstream )
 
             elif command == "create_upstreams" or command == "delete_remotes":
-                forkPath = self.get_section_option( section, "path", generalSettingsConfigs )
+                forkpath = self.get_section_option( section, "path", generalSettingsConfigs )
                 upstream = self.get_section_option( section, "upstream", generalSettingsConfigs )
 
                 if len( upstream ) > 20:
@@ -525,7 +525,7 @@ class RunBackstrokeThread(threading.Thread):
 
                     remotes = command_line_interface.execute(
                         shlex.split( "git remote" ),
-                        os.path.join( base_root_directory, forkPath ),
+                        os.path.join( base_root_directory, forkpath ),
                         short_errors=True
                     )
 
@@ -536,13 +536,13 @@ class RunBackstrokeThread(threading.Thread):
                             run_command_line(
                                 command_line_interface,
                                 shlex.split( "git remote add %s %s" % ( user, upstream ) ),
-                                os.path.join( base_root_directory, forkPath )
+                                os.path.join( base_root_directory, forkpath )
                             )
 
                             run_command_line(
                                 command_line_interface,
                                 shlex.split( "git fetch %s" % ( user ) ),
-                                os.path.join( base_root_directory, forkPath )
+                                os.path.join( base_root_directory, forkpath )
                             )
 
                     else:
@@ -559,37 +559,37 @@ class RunBackstrokeThread(threading.Thread):
                                 remote_index += 1
 
                                 log( 1, "Cleaning remote {:3d} of {:d} ({:s}): {:<20s} {:s}".format(
-                                        remote_index, remotes_count, progress, remote, forkPath ) )
+                                        remote_index, remotes_count, progress, remote, forkpath ) )
 
                                 run_command_line(
                                     command_line_interface,
                                     shlex.split( "git remote rm %s" % ( remote ) ),
-                                    os.path.join( base_root_directory, forkPath )
+                                    os.path.join( base_root_directory, forkpath )
                                 )
 
             elif command == "pull_origins":
                 successful_resquests += 1
-                forkPath = self.get_section_option( section, "path", generalSettingsConfigs )
+                forkpath = self.get_section_option( section, "path", generalSettingsConfigs )
 
                 run_command_line(
                     command_line_interface,
                     shlex.split( "git pull --rebase" ),
-                    os.path.join( base_root_directory, forkPath )
+                    os.path.join( base_root_directory, forkpath )
                 )
 
-                self.recursiveily_process_submodules( base_root_directory, command, typeSettings, forkPath )
+                self.recursiveily_process_submodules( base_root_directory, command, typeSettings, forkpath )
 
             elif command == "fetch_origins":
                 successful_resquests += 1
-                forkPath = self.get_section_option( section, "path", generalSettingsConfigs )
+                forkpath = self.get_section_option( section, "path", generalSettingsConfigs )
 
                 run_command_line(
                     command_line_interface,
                     shlex.split( "git fetch origin" ),
-                    os.path.join( base_root_directory, forkPath )
+                    os.path.join( base_root_directory, forkpath )
                 )
 
-                self.recursiveily_process_submodules( base_root_directory, command, typeSettings, forkPath )
+                self.recursiveily_process_submodules( base_root_directory, command, typeSettings, forkpath )
 
             else:
                 log( 1, "RunBackstrokeThread::run_general_command, Invalid command: " + str( command ) )
@@ -600,8 +600,8 @@ class RunBackstrokeThread(threading.Thread):
 
         return True
 
-    def recursiveily_process_submodules(self, base_root_directory, command, typeSettings, forkPath):
-        base_root_directory    = os.path.join( base_root_directory, forkPath )
+    def recursiveily_process_submodules(self, base_root_directory, command, typeSettings, forkpath):
+        base_root_directory    = os.path.join( base_root_directory, forkpath )
         nested_submodules_file = os.path.join( base_root_directory, ".gitmodules" )
 
         if os.path.exists( nested_submodules_file ):
