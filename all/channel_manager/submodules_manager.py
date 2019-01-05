@@ -262,7 +262,7 @@ class RunBackstrokeThread(threading.Thread):
 
                 self.run_general_command( CHANNEL_ROOT_DIRECTORY, typeSettings, self.command )
 
-            elif self.command == "backstroke":
+            elif self.command in ( "backstroke" ):
                 typeSettings = \
                 {
                     'section_name': "last_backstroke_session",
@@ -271,7 +271,13 @@ class RunBackstrokeThread(threading.Thread):
 
                 self.run_general_command( CHANNEL_ROOT_DIRECTORY, typeSettings, self.command )
 
-            elif self.command in ("create_upstreams", "delete_remotes", "fetch_origins", "pull_origins"):
+            elif self.command in
+                    ( "create_upstreams",
+                      "delete_remotes",
+                      "fetch_origins",
+                      "pull_origins",
+                      # "merge_upstreams",
+                    ):
 
                 if self.command in ("delete_remotes", "pull_origins", "fetch_origins"):
                     gitmodules_directory = self.get_channel_root_from_project()
