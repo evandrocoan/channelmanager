@@ -262,21 +262,12 @@ class RunBackstrokeThread(threading.Thread):
 
                 self.run_general_command( CHANNEL_ROOT_DIRECTORY, typeSettings, self.command )
 
-            elif self.command in ( "backstroke" ):
-                typeSettings = \
-                {
-                    'section_name': "last_backstroke_session",
-                    'git_file_path': os.path.join( CHANNEL_ROOT_DIRECTORY, 'Local', 'Backstroke.gitmodules' ),
-                }
-
-                self.run_general_command( CHANNEL_ROOT_DIRECTORY, typeSettings, self.command )
-
-            elif self.command in
-                    ( "create_upstreams",
+            elif self.command in (
+                      "create_upstreams",
                       "delete_remotes",
                       "fetch_origins",
                       "pull_origins",
-                      # "merge_upstreams",
+                      "backstroke",
                     ):
 
                 if self.command in ("delete_remotes", "pull_origins", "fetch_origins"):
@@ -480,40 +471,80 @@ class RunBackstrokeThread(threading.Thread):
                 time.sleep(2)
 
                 # https://docs.python.org/3/library/configparser.html#configparser.ConfigParser.get
-                upstream   = self.get_section_option( section, "upstream", generalSettingsConfigs )
-                backstroke = self.get_section_option( section, "backstroke", generalSettingsConfigs )
+                forkpath = self.get_section_option( section, "path", generalSettingsConfigs )
+                downstream = self.get_section_option( section, "url", generalSettingsConfigs )
 
-                # log( 1, upstream )
-                # log( 1, backstroke )
+                upstream = self.get_section_option( section, "upstream", generalSettingsConfigs )
+                branches = self.get_section_option( section, "branches", generalSettingsConfigs )
+                local_branch, upstream_branch = parser_branches( branches )
 
-                # https://stackoverflow.com/questions/2018026/what-are-the-differences-between-the-urllib-urllib2-and-requests-module
-                if len( backstroke ) > 20:
-                    successful_resquests += 1
+                if not upstream:
+                    log( 1, "Skipping %s because there is not upstream defined...", forkpath )
+                    continue
 
-                    # https://stackoverflow.com/questions/28396036/python-3-4-urllib-request-error-http-403
-                    req = urllib.Request( backstroke, headers={'User-Agent': 'Mozilla/5.0'} )
+                log( 1, downstream )
+                log( 1, upstream )
+                log( 1, branches )
+                if not local_branch or not upstream_branch:
+                    maximum_errors -= 1
 
-                    try:
-                        # https://stackoverflow.com/questions/2667509/curl-alternative-in-python
-                        res = urllib.urlopen( req )
-                        log( 1, res.read() )
-
-                    except HTTPError as error:
-                        maximum_errors -= 1
-
-                        log.newline( count=3 )
-                        log( 1, "ERROR! ", error.read() )
-
-                        # Save only where the first error happened
-                        if maximum_errors == MAXIMUM_REQUEST_ERRORS - 1:
-                            lastSection.set( typeSettings['section_name'], 'index', str( request_index - 1 ) )
-
-                        if maximum_errors < 1:
-                            break
-
-                else:
                     log.newline( count=3 )
-                    log( 1, "Missing backstroke key for upstream: " + upstream )
+                    log( 1, "ERROR! Invalid branches `%s`", branches )
+
+                    # Save only where the first error happened
+                    if maximum_errors == MAXIMUM_REQUEST_ERRORS - 1:
+                        lastSection.set( typeSettings['section_name'], 'index', str( request_index - 1 ) )
+
+                    if maximum_errors < 1:
+                        break
+
+                    continue
+
+                successful_resquests += 1
+
+                run_command_line(
+                    command_line_interface,
+                    shlex.split( "git checkout %s" % local_branch ),
+                    os.path.join( base_root_directory, forkpath )
+                )
+
+                run_command_line(
+                    command_line_interface,
+                    shlex.split( "git fetch" ),
+                    os.path.join( base_root_directory, forkpath )
+                )
+
+                run_command_line(
+                    command_line_interface,
+                    shlex.split( "git pull --rebase" ),
+                    os.path.join( base_root_directory, forkpath )
+                )
+
+                upstream_user, upstream_repository = parse_upstream( upstream )
+                remotes = command_line_interface.execute(
+                    shlex.split( "git remote" ),
+                    os.path.join( base_root_directory, forkpath ),
+                    short_errors=True
+                )
+
+                if upstream_user not in remotes:
+                    run_command_line(
+                        command_line_interface,
+                        shlex.split( "git remote add %s %s" % ( upstream_user, upstream ) ),
+                        os.path.join( base_root_directory, forkpath )
+                    )
+
+                run_command_line(
+                    command_line_interface,
+                    shlex.split( "git fetch %s" % ( upstream_user ) ),
+                    os.path.join( base_root_directory, forkpath )
+                )
+
+                run_command_line(
+                    command_line_interface,
+                    shlex.split( "git merge %s/%s" % ( upstream_user, upstream_branch ) ),
+                    os.path.join( base_root_directory, forkpath )
+                )
 
             elif command == "create_upstreams" or command == "delete_remotes":
                 forkpath = self.get_section_option( section, "path", generalSettingsConfigs )
@@ -628,6 +659,15 @@ def parse_upstream( upstream ):
 
     if matches:
         return matches.group(1), matches.group(2)
+
+    return "", ""
+
+
+def parser_branches( branches ):
+    matches = re.search( r'(.+)\-\>(.+),', branches )
+
+    if matches:
+        return matches.group(2), matches.group(1)
 
     return "", ""
 
