@@ -447,11 +447,11 @@ class RunBackstrokeThread(threading.Thread):
                     user, repository      = parse_upstream( upstream )
 
                     # Find all forks, add them as remote and fetch them
-                    run_command_line( "python %s --user=%s --repo=%s" % ( FIND_FORKS_PATH, user, repository ),
+                    run( "python %s --user=%s --repo=%s" % ( FIND_FORKS_PATH, user, repository ),
                         base_root_directory, forkpath )
 
                     # Clean duplicate branches
-                    run_command_line( "sh %s/remove_duplicate_branches.sh %s" % ( FIND_FORKS_PATH, forkUser ),
+                    run( "sh %s/remove_duplicate_branches.sh %s" % ( FIND_FORKS_PATH, forkUser ),
                         base_root_directory, forkpath )
 
                 else:
@@ -494,9 +494,9 @@ class RunBackstrokeThread(threading.Thread):
                     continue
 
                 successful_resquests += 1
-                run_command_line( "git checkout %s" % local_branch, base_root_directory, forkpath )
-                run_command_line( "git fetch", base_root_directory, forkpath )
-                run_command_line( "git pull --rebase", base_root_directory, forkpath )
+                run( "git checkout %s" % local_branch, base_root_directory, forkpath )
+                run( "git fetch", base_root_directory, forkpath )
+                run( "git pull --rebase", base_root_directory, forkpath )
 
                 upstream_user, upstream_repository = parse_upstream( upstream )
                 remotes = command_line_interface.execute(
@@ -506,10 +506,10 @@ class RunBackstrokeThread(threading.Thread):
                 )
 
                 if upstream_user not in remotes:
-                    run_command_line( "git remote add %s %s" % ( upstream_user, upstream ), base_root_directory, forkpath )
+                    run( "git remote add %s %s" % ( upstream_user, upstream ), base_root_directory, forkpath )
 
-                run_command_line( "git fetch %s" % ( upstream_user ), base_root_directory, forkpath )
-                run_command_line( "git merge %s/%s" % ( upstream_user, upstream_branch ), base_root_directory, forkpath )
+                run( "git fetch %s" % ( upstream_user ), base_root_directory, forkpath )
+                run( "git merge %s/%s" % ( upstream_user, upstream_branch ), base_root_directory, forkpath )
 
             elif command == "create_upstreams" or command == "delete_remotes":
                 forkpath = self.get_section_option( section, "path", generalSettingsConfigs )
@@ -528,8 +528,8 @@ class RunBackstrokeThread(threading.Thread):
                     if command == "create_upstreams":
 
                         if user not in remotes:
-                            run_command_line( "git remote add %s %s" % ( user, upstream ), base_root_directory, forkpath )
-                            run_command_line( "git fetch %s" % ( user ), base_root_directory, forkpath )
+                            run( "git remote add %s %s" % ( user, upstream ), base_root_directory, forkpath )
+                            run( "git fetch %s" % ( user ), base_root_directory, forkpath )
 
                     else:
                         remote_index = 0
@@ -547,20 +547,20 @@ class RunBackstrokeThread(threading.Thread):
                                 log( 1, "Cleaning remote {:3d} of {:d} ({:s}): {:<20s} {:s}".format(
                                         remote_index, remotes_count, progress, remote, forkpath ) )
 
-                                run_command_line( "git remote rm %s" % ( remote ), base_root_directory, forkpath )
+                                run( "git remote rm %s" % ( remote ), base_root_directory, forkpath )
 
             elif command == "pull_origins":
                 successful_resquests += 1
                 forkpath = self.get_section_option( section, "path", generalSettingsConfigs )
 
-                run_command_line( "git pull --rebase", base_root_directory, forkpath )
+                run( "git pull --rebase", base_root_directory, forkpath )
                 self.recursiveily_process_submodules( base_root_directory, command, typeSettings, forkpath )
 
             elif command == "fetch_origins":
                 successful_resquests += 1
                 forkpath = self.get_section_option( section, "path", generalSettingsConfigs )
 
-                run_command_line( "git fetch origin", base_root_directory, forkpath )
+                run( "git fetch origin", base_root_directory, forkpath )
                 self.recursiveily_process_submodules( base_root_directory, command, typeSettings, forkpath )
 
             else:
@@ -581,7 +581,7 @@ class RunBackstrokeThread(threading.Thread):
             self.run_general_command( base_root_directory, typeSettings, command )
 
 
-def run_command_line(command, *args):
+def run(command, *args):
     command = shlex.split( command )
     output = command_line_interface.execute( command, os.path.join( *args ), live_output=True, short_errors=True )
 
@@ -669,7 +669,7 @@ class RunGitForEachSubmodulesThread(threading.Thread):
         log( 1, "Command: %s", [command] )
 
         if sublime:
-            run_command_line(command, CHANNEL_ROOT_DIRECTORY )
+            run(command, CHANNEL_ROOT_DIRECTORY )
 
         else:
             # Python os.system() call runs in incorrect directory
