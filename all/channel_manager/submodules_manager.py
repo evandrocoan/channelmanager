@@ -409,7 +409,6 @@ class RunBackstrokeThread(threading.Thread):
         log( 1, "RunBackstrokeThread::sections: " + gitFilePath )
         generalSettingsConfigs._read( fakefile, gitFilePath )
 
-        index          = 0
         sections       = generalSettingsConfigs.sections()
         sections_count = len( sections )
 
@@ -472,7 +471,7 @@ class RunBackstrokeThread(threading.Thread):
                 local_branch, upstream_branch = parser_branches( branches )
 
                 if not upstream:
-                    log( 1, "Skipping %s because there is not upstream defined...", forkpath )
+                    log( 1, "Skipping %s because there is not upstream defined...", section )
                     continue
 
                 log( 1, downstream )
