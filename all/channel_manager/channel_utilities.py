@@ -422,7 +422,7 @@ def _configure_channel_menu_file(channel_package_name, channel_package_directory
     snake_case_name  = convert_to_snake_case( pascal_case_name )
 
     # Use the extension `.js` instead of `sublime-menu` to not allow Sublime Text load the template file
-    base_file, destine_file = _get_base_and_destine_paths( "Main.js", "Main.sublime-menu", channel_package_directory )
+    base_file, destine_file = _get_base_and_destine_paths( "Main.json", "Main.sublime-menu", channel_package_directory )
 
     with open( base_file, "r", encoding='utf-8' ) as file:
         text = file.read()
@@ -440,7 +440,7 @@ def _configure_channel_commands_file(channel_package_name, channel_package_direc
     snake_case_name  = convert_to_snake_case( pascal_case_name )
 
     # Use the extension `.js` instead of `sublime-menu` to not allow Sublime Text load the template file
-    base_file, destine_file = _get_base_and_destine_paths( "Default.js", "Default.sublime-commands", channel_package_directory )
+    base_file, destine_file = _get_base_and_destine_paths( "Default.json", "Default.sublime-commands", channel_package_directory )
 
     with open( base_file, "r", encoding='utf-8' ) as file:
         text = file.read()
