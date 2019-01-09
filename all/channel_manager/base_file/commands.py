@@ -121,7 +121,7 @@ class MyBrandNewChannelRunChannelAndSubmodules(DevelopmentVersionBaseCommand):
         submodules_manager.main( command )
 
 
-class MyBrandNewChannelRunInstallation( sublime_plugin.ApplicationCommand ):
+class MyBrandNewChannelRunInstallation(sublime_plugin.ApplicationCommand):
 
     def run(self):
         installation_wizard.main( g_channelSettings )
@@ -130,7 +130,7 @@ class MyBrandNewChannelRunInstallation( sublime_plugin.ApplicationCommand ):
         return not is_channel_installed()
 
 
-class MyBrandNewChannelRunUninstallation( sublime_plugin.ApplicationCommand ):
+class MyBrandNewChannelRunUninstallation(sublime_plugin.ApplicationCommand):
 
     def run(self):
         """
