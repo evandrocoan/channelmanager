@@ -42,25 +42,25 @@
                                     "command": "my_brand_new_channel_extract_default_packages" },
 
                             { "caption": "Merge Upstreams Locally",
-                                    "command": "my_brand_new_channel_run", "args": {"run": "-m"} },
+                                    "command": "my_brand_new_channel_run", "args": {"command": "-m"} },
 
                             { "caption": "Fetch All Submodules remote origin",
-                                    "command": "my_brand_new_channel_run", "args": {"run": "-fo"} },
+                                    "command": "my_brand_new_channel_run", "args": {"command": "-fo"} },
 
                             { "caption": "Pull & Rebase All Submodules (git)",
-                                    "command": "my_brand_new_channel_run", "args": {"run": "-p"} },
+                                    "command": "my_brand_new_channel_run", "args": {"command": "-p"} },
 
                             { "caption": "Pull & Rebase All Submodules (python)",
-                                    "command": "my_brand_new_channel_run", "args": {"run": "-o"} },
+                                    "command": "my_brand_new_channel_run", "args": {"command": "-o"} },
 
                             { "caption": "Push Local Git Tags",
-                                    "command": "my_brand_new_channel_run", "args": {"run": "-t"} },
+                                    "command": "my_brand_new_channel_run", "args": {"command": "-t"} },
 
                             { "caption": "Add All Upstreams Remotes",
-                                    "command": "my_brand_new_channel_run", "args": {"run": "-u"} },
+                                    "command": "my_brand_new_channel_run", "args": {"command": "-u"} },
 
                             { "caption": "Delete All remote Except origin",
-                                    "command": "my_brand_new_channel_run", "args": {"run": "-d"} },
+                                    "command": "my_brand_new_channel_run", "args": {"command": "-d"} },
                         ]
                     }
                 ]
