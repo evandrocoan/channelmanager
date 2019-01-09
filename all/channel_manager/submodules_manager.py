@@ -49,12 +49,16 @@ try:
     from . import settings as g_settings
 
     from .channel_utilities import get_main_directory
+    from .channel_utilities import load_data_file
+    from .channel_utilities import write_data_file
     from .channel_utilities import assert_path
 
 except( ImportError, ValueError ):
     import settings as g_settings
 
     from channel_utilities import get_main_directory
+    from channel_utilities import load_data_file
+    from channel_utilities import write_data_file
     from channel_utilities import assert_path
 
 
@@ -123,11 +127,11 @@ def print_python_envinronment():
 
 
 # print_python_envinronment()
-CHANNEL_SESSION_FILE = os.path.join( g_settings.PACKAGE_ROOT_DIRECTORY, "all", "last_session.channel-manager" )
+CHANNEL_SESSION_FILE = os.path.join( g_settings.PACKAGE_ROOT_DIRECTORY, "all", "last_session.json" )
 FIND_FORKS_PATH      = os.path.join( g_settings.PACKAGE_ROOT_DIRECTORY, "find_forks" )
 
 # How many errors are acceptable when the GitHub API request fails
-MAXIMUM_REQUEST_ERRORS = 10
+MAXIMUM_REQUEST_ERRORS = 1
 g_is_already_running   = False
 command_line_interface = cmd.Cli( None, False )
 
@@ -347,58 +351,13 @@ class RunBackstrokeThread(threading.Thread):
 
         return CHANNEL_ROOT_DIRECTORY
 
-    def open_last_session_data(self):
-        lastSection = configparser.ConfigParser( allow_no_value=True )
-        default_sections = \
-        [
-            "last_backstroke_session",
-            "last_find_forks_session",
-            "last_create_upstreams_session",
-        ]
-
-        def create_sections():
-
-            for section in default_sections:
-
-                if not lastSection.has_section( section ):
-                    lastSection.add_section( section )
-                    lastSection.set( section, 'index', '0' )
-
-                if not lastSection.has_option( section, 'index' ):
-                    lastSection.set( section, 'index', '0' )
-
-        if os.path.exists( CHANNEL_SESSION_FILE ):
-            lastSection.read( CHANNEL_SESSION_FILE )
-            create_sections()
-
-        else:
-            create_sections()
-
-        return lastSection
-
-    def get_section_option(self, section, option, configSettings):
+    @staticmethod
+    def get_section_option(section, option, configSettings):
 
         if configSettings.has_option( section, option ):
             return configSettings.get( section, option )
 
         return ""
-
-    def save_session_data(self, maximum_errors, session_key, lastSection):
-
-        with open( CHANNEL_SESSION_FILE, 'wt' ) as configfile:
-
-            if maximum_errors == MAXIMUM_REQUEST_ERRORS:
-                log.newline( count=2 )
-                log( 1, "Congratulations! It was a successful execution." )
-
-                lastSection.set( session_key, 'index', "0" )
-                lastSection.write( configfile )
-
-            else:
-                log.newline( count=2 )
-                log( 1, "Attention! There were errors on execution, please review its output." )
-
-                lastSection.write( configfile )
 
     # Now loop through the above array
     # for current_url in backstroke_request_list:
@@ -413,8 +372,8 @@ class RunBackstrokeThread(threading.Thread):
         maximum_errors = MAXIMUM_REQUEST_ERRORS
 
         # https://pymotw.com/3/configparser/
-        lastSection = self.open_last_session_data()
-        start_index = lastSection.getint( typeSettings['section_name'], 'index' )
+        lastSection = load_data_file( CHANNEL_SESSION_FILE )
+        start_index = lastSection.get( typeSettings['section_name'], 0 )
 
         request_index        = 0
         successful_resquests = 0
@@ -449,6 +408,8 @@ class RunBackstrokeThread(threading.Thread):
             # # For quick testing
             # if request_index > 3:
             #     break
+
+            self.save_session_file(base_root_directory, lastSection, typeSettings, request_index)
 
             log( 1, "{:s}, {:3d}({:d}) of {:d}... {:s}".format(
                     progress, request_index, successful_resquests, sections_count, section ) )
@@ -503,10 +464,6 @@ class RunBackstrokeThread(threading.Thread):
 
                     log.newline( count=3 )
                     log( 1, "ERROR! Invalid branches `%s`", branches )
-
-                    # Save only where the first error happened
-                    if maximum_errors == MAXIMUM_REQUEST_ERRORS - 1:
-                        lastSection.set( typeSettings['section_name'], 'index', str( request_index - 1 ) )
 
                     if maximum_errors < 1:
                         break
@@ -588,9 +545,27 @@ class RunBackstrokeThread(threading.Thread):
 
         # Only save the session file when finishing the main thread
         if base_root_directory == CHANNEL_ROOT_DIRECTORY:
-            self.save_session_data( maximum_errors, typeSettings['section_name'], lastSection )
+            log.newline( count=2 )
+
+            if maximum_errors == MAXIMUM_REQUEST_ERRORS:
+                lastSection[typeSettings['section_name']] = 0
+                log( 1, "Congratulations! It was a successful execution." )
+
+            else:
+                log( 1, "Attention! There were errors on execution, please review its output." )
+
+            write_data_file( CHANNEL_SESSION_FILE, lastSection )
 
         return True
+
+    @staticmethod
+    def save_session_file(base_root_directory, lastSection, typeSettings, request_index):
+        """ Only saves the session file when working on the main project submodules
+            instead overriding it with the nested submodules contents. """
+
+        if base_root_directory == CHANNEL_ROOT_DIRECTORY:
+            lastSection[typeSettings['section_name']] = request_index - 1
+            write_data_file( CHANNEL_SESSION_FILE, lastSection )
 
     def recursiveily_process_submodules(self, base_root_directory, command, typeSettings, forkpath):
         base_root_directory    = os.path.join( base_root_directory, forkpath )
