@@ -86,45 +86,39 @@ log( 2, "Debugging" )
 log( 2, "PACKAGE_ROOT_DIRECTORY: " + g_settings.PACKAGE_ROOT_DIRECTORY )
 
 
-class MyBrandNewChannelExtractDefaultPackages( sublime_plugin.ApplicationCommand ):
+class DevelopmentVersionBaseCommand(sublime_plugin.ApplicationCommand):
+
+    def is_enabled(self):
+        return is_channel_installed() and is_development_version()
+
+
+class MyBrandNewChannelExtractDefaultPackages(DevelopmentVersionBaseCommand):
 
     def run(self):
         sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
         copy_default_package.main( True )
 
-    def is_enabled(self):
-        return is_channel_installed() and is_development_version()
 
-
-class MyBrandNewChannelRun( sublime_plugin.ApplicationCommand ):
+class MyBrandNewChannelRun(DevelopmentVersionBaseCommand):
 
     def run(self, command):
         sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
         submodules_manager.main( command )
 
-    def is_enabled(self):
-        return is_channel_installed() and is_development_version()
 
-
-class MyBrandNewChannelGenerateChannelFile( sublime_plugin.ApplicationCommand ):
+class MyBrandNewChannelGenerateChannelFile(DevelopmentVersionBaseCommand):
 
     def run(self, command="all"):
         sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
         channel_manager.main( g_channelSettings, command )
 
-    def is_enabled(self):
-        return is_channel_installed() and is_development_version()
 
-
-class MyBrandNewChannelRunChannelAndSubmodules( sublime_plugin.ApplicationCommand ):
+class MyBrandNewChannelRunChannelAndSubmodules(DevelopmentVersionBaseCommand):
 
     def run(self, command):
         sublime.active_window().run_command( "show_panel", {"panel": "console", "toggle": False} )
         channel_manager.main( g_channelSettings, command )
         submodules_manager.main( command )
-
-    def is_enabled(self):
-        return is_channel_installed() and is_development_version()
 
 
 class MyBrandNewChannelRunInstallation( sublime_plugin.ApplicationCommand ):
