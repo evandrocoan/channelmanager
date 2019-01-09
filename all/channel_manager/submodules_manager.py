@@ -299,12 +299,7 @@ class RunBackstrokeThread(threading.Thread):
                       "merge_upstreams",
                     ):
 
-                if self.command in ("delete_remotes", "pull_origins", "fetch_origins"):
-                    gitmodules_directory = self.get_channel_root_from_project()
-
-                else:
-                    gitmodules_directory = CHANNEL_ROOT_DIRECTORY
-
+                gitmodules_directory = self.get_channel_root_from_project()
                 log( 1, "gitmodules_directory: %s", gitmodules_directory )
 
                 typeSettings = \
