@@ -178,6 +178,9 @@ def main(command=None):
                 help="Find all repositories on the `.gitmodules` which has the key `upstream` and delete"
                 "all its git remote repositories which are not the origin or the upstream user." )
 
+        argumentParser.add_argument( "-c", "--cancel-operation", action="store_true",
+                help="If there is some batch operation running, cancel it as soons as possible." )
+
         argumentParser.add_argument( "-o", "--pull-origins", action="store_true",
                 help="Find all repositories on the `.gitmodules` and perform a git pull --rebase" )
 
@@ -211,6 +214,10 @@ def main(command=None):
 
     elif command == "-d" or argumentsNamespace and argumentsNamespace.delete_remotes:
         RunBackstrokeThread("delete_remotes").start()
+
+    elif command == "cancel_operation" or argumentsNamespace and argumentsNamespace.cancel_operation:
+        global g_is_already_running
+        g_is_already_running = False
 
     elif not command:
         argumentParser.print_help()

@@ -29,7 +29,7 @@
                                     "args": {"command": "git_tag_all" } },
 
                             { "caption": "Cancel Current Operation",
-                                    "command": "my_brand_new_channel_generate_channel_file",
+                                    "command": "my_brand_new_channel_run_channel_and_submodules",
                                     "args": {"command": "cancel_operation" } },
 
                             { "caption": "Run Installation Wizard",
