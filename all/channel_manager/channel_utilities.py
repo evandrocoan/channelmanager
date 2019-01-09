@@ -54,7 +54,7 @@ except( ImportError, ValueError):
 
 
 BASE_FILE_FOLDER          = os.path.join( g_settings.PACKAGE_ROOT_DIRECTORY, "all", "channel_manager", "base_file" )
-UPGRADE_SESSION_FILE      = os.path.join( g_settings.PACKAGE_ROOT_DIRECTORY, "all", "last_sublime_upgrade.channel-manager" )
+UPGRADE_SESSION_FILE      = os.path.join( g_settings.PACKAGE_ROOT_DIRECTORY, "all", "last_session.json" )
 LAST_SUBLIME_TEXT_SECTION = "last_sublime_text_version"
 
 # print_python_envinronment()
@@ -756,33 +756,26 @@ def is_sublime_text_upgraded(caller_indentifier):
         @return True   when it is the fist time this function is called or there is a sublime text
                        upgrade, False otherwise.
     """
-    last_version    = 0
     current_version = int( sublime.version() )
+    last_session = load_data_file( UPGRADE_SESSION_FILE )
 
-    last_section = _open_last_session_data( UPGRADE_SESSION_FILE )
-    has_section  = last_section.has_section( LAST_SUBLIME_TEXT_SECTION )
+    section = last_session.get( LAST_SUBLIME_TEXT_SECTION, {} )
+    last_version = section.get( caller_indentifier, 0 )
 
-    if has_section:
+    section[caller_indentifier] = current_version
+    last_session[LAST_SUBLIME_TEXT_SECTION] = section
 
-        if last_section.has_option( LAST_SUBLIME_TEXT_SECTION, caller_indentifier ):
-            last_version = int( last_section.getint( LAST_SUBLIME_TEXT_SECTION, caller_indentifier ) )
-
-    else:
-        last_section.add_section( LAST_SUBLIME_TEXT_SECTION )
-
-    last_section.set( LAST_SUBLIME_TEXT_SECTION, caller_indentifier, str( current_version ) )
-    save_session_data( last_section, UPGRADE_SESSION_FILE )
-
+    write_data_file( UPGRADE_SESSION_FILE, last_session )
     return last_version < current_version
 
 
-def _open_last_session_data(session_file):
-    last_section = configparser.ConfigParser( allow_no_value=True )
+def open_last_session_data(session_file):
+    last_session = configparser.ConfigParser( allow_no_value=True )
 
     if os.path.exists( session_file ):
-        last_section.read( session_file )
+        last_session.read( session_file )
 
-    return last_section
+    return last_session
 
 
 def save_session_data(last_section, session_file):
