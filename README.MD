@@ -170,10 +170,12 @@ before sending the files contents to the `configparser`:
     path = Packages/Better CoffeeScript
     url = https://github.com/evandrocoan/sublime-better-coffeescript
     upstream = https://github.com/aponxi/sublime-better-coffeescript
+    branches = master->master
 [submodule "Packages/BufferScroll"]
     path = Packages/BufferScroll
     url = https://github.com/evandrocoan/BufferScroll
     upstream = https://github.com/titoBouzout/BufferScroll
+    branches = master->master
 ```
 
 **Backstroke.gitmodules**
@@ -181,12 +183,12 @@ before sending the files contents to the `configparser`:
 [submodule "Packages"]
 url = https://github.com/evandrocoan/Packages
 upstream = https://github.com/sublimehq/Packages
-backstroke = https://backstroke.us/_48c38b8a08174b2d82221f7
+branches = master_upstream_branch->master_fork_branch
 
 [submodule "Packages/ANSIescape"]
 url = https://github.com/evandrocoan/SublimeANSI
 upstream = https://github.com/aziz/SublimeANSI
-backstroke = https://backstroke.us/_2d82221f793d50c2f75952c
+branches = master_upstream_branch->master_fork_branch
 ```
 
 Hence, if you would like to receive updates from the
@@ -199,6 +201,7 @@ look like:
     path = Packages/Notepad++ Color Scheme
     url = https://github.com/your_user_name/SublimeNotepadPlusPlusTheme
     upstream = https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme
+    branches = master->master
 ```
 
 Sadly, this feature is not implemented yet. However, the `upstream` key is used by the plugin
