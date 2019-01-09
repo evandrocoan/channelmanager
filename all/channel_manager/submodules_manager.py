@@ -40,6 +40,7 @@ import unittest
 import importlib
 import threading
 import subprocess
+import contextlib
 
 
 # Relative imports in Python 3
@@ -216,8 +217,7 @@ def main(command=None):
         RunBackstrokeThread("delete_remotes").start()
 
     elif command == "cancel_operation" or argumentsNamespace and argumentsNamespace.cancel_operation:
-        global g_is_already_running
-        g_is_already_running = False
+        free_mutex_lock()
 
     elif not command:
         argumentParser.print_help()
@@ -235,6 +235,26 @@ def attempt_run_find_forks():
 
     else:
         RunBackstrokeThread("find_forks").start()
+
+
+@contextlib.contextmanager
+def lock_context_manager():
+    """
+        https://stackoverflow.com/questions/12594148/skipping-execution-of-with-block
+        https://stackoverflow.com/questions/27071524/python-context-manager-not-cleaning-up
+        https://stackoverflow.com/questions/10447818/python-context-manager-conditionally-executing-body
+        https://stackoverflow.com/questions/34775099/why-does-contextmanager-throws-a-runtime-error-generator-didnt-stop-after-thro
+    """
+    try:
+        yield is_allowed_to_run()
+
+    finally:
+        free_mutex_lock()
+
+
+def free_mutex_lock():
+    global g_is_already_running
+    g_is_already_running = False
 
 
 def is_allowed_to_run():
@@ -259,7 +279,8 @@ class RunBackstrokeThread(threading.Thread):
     def run(self):
         log( 1, "RunBackstrokeThread::run" )
 
-        if is_allowed_to_run():
+        with lock_context_manager() as is_allowed:
+            if not is_allowed: return
 
             if self.command == "find_forks":
                 typeSettings = \
@@ -297,9 +318,7 @@ class RunBackstrokeThread(threading.Thread):
             else:
                 log( 1, "RunBackstrokeThread::run, Invalid command: " + str( self.command ) )
 
-        global g_is_already_running
-        g_is_already_running = False
-
+        free_mutex_lock()
         log( 1, "Finished RunBackstrokeThread::run()" )
 
     @staticmethod
@@ -647,11 +666,11 @@ class RunGitForEachSubmodulesThread(threading.Thread):
 
     def run(self):
 
-        if is_allowed_to_run():
+        with lock_context_manager() as is_allowed:
+            if not is_allowed: return
             self.update_submodules( self.git_command )
 
-        global g_is_already_running
-        g_is_already_running = False
+        free_mutex_lock()
 
     def update_submodules(self, git_command):
         error_list = []
