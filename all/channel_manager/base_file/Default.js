@@ -24,8 +24,8 @@
     { "caption": "MyBrandNewChannel: Extract Default Package",
             "command": "my_brand_new_channel_extract_default_packages" },
 
-    { "caption": "MyBrandNewChannel: Run Backstroke Requests",
-            "command": "my_brand_new_channel_run", "args": {"run": "-b"} },
+    { "caption": "MyBrandNewChannel: Merge Upstreams Locally",
+            "command": "my_brand_new_channel_run", "args": {"run": "-m"} },
 
     { "caption": "MyBrandNewChannel: Fetch All Submodules remote origin",
             "command": "my_brand_new_channel_run", "args": {"run": "-fo"} },

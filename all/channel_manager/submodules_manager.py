@@ -155,9 +155,9 @@ def main(command=None):
         print_command_line_arguments()
         argumentParser = argparse.ArgumentParser( description='Update Sublime Text Channel' )
 
-        argumentParser.add_argument( "-b", "--backstroke", action="store_true",
-                help="Check all backstroke registered repositories updates with their upstream. "
-                "The backstroke URLs are now in a separate file on: Local/Backstroke.gitmodules" )
+        argumentParser.add_argument( "-m", "--merge-upstreams", action="store_true",
+                help="Merges all registered repositories updates with their upstream. "
+                "The upstrems URLs are in a separate file on: Local/Backstroke.gitmodules" )
 
         argumentParser.add_argument( "-f", "--find-forks", action="store_true",
                 help="Find all repositories forks, fetch their branches and clean the duplicated branches. "
@@ -203,8 +203,8 @@ def main(command=None):
     elif command == "-fo" or argumentsNamespace and argumentsNamespace.fetch_origins:
         RunBackstrokeThread("fetch_origins").start()
 
-    elif command == "-b" or argumentsNamespace and argumentsNamespace.backstroke:
-        RunBackstrokeThread("backstroke").start()
+    elif command == "-m" or argumentsNamespace and argumentsNamespace.merge_upstreams:
+        RunBackstrokeThread("merge_upstreams").start()
 
     elif command == "-u" or argumentsNamespace and argumentsNamespace.create_upstreams:
         RunBackstrokeThread("create_upstreams").start()
@@ -268,7 +268,7 @@ class RunBackstrokeThread(threading.Thread):
                       "delete_remotes",
                       "fetch_origins",
                       "pull_origins",
-                      "backstroke",
+                      "merge_upstreams",
                     ):
 
                 if self.command in ("delete_remotes", "pull_origins", "fetch_origins"):
@@ -457,8 +457,8 @@ class RunBackstrokeThread(threading.Thread):
                     log.newline( count=3 )
                     log( 1, "Error, invalid/missing upstream: " + str( upstream ) )
 
-            elif command == "backstroke":
-                # The GitHub API only allows about 30 requests per second for the backstroke call,
+            elif command == "merge_upstreams":
+                # The GitHub API only allows about 30 requests per second for the merge_upstreams call,
                 # then we make it take a little longer so all the requests can be performed in a row.
                 time.sleep(2)
 
