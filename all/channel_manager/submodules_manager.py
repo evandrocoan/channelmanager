@@ -123,11 +123,11 @@ else:
 
 if is_python_2:
     try:
-        from githubpullrequests import parse_gitmodules
+        from githubpullrequests import PullRequester
 
     except( ImportError, ValueError ):
         assert_path( g_settings.PACKAGE_ROOT_DIRECTORY, '..', '..', 'githubpullrequests', 'source' )
-        from githubpullrequests import parse_gitmodules
+        from githubpullrequests import PullRequester
 
 
 # sys.tracebacklimit = 10; raise ValueError
@@ -338,8 +338,10 @@ class RunBackstrokeThread(threading.Thread):
                     else:
                         github_token = os.environ.get( 'GITHUBPULLREQUESTS_TOKEN', "" )
 
-                    parse_gitmodules( backstroke_file, github_token )
-                    parse_gitmodules( gitmodules_file, github_token )
+                    pull_requester = PullRequester( github_token )
+                    pull_requester.parse_gitmodules( backstroke_file )
+                    pull_requester.parse_gitmodules( gitmodules_file )
+                    pull_requester.publish_report()
 
                 else:
 
@@ -354,6 +356,7 @@ class RunBackstrokeThread(threading.Thread):
                 log( 1, "RunBackstrokeThread::run, Invalid command: " + str( self.command ) )
 
         free_mutex_lock()
+        log.newline()
         log( 1, "Finished RunBackstrokeThread::run()" )
 
     # Now loop through the above array
