@@ -57,12 +57,14 @@ BASE_FILE_FOLDER          = os.path.join( g_settings.PACKAGE_ROOT_DIRECTORY, "al
 UPGRADE_SESSION_FILE      = os.path.join( g_settings.PACKAGE_ROOT_DIRECTORY, "all", "last_session.json" )
 LAST_SUBLIME_TEXT_SECTION = "last_sublime_text_version"
 
+
 # print_python_envinronment()
-def assert_path(module):
+def assert_path(*args):
     """
         Import a module from a relative path
         https://stackoverflow.com/questions/279237/import-a-module-from-a-relative-path
     """
+    module = os.path.realpath( os.path.join( *args ) )
     if module not in sys.path:
         sys.path.append( module )
 
