@@ -297,7 +297,7 @@ class RunBackstrokeThread(threading.Thread):
                       "pull_origins",
                       "merge_upstreams",
                     ):
-                gitmodules_directory = self.get_channel_root_from_project()
+                gitmodules_directory = get_channel_root_from_project()
                 log( 1, "gitmodules_directory: %s", gitmodules_directory )
 
                 git_file_path = os.path.join( gitmodules_directory, '.gitmodules' )
@@ -308,37 +308,6 @@ class RunBackstrokeThread(threading.Thread):
 
         free_mutex_lock()
         log( 1, "Finished RunBackstrokeThread::run()" )
-
-    @staticmethod
-    def get_channel_root_from_project():
-
-        if sublime:
-            active_window = sublime.active_window()
-
-            def is_valid_folder(folder):
-
-                for file_name in ['.gitmodules', '.gitignore']:
-                    if not os.path.exists( os.path.join( folder, file_name ) ):
-                        break
-
-                # This is only run if all files were found
-                else:
-                    return True
-
-                return False
-
-            for folder in active_window.folders():
-
-                if is_valid_folder( folder ):
-
-                    for root, dirs, files in os.walk( folder ):
-
-                        for file in files:
-
-                            if file.endswith( ".sublime-project" ):
-                                return os.path.abspath( folder )
-
-        return CHANNEL_ROOT_DIRECTORY
 
     @staticmethod
     def get_section_option(section, option, configSettings):
@@ -603,6 +572,37 @@ def print_command_line_arguments():
 
     except AttributeError:
         pass
+
+
+def get_channel_root_from_project():
+
+    if sublime:
+        active_window = sublime.active_window()
+
+        def is_valid_folder(folder):
+
+            for file_name in ['.gitmodules', '.gitignore']:
+                if not os.path.exists( os.path.join( folder, file_name ) ):
+                    break
+
+            # This is only run if all files were found
+            else:
+                return True
+
+            return False
+
+        for folder in active_window.folders():
+
+            if is_valid_folder( folder ):
+
+                for root, dirs, files in os.walk( folder ):
+
+                    for file in files:
+
+                        if file.endswith( ".sublime-project" ):
+                            return os.path.abspath( folder )
+
+    return CHANNEL_ROOT_DIRECTORY
 
 
 #
