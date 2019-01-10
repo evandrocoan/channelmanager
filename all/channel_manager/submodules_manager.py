@@ -51,6 +51,7 @@ try:
     from .channel_utilities import get_main_directory
     from .channel_utilities import load_data_file
     from .channel_utilities import write_data_file
+    from .channel_utilities import get_section_option
     from .channel_utilities import assert_path
 
 except( ImportError, ValueError ):
@@ -59,6 +60,7 @@ except( ImportError, ValueError ):
     from channel_utilities import get_main_directory
     from channel_utilities import load_data_file
     from channel_utilities import write_data_file
+    from channel_utilities import get_section_option
     from channel_utilities import assert_path
 
 
@@ -309,14 +311,6 @@ class RunBackstrokeThread(threading.Thread):
         free_mutex_lock()
         log( 1, "Finished RunBackstrokeThread::run()" )
 
-    @staticmethod
-    def get_section_option(section, option, configSettings):
-
-        if configSettings.has_option( section, option ):
-            return configSettings.get( section, option )
-
-        return ""
-
     # Now loop through the above array
     # for current_url in backstroke_request_list:
     #     log( 1, str( current_url ) )
@@ -372,9 +366,9 @@ class RunBackstrokeThread(threading.Thread):
 
             if command == "find_forks":
                 # https://docs.python.org/3/library/configparser.html#configparser.ConfigParser.get
-                forkUrl  = self.get_section_option( section, "url", generalSettingsConfigs )
-                forkpath = self.get_section_option( section, "path", generalSettingsConfigs )
-                upstream = self.get_section_option( section, "upstream", generalSettingsConfigs )
+                forkUrl  = get_section_option( section, "url", generalSettingsConfigs )
+                forkpath = get_section_option( section, "path", generalSettingsConfigs )
+                upstream = get_section_option( section, "upstream", generalSettingsConfigs )
 
                 # log( 1, "forkpath: " + forkpath )
                 # log( 1, "upstream: " + upstream )
@@ -401,11 +395,11 @@ class RunBackstrokeThread(threading.Thread):
                 time.sleep(2)
 
                 # https://docs.python.org/3/library/configparser.html#configparser.ConfigParser.get
-                forkpath = self.get_section_option( section, "path", generalSettingsConfigs )
-                downstream = self.get_section_option( section, "url", generalSettingsConfigs )
+                forkpath = get_section_option( section, "path", generalSettingsConfigs )
+                downstream = get_section_option( section, "url", generalSettingsConfigs )
 
-                upstream = self.get_section_option( section, "upstream", generalSettingsConfigs )
-                branches = self.get_section_option( section, "branches", generalSettingsConfigs )
+                upstream = get_section_option( section, "upstream", generalSettingsConfigs )
+                branches = get_section_option( section, "branches", generalSettingsConfigs )
                 local_branch, upstream_branch = parser_branches( branches )
 
                 if not upstream:
@@ -445,8 +439,8 @@ class RunBackstrokeThread(threading.Thread):
                 run( "git merge %s/%s" % ( upstream_user, upstream_branch ), base_root_directory, forkpath )
 
             elif command == "create_upstreams" or command == "delete_remotes":
-                forkpath = self.get_section_option( section, "path", generalSettingsConfigs )
-                upstream = self.get_section_option( section, "upstream", generalSettingsConfigs )
+                forkpath = get_section_option( section, "path", generalSettingsConfigs )
+                upstream = get_section_option( section, "upstream", generalSettingsConfigs )
 
                 if len( upstream ) > 20:
                     successful_resquests += 1
@@ -484,14 +478,14 @@ class RunBackstrokeThread(threading.Thread):
 
             elif command == "pull_origins":
                 successful_resquests += 1
-                forkpath = self.get_section_option( section, "path", generalSettingsConfigs )
+                forkpath = get_section_option( section, "path", generalSettingsConfigs )
 
                 run( "git pull --rebase", base_root_directory, forkpath )
                 self.recursiveily_process_submodules( base_root_directory, command, forkpath )
 
             elif command == "fetch_origins":
                 successful_resquests += 1
-                forkpath = self.get_section_option( section, "path", generalSettingsConfigs )
+                forkpath = get_section_option( section, "path", generalSettingsConfigs )
 
                 run( "git fetch origin", base_root_directory, forkpath )
                 self.recursiveily_process_submodules( base_root_directory, command, forkpath )

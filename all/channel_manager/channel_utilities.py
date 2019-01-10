@@ -771,6 +771,19 @@ def is_sublime_text_upgraded(caller_indentifier):
     return last_version < current_version
 
 
+def get_section_option(section, option, configSettings):
+    """
+        @param `section` str
+        @param `option` str
+        @param `configSettings` a ConfigParser object
+    """
+
+    if configSettings.has_option( section, option ):
+        return configSettings.get( section, option )
+
+    return ""
+
+
 def open_last_session_data(session_file):
     last_session = configparser.ConfigParser( allow_no_value=True )
 
