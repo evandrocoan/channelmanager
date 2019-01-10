@@ -765,7 +765,7 @@ def is_sublime_text_upgraded(caller_indentifier):
     section[caller_indentifier] = current_version
     last_session[LAST_SUBLIME_TEXT_SECTION] = section
 
-    write_data_file( UPGRADE_SESSION_FILE, last_session )
+    write_data_file( UPGRADE_SESSION_FILE, last_session, 0 )
     return last_version < current_version
 
 
