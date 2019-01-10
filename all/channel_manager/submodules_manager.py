@@ -287,13 +287,8 @@ class RunBackstrokeThread(threading.Thread):
             if not is_allowed: return
 
             if self.command == "find_forks":
-                typeSettings = \
-                {
-                    'section_name': "last_find_forks_session",
-                    'git_file_path': os.path.join( CHANNEL_ROOT_DIRECTORY, '.gitmodules' ),
-                }
-
-                self.run_general_command( CHANNEL_ROOT_DIRECTORY, typeSettings, self.command )
+                git_file_path = os.path.join( CHANNEL_ROOT_DIRECTORY, '.gitmodules' )
+                self.run_general_command( CHANNEL_ROOT_DIRECTORY, git_file_path, self.command )
 
             elif self.command in (
                       "create_upstreams",
@@ -302,17 +297,11 @@ class RunBackstrokeThread(threading.Thread):
                       "pull_origins",
                       "merge_upstreams",
                     ):
-
                 gitmodules_directory = self.get_channel_root_from_project()
                 log( 1, "gitmodules_directory: %s", gitmodules_directory )
 
-                typeSettings = \
-                {
-                    'section_name': "last_create_upstreams_session",
-                    'git_file_path': os.path.join( gitmodules_directory, '.gitmodules' ),
-                }
-
-                self.run_general_command( CHANNEL_ROOT_DIRECTORY, typeSettings, self.command )
+                git_file_path = os.path.join( gitmodules_directory, '.gitmodules' )
+                self.run_general_command( CHANNEL_ROOT_DIRECTORY, git_file_path, self.command )
 
             else:
                 log( 1, "RunBackstrokeThread::run, Invalid command: " + str( self.command ) )
@@ -364,7 +353,7 @@ class RunBackstrokeThread(threading.Thread):
     #     log( 1, str( current_url ) )
     #     curl -X POST current_url
 
-    def run_general_command(self, base_root_directory, typeSettings, command):
+    def run_general_command(self, base_root_directory, git_file_path, command):
         """
             @param function_command   a function pointer to be called on each `.gitmodules` section.
         """
@@ -373,21 +362,19 @@ class RunBackstrokeThread(threading.Thread):
 
         # https://pymotw.com/3/configparser/
         lastSection = load_data_file( CHANNEL_SESSION_FILE )
-        start_index = lastSection.get( typeSettings['section_name'], 0 )
+        start_index = lastSection.get( command, 0 )
 
-        request_index        = 0
+        request_index = 0
         successful_resquests = 0
-
-        gitFilePath            = typeSettings['git_file_path']
         generalSettingsConfigs = configparser.RawConfigParser()
 
         # https://stackoverflow.com/questions/45415684/how-to-stop-tabs-on-python-2-7-rawconfigparser-throwing-parsingerror/
-        with open( gitFilePath ) as fakeFile:
+        with open( git_file_path ) as fakeFile:
             # https://stackoverflow.com/questions/22316333/how-can-i-resolve-typeerror-with-stringio-in-python-2-7
             fakefile = io.StringIO( fakeFile.read().replace( u"\t", u"" ) )
 
-        log( 1, "RunBackstrokeThread::sections: " + gitFilePath )
-        generalSettingsConfigs._read( fakefile, gitFilePath )
+        log( 1, "RunBackstrokeThread::sections: " + git_file_path )
+        generalSettingsConfigs._read( fakefile, git_file_path )
 
         sections       = generalSettingsConfigs.sections()
         sections_count = len( sections )
@@ -409,7 +396,7 @@ class RunBackstrokeThread(threading.Thread):
             # if request_index > 3:
             #     break
 
-            self.save_session_file(base_root_directory, lastSection, typeSettings, request_index)
+            self.save_session_file(base_root_directory, lastSection, command, request_index)
 
             log( 1, "{:s}, {:3d}({:d}) of {:d}... {:s}".format(
                     progress, request_index, successful_resquests, sections_count, section ) )
@@ -531,14 +518,14 @@ class RunBackstrokeThread(threading.Thread):
                 forkpath = self.get_section_option( section, "path", generalSettingsConfigs )
 
                 run( "git pull --rebase", base_root_directory, forkpath )
-                self.recursiveily_process_submodules( base_root_directory, command, typeSettings, forkpath )
+                self.recursiveily_process_submodules( base_root_directory, command, forkpath )
 
             elif command == "fetch_origins":
                 successful_resquests += 1
                 forkpath = self.get_section_option( section, "path", generalSettingsConfigs )
 
                 run( "git fetch origin", base_root_directory, forkpath )
-                self.recursiveily_process_submodules( base_root_directory, command, typeSettings, forkpath )
+                self.recursiveily_process_submodules( base_root_directory, command, forkpath )
 
             else:
                 log( 1, "RunBackstrokeThread::run_general_command, Invalid command: " + str( command ) )
@@ -548,32 +535,29 @@ class RunBackstrokeThread(threading.Thread):
             log.newline( count=2 )
 
             if maximum_errors == MAXIMUM_REQUEST_ERRORS:
-                lastSection[typeSettings['section_name']] = 0
+                self.save_session_file(base_root_directory, lastSection, command, 1)
                 log( 1, "Congratulations! It was a successful execution." )
 
             else:
                 log( 1, "Attention! There were errors on execution, please review its output." )
 
-            write_data_file( CHANNEL_SESSION_FILE, lastSection )
-
         return True
 
     @staticmethod
-    def save_session_file(base_root_directory, lastSection, typeSettings, request_index):
+    def save_session_file(base_root_directory, lastSection, command, request_index):
         """ Only saves the session file when working on the main project submodules
             instead overriding it with the nested submodules contents. """
 
         if base_root_directory == CHANNEL_ROOT_DIRECTORY:
-            lastSection[typeSettings['section_name']] = request_index - 1
+            lastSection[command] = request_index - 1
             write_data_file( CHANNEL_SESSION_FILE, lastSection )
 
-    def recursiveily_process_submodules(self, base_root_directory, command, typeSettings, forkpath):
+    def recursiveily_process_submodules(self, base_root_directory, command, forkpath):
         base_root_directory    = os.path.join( base_root_directory, forkpath )
         nested_submodules_file = os.path.join( base_root_directory, ".gitmodules" )
 
         if os.path.exists( nested_submodules_file ):
-            typeSettings['git_file_path'] = nested_submodules_file
-            self.run_general_command( base_root_directory, typeSettings, command )
+            self.run_general_command( base_root_directory, nested_submodules_file, command )
 
 
 def run(command, *args):
