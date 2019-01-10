@@ -44,6 +44,9 @@
                             { "caption": "Merge Upstreams Locally",
                                     "command": "my_brand_new_channel_run", "args": {"command": "-m"} },
 
+                            { "caption": "Create GitHub Pull Requests",
+                                    "command": "my_brand_new_channel_run", "args": {"command": "-pr"} },
+
                             { "caption": "Fetch All Submodules remote origin",
                                     "command": "my_brand_new_channel_run", "args": {"command": "-fo"} },
 

@@ -64,6 +64,19 @@ except( ImportError, ValueError ):
     from channel_utilities import assert_path
 
 
+try:
+    from githubpullrequests import parse_gitmodules
+
+except( ImportError, ValueError ):
+
+    try:
+        import sublime_api
+
+    except( ImportError, ValueError ):
+        assert_path( g_settings.PACKAGE_ROOT_DIRECTORY, '..', '..', 'githubpullrequests', 'source' )
+        from githubpullrequests import parse_gitmodules
+
+
 # Allow using this file on the website where the sublime
 # module is unavailable
 try:
@@ -74,6 +87,7 @@ try:
     import configparser
 
     from debug_tools import getLogger
+    from debug_tools.utilities import join_path
     from debug_tools.estimated_time_left import sequence_timer
     from debug_tools.estimated_time_left import progress_info
 
@@ -100,6 +114,7 @@ except( ImportError, ValueError ):
     from six.moves import configparser
     from package_control import cmd
     from debug_tools import getLogger
+    from debug_tools.utilities import join_path
     from debug_tools.estimated_time_left import sequence_timer
 
 
@@ -188,6 +203,12 @@ def main(command=None):
         argumentParser.add_argument( "-c", "--cancel-operation", action="store_true",
                 help="If there is some batch operation running, cancel it as soons as possible." )
 
+        argumentParser.add_argument( "-pr", "--create-pullrequests", action="store_true",
+                help="Call the command githubpullrequests for all registered git submodules. "
+                "You need to create the file `Local/GITHUBPULLREQUESTS_TOKEN` "
+                "or create the environment variable `GITHUBPULLREQUESTS_TOKEN` within a Github token "
+                "with `public_repos` permission." )
+
         argumentParser.add_argument( "-o", "--pull-origins", action="store_true",
                 help="Find all repositories on the `.gitmodules` and perform a git pull --rebase" )
 
@@ -215,6 +236,9 @@ def main(command=None):
 
     elif command == "-m" or argumentsNamespace and argumentsNamespace.merge_upstreams:
         RunBackstrokeThread("merge_upstreams").start()
+
+    elif command == "-pr" or argumentsNamespace and argumentsNamespace.create_pullrequests:
+        RunBackstrokeThread("create_pullrequests").start()
 
     elif command == "-u" or argumentsNamespace and argumentsNamespace.create_upstreams:
         RunBackstrokeThread("create_upstreams").start()
@@ -304,6 +328,20 @@ class RunBackstrokeThread(threading.Thread):
 
                 git_file_path = os.path.join( gitmodules_directory, '.gitmodules' )
                 self.run_general_command( CHANNEL_ROOT_DIRECTORY, git_file_path, self.command )
+
+            elif self.command == "create_pullrequests":
+                token_file = join_path( CHANNEL_ROOT_DIRECTORY, 'Local', 'GITHUBPULLREQUESTS_TOKEN' )
+                gitmodules_file = join_path( CHANNEL_ROOT_DIRECTORY, '.gitmodules' )
+                backstroke_file = join_path( CHANNEL_ROOT_DIRECTORY, 'Local', 'Backstroke.gitmodules' )
+
+                if os.path.exists( token_file ):
+                    github_token = token_file
+
+                else:
+                    github_token = os.environ.get( 'GITHUBPULLREQUESTS_TOKEN', "" )
+
+                parse_gitmodules( gitmodules_file, github_token )
+                parse_gitmodules( backstroke_file, github_token )
 
             else:
                 log( 1, "RunBackstrokeThread::run, Invalid command: " + str( self.command ) )

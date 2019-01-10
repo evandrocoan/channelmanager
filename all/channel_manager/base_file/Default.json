@@ -27,6 +27,9 @@
     { "caption": "MyBrandNewChannel: Merge Upstreams Locally",
             "command": "my_brand_new_channel_run", "args": {"command": "-m"} },
 
+    { "caption": "MyBrandNewChannel: Create GitHub Pull Requests",
+            "command": "my_brand_new_channel_run", "args": {"command": "-pr"} },
+
     { "caption": "MyBrandNewChannel: Fetch All Submodules remote origin",
             "command": "my_brand_new_channel_run", "args": {"command": "-fo"} },
 
