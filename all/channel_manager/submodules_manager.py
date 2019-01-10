@@ -165,6 +165,7 @@ def main(command=None):
     log( 1, "Entering on main(1) " + str( command ) )
     global CHANNEL_ROOT_DIRECTORY
 
+    maximum_repositories   = 0
     argumentsNamespace     = None
     CHANNEL_ROOT_DIRECTORY = get_main_directory( g_settings.PACKAGE_ROOT_DIRECTORY )
 
@@ -176,6 +177,9 @@ def main(command=None):
         argumentParser.add_argument( "-m", "--merge-upstreams", action="store_true",
                 help="Merges all registered repositories updates with their upstream. "
                 "The upstrems URLs are in a separate file on: Local/Backstroke.gitmodules" )
+
+        argumentParser.add_argument( "-mr", "--maximum-repositories", action="store", type=int,
+                help="The maximum count of repositories/requests to process per file." )
 
         argumentParser.add_argument( "-f", "--find-forks", action="store_true",
                 help="Find all repositories forks, fetch their branches and clean the duplicated branches. "
@@ -214,13 +218,16 @@ def main(command=None):
         argumentsNamespace = argumentParser.parse_args()
 
     # log( 1, argumentsNamespace )
+    if argumentsNamespace and argumentsNamespace.maximum_repositories:
+        maximum_repositories = argumentsNamespace.maximum_repositories
+
     if argumentsNamespace and argumentsNamespace.find_forks:
         if sublime:
             log( 1, "The find forks command is only available running by the command line, while" )
             log( 1, "using the Sublime Text Channel Development version." )
 
         else:
-            RunBackstrokeThread("find_forks").start()
+            RunBackstrokeThread("find_forks", maximum_repositories).start()
 
     elif command == "-t" or argumentsNamespace and argumentsNamespace.push_tags:
         RunGitForEachSubmodulesThread( "git push --tags" ).start()
@@ -230,22 +237,22 @@ def main(command=None):
                 "git branch --set-upstream-to=origin/master master && git pull --rebase" ).start()
 
     elif command == "-o" or argumentsNamespace and argumentsNamespace.pull_origins:
-        RunBackstrokeThread("pull_origins").start()
+        RunBackstrokeThread("pull_origins", maximum_repositories).start()
 
     elif command == "-fo" or argumentsNamespace and argumentsNamespace.fetch_origins:
-        RunBackstrokeThread("fetch_origins").start()
+        RunBackstrokeThread("fetch_origins", maximum_repositories).start()
 
     elif command == "-m" or argumentsNamespace and argumentsNamespace.merge_upstreams:
-        RunBackstrokeThread("merge_upstreams").start()
+        RunBackstrokeThread("merge_upstreams", maximum_repositories).start()
 
     elif command == "-pr" or argumentsNamespace and argumentsNamespace.create_pullrequests:
-        RunBackstrokeThread("create_pullrequests").start()
+        RunBackstrokeThread("create_pullrequests", maximum_repositories).start()
 
     elif command == "-u" or argumentsNamespace and argumentsNamespace.create_upstreams:
-        RunBackstrokeThread("create_upstreams").start()
+        RunBackstrokeThread("create_upstreams", maximum_repositories).start()
 
     elif command == "-d" or argumentsNamespace and argumentsNamespace.delete_remotes:
-        RunBackstrokeThread("delete_remotes").start()
+        RunBackstrokeThread("delete_remotes", maximum_repositories).start()
 
     elif command == "cancel_operation" or argumentsNamespace and argumentsNamespace.cancel_operation:
         free_mutex_lock()
@@ -294,9 +301,10 @@ def is_allowed_to_run():
 #
 class RunBackstrokeThread(threading.Thread):
 
-    def __init__(self, command):
+    def __init__(self, command, maximum_repositories=0):
         threading.Thread.__init__(self)
         self.command = command
+        self.maximum_repositories = maximum_repositories
 
     def run(self):
         log( 1, "RunBackstrokeThread::run" )
@@ -334,7 +342,7 @@ class RunBackstrokeThread(threading.Thread):
                     else:
                         github_token = os.environ.get( 'GITHUBPULLREQUESTS_TOKEN', "" )
 
-                    pull_requester = PullRequester( github_token )
+                    pull_requester = PullRequester( github_token, self.maximum_repositories )
                     pull_requester.parse_gitmodules( backstroke_file )
                     pull_requester.parse_gitmodules( gitmodules_file )
                     pull_requester.publish_report()
@@ -399,9 +407,9 @@ class RunBackstrokeThread(threading.Thread):
                 start_index -= 1
                 continue
 
-            # # For quick testing
-            # if request_index > 3:
-            #     break
+            # For quick testing
+            if self.maximum_repositories and request_index > self.maximum_repositories:
+                break
 
             self.save_session_file(base_root_directory, lastSection, command, request_index)
 
