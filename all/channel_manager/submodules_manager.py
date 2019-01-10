@@ -215,7 +215,12 @@ def main(command=None):
 
     # log( 1, argumentsNamespace )
     if argumentsNamespace and argumentsNamespace.find_forks:
-        attempt_run_find_forks()
+        if sublime:
+            log( 1, "The find forks command is only available running by the command line, while" )
+            log( 1, "using the Sublime Text Channel Development version." )
+
+        else:
+            RunBackstrokeThread("find_forks").start()
 
     elif command == "-t" or argumentsNamespace and argumentsNamespace.push_tags:
         RunGitForEachSubmodulesThread( "git push --tags" ).start()
@@ -252,15 +257,6 @@ def main(command=None):
         log( 1, "Invalid command: " + str( command ) )
 
     # unittest.main()
-
-
-def attempt_run_find_forks():
-    if sublime:
-        log( 1, "The find forks command is only available running by the command line, while" )
-        log( 1, "using the Sublime Text Channel Development version." )
-
-    else:
-        RunBackstrokeThread("find_forks").start()
 
 
 @contextlib.contextmanager
