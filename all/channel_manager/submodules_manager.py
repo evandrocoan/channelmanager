@@ -64,19 +64,6 @@ except( ImportError, ValueError ):
     from channel_utilities import assert_path
 
 
-try:
-    from githubpullrequests import parse_gitmodules
-
-except( ImportError, ValueError ):
-
-    try:
-        import sublime_api
-
-    except( ImportError, ValueError ):
-        assert_path( g_settings.PACKAGE_ROOT_DIRECTORY, '..', '..', 'githubpullrequests', 'source' )
-        from githubpullrequests import parse_gitmodules
-
-
 # Allow using this file on the website where the sublime
 # module is unavailable
 try:
@@ -132,6 +119,15 @@ else:
     # https://stackoverflow.com/questions/3969726/attributeerror-module-object-has-no-attribute-urlopen
     import urllib.request as urllib
     from urllib.error import HTTPError
+
+
+if is_python_2:
+    try:
+        from githubpullrequests import parse_gitmodules
+
+    except( ImportError, ValueError ):
+        assert_path( g_settings.PACKAGE_ROOT_DIRECTORY, '..', '..', 'githubpullrequests', 'source' )
+        from githubpullrequests import parse_gitmodules
 
 
 # sys.tracebacklimit = 10; raise ValueError
@@ -334,14 +330,25 @@ class RunBackstrokeThread(threading.Thread):
                 gitmodules_file = join_path( CHANNEL_ROOT_DIRECTORY, '.gitmodules' )
                 backstroke_file = join_path( CHANNEL_ROOT_DIRECTORY, 'Local', 'Backstroke.gitmodules' )
 
-                if os.path.exists( token_file ):
-                    github_token = token_file
+                if is_python_2:
+
+                    if os.path.exists( token_file ):
+                        github_token = token_file
+
+                    else:
+                        github_token = os.environ.get( 'GITHUBPULLREQUESTS_TOKEN', "" )
+
+                    parse_gitmodules( backstroke_file, github_token )
+                    parse_gitmodules( gitmodules_file, github_token )
 
                 else:
-                    github_token = os.environ.get( 'GITHUBPULLREQUESTS_TOKEN', "" )
 
-                parse_gitmodules( gitmodules_file, github_token )
-                parse_gitmodules( backstroke_file, github_token )
+                    if os.path.exists( token_file ):
+                        run( "githubpullrequests -f '%s' -f '%s' -t '%s'" % (
+                                gitmodules_file, backstroke_file, token_file ), CHANNEL_ROOT_DIRECTORY )
+
+                    else:
+                        run( "githubpullrequests -f '%s -f '%s'" % ( gitmodules_file, backstroke_file ), CHANNEL_ROOT_DIRECTORY )
 
             else:
                 log( 1, "RunBackstrokeThread::run, Invalid command: " + str( self.command ) )
@@ -696,5 +703,4 @@ class RunGitForEachSubmodulesThread(threading.Thread):
 
 if __name__ == "__main__":
     main()
-
 

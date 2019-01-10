@@ -33,7 +33,12 @@ import json
 
 import stat
 import shutil
-import configparser
+
+try:
+    import configparser
+
+except( ImportError, ValueError ):
+    from six.moves import configparser
 
 import re
 import time
