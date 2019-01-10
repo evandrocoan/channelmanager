@@ -156,13 +156,7 @@ The plugin `submodules_manager.py` run several operations based on the `.gitmodu
 Sublime Text Data folder (the folder at `Packages/../`) and `Backstroke.gitmodules` file on the
 Sublime Text Data folder (the folder at `Packages/../Local`). However, still to do a implementation
 of a configuration which will allow you to change the locations of these files by settings files. So
-you can put them where you please most.
-
-Here is a sample of the structure of both files, the `Backstroke.gitmodules` is not indented on
-purpose for backward compatibility with `Python 2.7` configparser which does not allow indented
-blocks. If you are planing in only using `Python 3`, you can indent both files. The file
-`.gitmodules` is compatible with `Python 3` due a created wrapper which removes the indentation
-before sending the files contents to the `configparser`:
+you can put them where you please most. Here is a sample of the structure of both files:
 
 **.gitmodules**
 ```shell
@@ -181,14 +175,14 @@ before sending the files contents to the `configparser`:
 **Backstroke.gitmodules**
 ```shell
 [submodule "Packages"]
-url = https://github.com/evandrocoan/Packages
-upstream = https://github.com/sublimehq/Packages
-branches = master_upstream_branch->master_fork_branch
+    url = https://github.com/evandrocoan/Packages
+    upstream = https://github.com/sublimehq/Packages
+    branches = master_upstream_branch->master_fork_branch
 
 [submodule "Packages/ANSIescape"]
-url = https://github.com/evandrocoan/SublimeANSI
-upstream = https://github.com/aziz/SublimeANSI
-branches = master_upstream_branch->master_fork_branch
+    url = https://github.com/evandrocoan/SublimeANSI
+    upstream = https://github.com/aziz/SublimeANSI
+    branches = master_upstream_branch->master_fork_branch
 ```
 
 Hence, if you would like to receive updates from the
