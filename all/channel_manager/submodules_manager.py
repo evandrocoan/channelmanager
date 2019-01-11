@@ -375,12 +375,13 @@ class RunBackstrokeThread(threading.Thread):
         log( 1, "RunBackstrokeThread::run_general_command" )
         maximum_errors = MAXIMUM_REQUEST_ERRORS
 
-        # https://pymotw.com/3/configparser/
         lastSection = load_data_file( CHANNEL_SESSION_FILE )
         start_index = lastSection.get( command, 0 )
 
         request_index = 0
         successful_resquests = 0
+
+        # https://pymotw.com/3/configparser/
         generalSettingsConfigs = configparser.RawConfigParser()
 
         # https://stackoverflow.com/questions/45415684/how-to-stop-tabs-on-python-2-7-rawconfigparser-throwing-parsingerror/
