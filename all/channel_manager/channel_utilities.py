@@ -139,7 +139,7 @@ def load_data_file(file_path, wait_on_error=True, log_level=1, exceptions=False)
 
         @return a dictionary object with the JSON file data
     """
-    channel_dictionary = {}
+    channel_dictionary = OrderedDict()
 
     if os.path.exists( file_path ):
         maximum_attempts = 10
