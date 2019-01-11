@@ -166,6 +166,7 @@ def main(command=None):
     global CHANNEL_ROOT_DIRECTORY
 
     maximum_repositories   = 0
+    synced_repositories    = False
     argumentsNamespace     = None
     CHANNEL_ROOT_DIRECTORY = get_main_directory( g_settings.PACKAGE_ROOT_DIRECTORY )
 
@@ -179,7 +180,12 @@ def main(command=None):
                 "The upstrems URLs are in a separate file on: Local/Backstroke.gitmodules" )
 
         argumentParser.add_argument( "-mr", "--maximum-repositories", action="store", type=int,
-                help="The maximum count of repositories/requests to process per file." )
+                help="The maximum count of repositories/requests to process per file. "
+                "Only valid when using `--merge-upstreams` option." )
+
+        argumentParser.add_argument( "-s", "--synced-repositories", action="store_true",
+                help="Reports which repositories not Synchronized with Pull Requests. "
+                "Only valid when using `--merge-upstreams` option." )
 
         argumentParser.add_argument( "-f", "--find-forks", action="store_true",
                 help="Find all repositories forks, fetch their branches and clean the duplicated branches. "
@@ -221,6 +227,9 @@ def main(command=None):
     if argumentsNamespace and argumentsNamespace.maximum_repositories:
         maximum_repositories = argumentsNamespace.maximum_repositories
 
+    if argumentsNamespace and argumentsNamespace.synced_repositories:
+        synced_repositories = argumentsNamespace.synced_repositories
+
     if argumentsNamespace and argumentsNamespace.find_forks:
         if sublime:
             log( 1, "The find forks command is only available running by the command line, while" )
@@ -246,7 +255,7 @@ def main(command=None):
         RunBackstrokeThread("merge_upstreams", maximum_repositories).start()
 
     elif command == "-pr" or argumentsNamespace and argumentsNamespace.create_pullrequests:
-        RunBackstrokeThread("create_pullrequests", maximum_repositories).start()
+        RunBackstrokeThread("create_pullrequests", maximum_repositories, synced_repositories).start()
 
     elif command == "-u" or argumentsNamespace and argumentsNamespace.create_upstreams:
         RunBackstrokeThread("create_upstreams", maximum_repositories).start()
@@ -301,10 +310,11 @@ def is_allowed_to_run():
 #
 class RunBackstrokeThread(threading.Thread):
 
-    def __init__(self, command, maximum_repositories=0):
+    def __init__(self, command, maximum_repositories=0, synced_repositories=False):
         threading.Thread.__init__(self)
         self.command = command
         self.maximum_repositories = maximum_repositories
+        self.synced_repositories = synced_repositories
 
     def run(self):
         log( 1, "RunBackstrokeThread::run" )
@@ -342,19 +352,21 @@ class RunBackstrokeThread(threading.Thread):
                     else:
                         github_token = os.environ.get( 'GITHUBPULLREQUESTS_TOKEN', "" )
 
-                    pull_requester = PullRequester( github_token, self.maximum_repositories )
+                    pull_requester = PullRequester( github_token, self.maximum_repositories, self.synced_repositories )
                     pull_requester.parse_gitmodules( gitmodules_file )
                     pull_requester.parse_gitmodules( backstroke_file )
                     pull_requester.publish_report()
 
                 else:
+                    sync = "-s" if self.synced_repositories else ""
 
                     if os.path.exists( token_file ):
-                        run( "githubpullrequests -f '%s' -f '%s' -t '%s'" % (
-                                gitmodules_file, backstroke_file, token_file ), CHANNEL_ROOT_DIRECTORY )
+                        run( "githubpullrequests -f '%s' -f '%s' -t '%s' %s" % (
+                                gitmodules_file, backstroke_file, token_file, sync ), CHANNEL_ROOT_DIRECTORY )
 
                     else:
-                        run( "githubpullrequests -f '%s -f '%s'" % ( gitmodules_file, backstroke_file ), CHANNEL_ROOT_DIRECTORY )
+                        run( "githubpullrequests -f '%s -f '%s' %s" % (
+                                gitmodules_file, backstroke_file, sync ), CHANNEL_ROOT_DIRECTORY )
 
             else:
                 log( 1, "RunBackstrokeThread::run, Invalid command: " + str( self.command ) )
