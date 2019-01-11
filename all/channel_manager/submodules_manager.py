@@ -340,33 +340,7 @@ class RunBackstrokeThread(threading.Thread):
                 self.run_general_command( CHANNEL_ROOT_DIRECTORY, git_file_path, self.command )
 
             elif self.command == "create_pullrequests":
-                token_file = join_path( CHANNEL_ROOT_DIRECTORY, 'Local', 'GITHUBPULLREQUESTS_TOKEN' )
-                gitmodules_file = join_path( CHANNEL_ROOT_DIRECTORY, '.gitmodules' )
-                backstroke_file = join_path( CHANNEL_ROOT_DIRECTORY, 'Local', 'Backstroke.gitmodules' )
-
-                if is_python_2:
-
-                    if os.path.exists( token_file ):
-                        github_token = token_file
-
-                    else:
-                        github_token = os.environ.get( 'GITHUBPULLREQUESTS_TOKEN', "" )
-
-                    pull_requester = PullRequester( github_token, self.maximum_repositories, self.synced_repositories )
-                    pull_requester.parse_gitmodules( gitmodules_file )
-                    pull_requester.parse_gitmodules( backstroke_file )
-                    pull_requester.publish_report()
-
-                else:
-                    sync = "-s" if self.synced_repositories else ""
-
-                    if os.path.exists( token_file ):
-                        run( "githubpullrequests -f '%s' -f '%s' -t '%s' %s" % (
-                                gitmodules_file, backstroke_file, token_file, sync ), CHANNEL_ROOT_DIRECTORY )
-
-                    else:
-                        run( "githubpullrequests -f '%s -f '%s' %s" % (
-                                gitmodules_file, backstroke_file, sync ), CHANNEL_ROOT_DIRECTORY )
+                self.run_githubpullrequests()
 
             else:
                 log( 1, "RunBackstrokeThread::run, Invalid command: " + str( self.command ) )
@@ -375,10 +349,34 @@ class RunBackstrokeThread(threading.Thread):
         log.newline()
         log( 1, "Finished RunBackstrokeThread::run()" )
 
-    # Now loop through the above array
-    # for current_url in backstroke_request_list:
-    #     log( 1, str( current_url ) )
-    #     curl -X POST current_url
+    def run_githubpullrequests(self):
+        token_file = join_path( CHANNEL_ROOT_DIRECTORY, 'Local', 'GITHUBPULLREQUESTS_TOKEN' )
+        gitmodules_file = join_path( CHANNEL_ROOT_DIRECTORY, '.gitmodules' )
+        backstroke_file = join_path( CHANNEL_ROOT_DIRECTORY, 'Local', 'Backstroke.gitmodules' )
+
+        if is_python_2:
+
+            if os.path.exists( token_file ):
+                github_token = token_file
+
+            else:
+                github_token = os.environ.get( 'GITHUBPULLREQUESTS_TOKEN', "" )
+
+            pull_requester = PullRequester( github_token, self.maximum_repositories, self.synced_repositories )
+            pull_requester.parse_gitmodules( gitmodules_file )
+            pull_requester.parse_gitmodules( backstroke_file )
+            pull_requester.publish_report()
+
+        else:
+            sync = "-s" if self.synced_repositories else ""
+
+            if os.path.exists( token_file ):
+                run( "githubpullrequests -f '%s' -f '%s' -t '%s' %s" % (
+                        gitmodules_file, backstroke_file, token_file, sync ), CHANNEL_ROOT_DIRECTORY )
+
+            else:
+                run( "githubpullrequests -f '%s -f '%s' %s" % (
+                        gitmodules_file, backstroke_file, sync ), CHANNEL_ROOT_DIRECTORY )
 
     def run_general_command(self, base_root_directory, git_file_path, command):
         """
