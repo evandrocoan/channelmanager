@@ -363,8 +363,7 @@ class RunBackstrokeThread(threading.Thread):
                 github_token = os.environ.get( 'GITHUBPULLREQUESTS_TOKEN', "" )
 
             pull_requester = PullRequester( github_token, self.maximum_repositories, self.synced_repositories )
-            pull_requester.parse_gitmodules( gitmodules_file )
-            pull_requester.parse_gitmodules( backstroke_file )
+            pull_requester.parse_gitmodules( [gitmodules_file, backstroke_file] )
             pull_requester.publish_report()
 
         else:
