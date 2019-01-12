@@ -140,6 +140,7 @@ def print_python_envinronment():
 
 
 # print_python_envinronment()
+CHANNEL_LOG_FILE     = os.path.join( g_settings.PACKAGE_ROOT_DIRECTORY, "all", "commands.log" )
 CHANNEL_SESSION_FILE = os.path.join( g_settings.PACKAGE_ROOT_DIRECTORY, "all", "last_session.json" )
 FIND_FORKS_PATH      = os.path.join( g_settings.PACKAGE_ROOT_DIRECTORY, "find_forks" )
 
@@ -150,6 +151,7 @@ command_line_interface = cmd.Cli( None, False )
 
 
 # Debugger settings: 0 - disabled, 127 - enabled
+# log = getLogger( 127, __name__, CHANNEL_LOG_FILE, rotation=10, mode=2, stdout=True)
 log = getLogger( 127, __name__ )
 
 #log.setup( "Debug.txt" )
