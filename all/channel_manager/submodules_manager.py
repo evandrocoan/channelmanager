@@ -468,9 +468,9 @@ class RunBackstrokeThread(threading.Thread):
                     log( 1, "Skipping %s because there is not upstream defined...", section )
                     continue
 
+                log( 1, branches )
                 log( 1, downstream )
                 log( 1, upstream )
-                log( 1, branches )
                 if not local_branch or not upstream_branch:
                     maximum_errors -= 1
 
