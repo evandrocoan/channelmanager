@@ -11,7 +11,7 @@
 # Licensing
 #
 # Channel Manager Utilities, functions to be used by the common tasks
-# Copyright (C) 2017 Evandro Coan <https://github.com/evandrocoan>
+# Copyright (C) 2017-2019 Evandro Coan <https://github.com/evandrocoan>
 #
 #  This program is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -34,14 +34,7 @@ import json
 import stat
 import shutil
 
-try:
-    import configparser
-
-except( ImportError, ValueError ):
-    from six.moves import configparser
-
 import re
-import time
 import datetime
 import textwrap
 
@@ -63,7 +56,6 @@ UPGRADE_SESSION_FILE      = os.path.join( g_settings.PACKAGE_ROOT_DIRECTORY, "al
 LAST_SUBLIME_TEXT_SECTION = "last_sublime_text_version"
 
 
-# print_python_envinronment()
 def assert_path(*args):
     """
         Import a module from a relative path
@@ -97,93 +89,21 @@ except ImportError:
 
 
 try:
-    from debug_tools import getLogger
+    import debug_tools
 
 except ImportError:
     # Import the debugger. It will fail when `debug_tools` is inside a `.sublime-package`,
     # however, this is only meant to be used on the Development version, when `debug_tools` is
     # unpacked at the loose packages folder as a git submodule.
     assert_path( os.path.join( os.path.dirname( g_settings.PACKAGE_ROOT_DIRECTORY ), 'debugtools', 'all' ) )
-    from debug_tools import getLogger
+
+from debug_tools import getLogger
+from debug_tools.third_part import load_data_file
+from debug_tools.third_part import write_data_file
 
 
 # Debugger settings: 0 - disabled, 127 - enabled
 log = getLogger( 127, __name__ )
-
-
-def write_data_file(file_path, channel_dictionary, debug=1):
-    """
-        Python - json without whitespaces
-        https://stackoverflow.com/questions/16311562/python-json-without-whitespaces
-    """
-    log( 1 & debug, "Writing to the data file: " + str( file_path ) )
-
-    with open( file_path, 'w', newline='\n', encoding='utf-8' ) as output_file:
-        json.dump( channel_dictionary, output_file, indent=4, separators=(',', ': ') )
-        output_file.write("\n")  # Add newline cause Py JSON does not
-
-
-def load_package_file_as_binary(file_path, log_level=1):
-    packages_start = file_path.find( "Packages" )
-    packages_relative_path = file_path[packages_start:].replace( "\\", "/" )
-
-    log( log_level, "load_data_file, packages_relative_path: " + str( packages_relative_path ) )
-    resource_bytes = sublime.load_binary_resource( packages_relative_path )
-    return resource_bytes
-
-
-def load_data_file(file_path, wait_on_error=True, log_level=1, exceptions=False):
-    """
-        Attempt to read the file some times when there is a value error. This could happen when the
-        file is currently being written by Sublime Text.
-
-        @return a dictionary object with the JSON file data
-    """
-    channel_dictionary = OrderedDict()
-
-    if os.path.exists( file_path ):
-        maximum_attempts = 10
-
-        while maximum_attempts > 0:
-
-            try:
-                with open( file_path, 'r', encoding='utf-8' ) as data_file:
-                    return json.load( data_file, object_pairs_hook=OrderedDict )
-
-            except ValueError as error:
-                log( 1, "Error: maximum_attempts %d, %s (%s)" % ( maximum_attempts, error, file_path ) )
-                maximum_attempts -= 1
-
-                if wait_on_error:
-                    time.sleep( 0.1 )
-
-        if maximum_attempts < 1:
-            log.exception( "Could not open the file_path: %s" % ( file_path ) )
-            if exceptions: raise
-
-    else:
-
-        if sublime:
-
-            try:
-                resource_bytes = load_package_file_as_binary( file_path, log_level )
-                return json.loads( resource_bytes.decode('utf-8'), object_pairs_hook=OrderedDict )
-
-            except IOError as error:
-                log.exception( "Error: The file '%s' does not exists! %s" % ( file_path, error ) )
-                if exceptions: raise
-
-        else:
-
-            # Force an exception to be logged by the logging module
-            try:
-                raise IOError( "Error: The file '%s' does not exists!" % file_path )
-
-            except IOError:
-                log.exception( "" )
-                if exceptions: raise
-
-    return channel_dictionary
 
 
 def is_dependency(package_name, repositories_dictionary):
@@ -776,34 +696,6 @@ def is_sublime_text_upgraded(caller_indentifier):
         write_data_file( UPGRADE_SESSION_FILE, last_session, 0 )
 
     return last_version < current_version
-
-
-def get_section_option(section, option, configSettings):
-    """
-        @param `section` str
-        @param `option` str
-        @param `configSettings` a ConfigParser object
-    """
-
-    if configSettings.has_option( section, option ):
-        return configSettings.get( section, option )
-
-    return ""
-
-
-def open_last_session_data(session_file):
-    last_session = configparser.ConfigParser( allow_no_value=True )
-
-    if os.path.exists( session_file ):
-        last_session.read( session_file )
-
-    return last_session
-
-
-def save_session_data(last_section, session_file):
-
-    with open( session_file, 'wt', newline='\n', encoding='utf-8' ) as configfile:
-        last_section.write( configfile )
 
 
 def is_channel_upgraded(channel_settings):

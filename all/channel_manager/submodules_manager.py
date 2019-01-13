@@ -27,6 +27,9 @@
 #  along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+# To run this file, run on the Sublime Text console:
+# import imp; import channelmanager.all.channel_manager .submodules_manager; imp.reload( channelmanager.all.channel_manager .submodules_manager )
+
 import re
 import os
 import io
@@ -49,18 +52,12 @@ try:
     from . import settings as g_settings
 
     from .channel_utilities import get_main_directory
-    from .channel_utilities import load_data_file
-    from .channel_utilities import write_data_file
-    from .channel_utilities import get_section_option
     from .channel_utilities import assert_path
 
 except( ImportError, ValueError ):
     import settings as g_settings
 
     from channel_utilities import get_main_directory
-    from channel_utilities import load_data_file
-    from channel_utilities import write_data_file
-    from channel_utilities import get_section_option
     from channel_utilities import assert_path
 
 
@@ -69,22 +66,6 @@ except( ImportError, ValueError ):
 try:
     import sublime
     import sublime_plugin
-
-    # https://stackoverflow.com/questions/14087598/python-3-importerror-no-module-named-configparser
-    import configparser
-
-    from debug_tools import getLogger
-    from debug_tools.utilities import join_path
-    from debug_tools.estimated_time_left import sequence_timer
-    from debug_tools.estimated_time_left import progress_info
-
-    # When there is an ImportError, means that Package Control is installed instead of PackagesManager.
-    # Which means we cannot do nothing as this is only compatible with PackagesManager.
-    try:
-        from PackagesManager.package_control import cmd
-
-    except( ImportError, ValueError ):
-        pass
 
 except( ImportError, ValueError ):
     sublime = None
@@ -98,11 +79,32 @@ except( ImportError, ValueError ):
     assert_path( os.path.dirname( g_settings.PACKAGE_ROOT_DIRECTORY ), 'PackagesManager' )
     assert_path( os.path.dirname( g_settings.PACKAGE_ROOT_DIRECTORY ), 'debugtools', 'all' )
 
-    from six.moves import configparser
+
+from debug_tools import getLogger
+from debug_tools.utilities import join_path
+from debug_tools.third_part import load_data_file
+from debug_tools.third_part import write_data_file
+from debug_tools.third_part import get_section_option
+from debug_tools.third_part import print_python_envinronment
+from debug_tools.estimated_time_left import sequence_timer
+from debug_tools.estimated_time_left import progress_info
+
+
+# When there is an ImportError, means that Package Control is installed instead of PackagesManager.
+# Which means we cannot do nothing as this is only compatible with PackagesManager.
+try:
+    from PackagesManager.package_control import cmd
+
+except( ImportError, ValueError ):
     from package_control import cmd
-    from debug_tools import getLogger
-    from debug_tools.utilities import join_path
-    from debug_tools.estimated_time_left import sequence_timer
+
+
+try:
+    # https://stackoverflow.com/questions/14087598/python-3-importerror-no-module-named-configparser
+    import configparser
+
+except( ImportError, ValueError ):
+    from six.moves import configparser
 
 
 # # https://stackoverflow.com/questions/9079036/detect-python-version-at-runtime
@@ -130,16 +132,8 @@ if is_python_2:
         from githubpullrequests import PullRequester
 
 
-# sys.tracebacklimit = 10; raise ValueError
-def print_python_envinronment():
-    index = 0;
-
-    for file_path in sys.path:
-        print(index, file_path);
-        index += 1;
-
-
 # print_python_envinronment()
+# sys.tracebacklimit = 1; raise ValueError
 CHANNEL_LOG_FILE     = os.path.join( g_settings.PACKAGE_ROOT_DIRECTORY, "all", "commands.log" )
 CHANNEL_SESSION_FILE = os.path.join( g_settings.PACKAGE_ROOT_DIRECTORY, "all", "last_session.json" )
 FIND_FORKS_PATH      = os.path.join( g_settings.PACKAGE_ROOT_DIRECTORY, "find_forks" )

@@ -59,6 +59,8 @@ ALL_RUNNING_CONTROL_FLAGS    = CLEAN_PACKAGESMANAGER_FLAG | RESTORE_REMOVE_ORPHA
 
 
 from collections import OrderedDict
+from debug_tools.third_part import load_data_file
+from debug_tools.third_part import write_data_file
 from debug_tools.estimated_time_left import sequence_timer
 from debug_tools.estimated_time_left import progress_info
 from debug_tools.estimated_time_left import CurrentUpdateProgress
@@ -75,8 +77,6 @@ from .channel_utilities import is_directory_empty
 from .channel_utilities import get_installed_packages
 from .channel_utilities import unique_list_join
 from .channel_utilities import unique_list_append
-from .channel_utilities import load_data_file
-from .channel_utilities import write_data_file
 from .channel_utilities import string_convert_list
 from .channel_utilities import get_main_directory
 from .channel_utilities import remove_if_exists

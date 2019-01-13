@@ -42,8 +42,6 @@ from . import settings as g_settings
 
 from channel_manager import channel_installer
 from channel_manager.channel_utilities import wrap_text
-from channel_manager.channel_utilities import load_data_file
-from channel_manager.channel_utilities import write_data_file
 from channel_manager.channel_utilities import upcase_first_letter
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
@@ -60,6 +58,8 @@ except ImportError:
 
 
 from debug_tools import getLogger
+from debug_tools.third_part import load_data_file
+from debug_tools.third_part import write_data_file
 
 # Debugger settings: 0 - disabled, 127 - enabled
 log = getLogger( 127, __name__ )

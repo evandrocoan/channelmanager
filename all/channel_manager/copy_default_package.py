@@ -40,9 +40,6 @@ import threading
 import contextlib
 
 from . import settings as g_settings
-
-from .channel_utilities import load_data_file
-from .channel_utilities import write_data_file
 from .channel_utilities import is_sublime_text_upgraded
 
 try:
@@ -54,6 +51,8 @@ except ImportError:
     pass
 
 from debug_tools import getLogger
+from debug_tools.third_part import load_data_file
+from debug_tools.third_part import write_data_file
 
 # Debugger settings: 0 - disabled, 127 - enabled
 log = getLogger( 127, __name__ )
