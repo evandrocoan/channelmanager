@@ -58,9 +58,25 @@ RESTORE_REMOVE_ORPHANED_FLAG = 2
 ALL_RUNNING_CONTROL_FLAGS    = CLEAN_PACKAGESMANAGER_FLAG | RESTORE_REMOVE_ORPHANED_FLAG
 
 
-from collections import OrderedDict
+from debug_tools.utilities import wrap_text
+from debug_tools.utilities import sort_dictionary
 from debug_tools.third_part import load_data_file
 from debug_tools.third_part import write_data_file
+from debug_tools.third_part import add_item_if_not_exists
+from debug_tools.third_part import add_path_if_not_exists
+from debug_tools.third_part import add_git_folder_by_file
+from debug_tools.third_part import is_directory_empty
+from debug_tools.third_part import remove_if_exists
+from debug_tools.third_part import remove_item_if_exists
+from debug_tools.third_part import safe_remove
+from debug_tools.third_part import remove_only_if_exists
+from debug_tools.third_part import delete_read_only_file
+from debug_tools.third_part import _delete_read_only_file
+from debug_tools.third_part import remove_git_folder
+from debug_tools.third_part import recursively_delete_empty_folders
+from debug_tools.third_part import unique_list_join
+from debug_tools.third_part import unique_list_append
+from debug_tools.third_part import convert_to_unix_path
 from debug_tools.estimated_time_left import sequence_timer
 from debug_tools.estimated_time_left import progress_info
 from debug_tools.estimated_time_left import CurrentUpdateProgress
@@ -68,35 +84,14 @@ from debug_tools.estimated_time_left import CurrentUpdateProgress
 from . import upgrade_wizard
 from . import settings as g_settings
 
-from .channel_utilities import add_item_if_not_exists
-from .channel_utilities import remove_item_if_exists
-from .channel_utilities import convert_to_unix_path
-from .channel_utilities import wrap_text
-from .channel_utilities import is_directory_empty
-
 from .channel_utilities import get_installed_packages
-from .channel_utilities import unique_list_join
-from .channel_utilities import unique_list_append
-from .channel_utilities import string_convert_list
-from .channel_utilities import get_main_directory
-from .channel_utilities import remove_if_exists
-from .channel_utilities import delete_read_only_file
-from .channel_utilities import _delete_read_only_file
-from .channel_utilities import wrap_text
-from .channel_utilities import safe_remove
-from .channel_utilities import remove_only_if_exists
 from .channel_utilities import InstallationCancelled
 from .channel_utilities import NoPackagesAvailable
 from .channel_utilities import load_repository_file
 from .channel_utilities import is_channel_upgraded
-from .channel_utilities import recursively_delete_empty_folders
 from .channel_utilities import print_failed_repositories
-from .channel_utilities import sort_dictionary
-from .channel_utilities import add_path_if_not_exists
 from .channel_utilities import is_dependency
 from .channel_utilities import is_package_dependency
-from .channel_utilities import remove_git_folder
-from .channel_utilities import add_git_folder_by_file
 
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
@@ -107,9 +102,7 @@ try:
 
     from package_control.package_manager import PackageManager
     from package_control.package_disabler import PackageDisabler
-
     from package_control.thread_progress import ThreadProgress
-    from package_control.commands.advanced_install_package_command import AdvancedInstallPackageThread
 
     def silence_error_message_box(value):
         pass
@@ -120,9 +113,7 @@ except ImportError:
 
     from PackagesManager.package_control.package_manager import PackageManager
     from PackagesManager.package_control.package_disabler import PackageDisabler
-
     from PackagesManager.package_control.thread_progress import ThreadProgress
-    from PackagesManager.package_control.commands.advanced_install_package_command import AdvancedInstallPackageThread
 
 
 from debug_tools import getLogger
@@ -1876,7 +1867,7 @@ def end_user_message(message):
     log.newline()
     log.clean( 1, message )
 
-    return wrap_text( message )
+    return wrap_text( message, single_lines=True )
 
 
 def _unlock_installer_flag(flag):

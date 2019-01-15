@@ -39,7 +39,6 @@ import threading
 
 import re
 import shlex
-import subprocess
 import configparser
 import contextlib
 
@@ -50,13 +49,7 @@ from . import settings as g_settings
 g_is_already_running = False
 g_failed_repositories = []
 
-from .channel_utilities import string_convert_list
-from .channel_utilities import print_data_file
-from .channel_utilities import dictionary_to_string_by_line
-from .channel_utilities import remove_only_if_exists
 from .channel_utilities import load_repository_file
-from .channel_utilities import sort_dictionaries_on_list
-from .channel_utilities import sort_list_of_dictionaries
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
 # or vice-versa. Which means we cannot do nothing as this is only compatible with PackagesManager.
@@ -77,8 +70,12 @@ except ImportError:
 # sublime_plugin.reload_plugin( "debug_tools.estimated_time_left" )
 
 from debug_tools import getLogger
+from debug_tools.utilities import sort_dictionaries_on_list
+from debug_tools.utilities import sort_list_of_dictionaries
 from debug_tools.third_part import load_data_file
 from debug_tools.third_part import write_data_file
+from debug_tools.third_part import dictionary_to_string_by_line
+from debug_tools.third_part import print_data_file
 from debug_tools.estimated_time_left import sequence_timer
 from debug_tools.estimated_time_left import progress_info
 from debug_tools.estimated_time_left import CurrentUpdateProgress

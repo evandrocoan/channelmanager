@@ -30,10 +30,10 @@
 import sublime
 import textwrap
 
-from .channel_utilities import wrap_text
 from .channel_utilities import InstallationCancelled
 
 from debug_tools import getLogger
+from debug_tools.utilities import wrap_text
 
 # Debugger settings: 0 - disabled, 127 - enabled
 log = getLogger( 127, __name__ )
@@ -113,7 +113,7 @@ def show_program_description():
                 You removed all upgrade changes. If you would like the undo this, cancel the
                 {wizard} and restart Sublime Text. Otherwise, hit the `{ok_button}` button to
                 confirm the operation changes.
-            """.format( wizard=g_installation_type, ok_button=no_button_text ) ) )
+            """.format( wizard=g_installation_type, ok_button=no_button_text ), single_lines=True ) )
 
     else:
         global g_isFirstTime
@@ -123,14 +123,14 @@ def show_program_description():
                     If you would like to remove packages from the upgrade list, choose the
                     `{ok_button}` button. Otherwise, choose the `{no_button}` button to start the
                     upgrade process.
-                """.format( ok_button=ok_button_text, no_button=no_button_text) ) )
+                """.format( ok_button=ok_button_text, no_button=no_button_text), single_lines=True ) )
 
         else:
             lines.append( wrap_text( """\
                     If you would like revert your changes to the {wizard} package's list, just
                     cancel the {wizard} and restart Sublime Text. Then, on next time you start
                     Sublime Text, you will be able to start picking up packages again.
-                """.format( wizard=g_installation_type ) ) )
+                """.format( wizard=g_installation_type ), single_lines=True ) )
 
         g_isFirstTime = False
 
@@ -152,7 +152,7 @@ def show_goodbye_message():
 
         If you would like to ignore this upgrade, hit the `{no_button}` button.
         """.format( ok_button=ok_button_text, no_button=no_button_text,
-                wizard=g_installation_type, channel_name=CHANNEL_PACKAGE_NAME ) ),
+                wizard=g_installation_type, channel_name=CHANNEL_PACKAGE_NAME ), single_lines=True ),
     ]
 
     sublime_dialog = sublime.yes_no_cancel_dialog( "\n".join( lines ), ok_button_text, no_button_text )

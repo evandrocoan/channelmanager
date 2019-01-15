@@ -37,7 +37,6 @@ g_is_already_running = False
 from . import settings as g_settings
 
 from channel_manager import channel_installer
-from channel_manager.channel_utilities import wrap_text
 
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
@@ -50,6 +49,7 @@ except ImportError:
 
 
 from debug_tools import getLogger
+from debug_tools.utilities import wrap_text
 
 # Debugger settings: 0 - disabled, 127 - enabled
 log = getLogger( 127, __name__ )
@@ -151,7 +151,7 @@ def show_program_description():
 
         Click on the `Cancel` button if you want give up from installing the %s.
         """ % ( CHANNEL_PACKAGE_NAME, uninstall_button, CHANNEL_PACKAGE_NAME,
-                CHANNEL_PACKAGE_NAME, CHANNEL_PACKAGE_NAME ) ),
+                CHANNEL_PACKAGE_NAME, CHANNEL_PACKAGE_NAME ), single_lines=True ),
     ]
 
     return sublime.ok_cancel_dialog( "\n".join( lines ), uninstall_button )

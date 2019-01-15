@@ -41,8 +41,6 @@ g_is_already_running = False
 from . import settings as g_settings
 
 from channel_manager import channel_installer
-from channel_manager.channel_utilities import wrap_text
-from channel_manager.channel_utilities import upcase_first_letter
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
 # or vice-versa. Which means we cannot do nothing as this is only compatible with PackagesManager.
@@ -58,8 +56,10 @@ except ImportError:
 
 
 from debug_tools import getLogger
+from debug_tools.utilities import wrap_text
 from debug_tools.third_part import load_data_file
 from debug_tools.third_part import write_data_file
+from debug_tools.third_part import upcase_first_letter
 
 # Debugger settings: 0 - disabled, 127 - enabled
 log = getLogger( 127, __name__ )
@@ -225,7 +225,7 @@ def show_goodbye_message():
         If you wish to install the {channel_name} later, after uninstalling it, you can just install
         this package again.
         """.format( ok_button=ok_button_text, negative_button_text=negative_button_text,
-                installation_type=g_installation_command, channel_name=CHANNEL_PACKAGE_NAME ) ),
+                installation_type=g_installation_command, channel_name=CHANNEL_PACKAGE_NAME ), single_lines=True ),
     ]
 
     channelDetailsPath = g_channelSettings['CHANNEL_INSTALLATION_DETAILS']
@@ -262,7 +262,7 @@ def show_program_description():
         This is a channel of packages for Sublime Text's Package Control, which replace and install
         some of the packages by a forked/alternative version. i.e., custom modification of them. You
         can find this list of packages to be installed on channel on the following addresses:
-        """ % CHANNEL_PACKAGE_NAME ),
+        """ % CHANNEL_PACKAGE_NAME, single_lines=True ),
         "",
         g_link_wrapper.fill( "<%s>" % g_channelSettings['CHANNEL_ROOT_URL'] ),
         g_link_wrapper.fill( "<%s>" % g_channelSettings['CHANNEL_FILE_URL'] ),
@@ -275,7 +275,7 @@ def show_program_description():
         This installer will also remove you current installation of Package Control and install
         another forked version of it, which has the name PackagesManager. Now on, when you want to,
         install/manage packages, you should look for `PackagesManager` instead of `Package Control`.
-        """ ),
+        """, single_lines=True ),
     ]
 
     return sublime.ok_cancel_dialog( "\n".join( lines ), "Next" )
@@ -313,7 +313,7 @@ def show_license_agreement():
         On the following addresses you can find the list and links for all distributed contents by
         this installer, which these conditions above applies to, and their respective software
         license:
-        """ % CHANNEL_PACKAGE_NAME ),
+        """ % CHANNEL_PACKAGE_NAME, single_lines=True ),
         "",
         g_link_wrapper.fill( "<%s#License>" % g_channelSettings['CHANNEL_ROOT_URL'] ),
         g_link_wrapper.fill( "<%s>" % g_channelSettings['CHANNEL_FILE_URL'] ),
@@ -326,7 +326,7 @@ def show_license_agreement():
         If you do agree with these conditions, type the following phrase on the input panel which is
         open at the bottom of your Sublime Text window and then click on the `Next` button to
         proceed to the next step:
-        """ ),
+        """, single_lines=True ),
         "",
         g_link_wrapper.fill( agrement_text ),
     ]
@@ -352,7 +352,7 @@ def show_license_agreement():
                 Please, click in `Cancel` instead of `Next` on the next message dialog, if you do
                 not agree with the
                 {channel_name} license.
-                """.format( channel_name=CHANNEL_PACKAGE_NAME, typed_text=typed_text ) ) )
+                """.format( channel_name=CHANNEL_PACKAGE_NAME, typed_text=typed_text ), single_lines=True ) )
 
     def did_the_user_agreed(answer):
         user_input_text[0] = answer
@@ -371,7 +371,7 @@ def show_license_agreement():
 
                         If you did not mean to agree with the license, click on the `Cancel` button,
                         otherwise click on the `OK` button.
-                        """ % answer ) )
+                        """ % answer, single_lines=True ) )
 
                 if is_re_confirmed:
                     input_panel_question_confirmation[0] = True
@@ -446,7 +446,7 @@ def select_stable_or_developent_version():
         things. Also because elsewhere you are, not always there will be enough free space required
         by the Development Version.
         """.format( descriptions=g_channelSettings['CHANNEL_VERSIONS_DESCRIPTIONS'],
-                channel_name=CHANNEL_PACKAGE_NAME ) ),
+                channel_name=CHANNEL_PACKAGE_NAME ), single_lines=True ),
     ]
 
     user_response = sublime.yes_no_cancel_dialog(
@@ -477,7 +477,7 @@ def select_stable_or_developent_version():
                     recorded everything which happened, and should be very helpful in finding the
                     solution for the problem.
                     """.format( channel_name=CHANNEL_PACKAGE_NAME,
-                            root_url=g_channelSettings['CHANNEL_ROOT_URL'] ) ) )
+                            root_url=g_channelSettings['CHANNEL_ROOT_URL'] ), single_lines=True ) )
 
     return user_response != sublime.DIALOG_CANCEL, False
 
@@ -518,7 +518,7 @@ def show_installation_confirmation():
         going on the menu `Preferences -> Packages Settings -> {channel_name}` and select the option
         `{uninstallation_command}`. Then later install again the {channel_name}.
         """.format( version_to_install=version_to_install, channel_name=CHANNEL_PACKAGE_NAME,
-                uninstallation_command=g_uninstallation_command ) ),
+                uninstallation_command=g_uninstallation_command ), single_lines=True ),
         ]
 
     return calculate_next_step( sublime.yes_no_cancel_dialog( "\n".join( lines ),  "Install Now", "Go Back" ) )
@@ -549,14 +549,14 @@ def start_the_installation_process():
         minutes for the Development Version, depending on your Computer Performance. Any problems
         you have with the process you can open issue on the {channel_name} issue tracker at the
         address:
-        """.format( channel_name=CHANNEL_PACKAGE_NAME, uninstallation_command=g_uninstallation_command ) ),
+        """.format( channel_name=CHANNEL_PACKAGE_NAME, uninstallation_command=g_uninstallation_command ), single_lines=True ),
         "",
         g_link_wrapper.fill( "<%s/issues>" % g_channelSettings['CHANNEL_ROOT_URL'] ),
         "",
         wrap_text( """\
         Just do not forget to save your Sublime Text Console output, as it recorded everything which
         happened, and should be very helpful in finding the solution for the problem.
-        """ ),
+        """, single_lines=True ),
     ]
 
     install_channel()

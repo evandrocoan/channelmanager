@@ -29,16 +29,7 @@
 
 import os
 import sys
-import json
 
-import stat
-import shutil
-
-import re
-import datetime
-import textwrap
-
-from collections import OrderedDict
 from distutils.version import LooseVersion
 
 
@@ -100,6 +91,9 @@ except ImportError:
 from debug_tools import getLogger
 from debug_tools.third_part import load_data_file
 from debug_tools.third_part import write_data_file
+from debug_tools.third_part import convert_to_snake_case
+from debug_tools.third_part import convert_to_pascal_case
+from debug_tools.third_part import compare_text_with_file
 
 
 # Debugger settings: 0 - disabled, 127 - enabled
@@ -182,14 +176,6 @@ def download_text_file( git_modules_url ):
         downloaded_contents = manager.fetch( git_modules_url, 'Error downloading git_modules_url: ' + git_modules_url )
 
     return downloaded_contents.decode('utf-8')
-
-
-def string_convert_list( comma_separated_list ):
-
-    if comma_separated_list:
-        return [ dependency.strip() for dependency in comma_separated_list.split(',') ]
-
-    return []
 
 
 def get_main_directory(current_directory):
@@ -306,24 +292,6 @@ def generate_channel_files(channel_package_name, channel_package_directory, chan
         _configure_channel_commands_file( channel_package_name, channel_package_directory )
 
 
-def convert_to_pascal_case(input_string):
-    """
-        how to replace multiple characters in a string?
-        https://stackoverflow.com/questions/21859203/how-to-replace-multiple-characters-in-a-string
-    """
-    clean_string = re.sub( '[=+-:*?"<>|]', ' ', input_string )
-    return ''.join( word[0].upper() + word[1:] if len( word ) else word for word in clean_string.split() )
-
-
-def convert_to_snake_case(pascal_case_name):
-    """
-        Elegant Python function to convert CamelCase to snake_case?
-        https://stackoverflow.com/questions/1175208/elegant-python-function-to-convert-camelcase-to-snake-case
-    """
-    first_substitution = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', pascal_case_name)
-    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', first_substitution).lower()
-
-
 def _get_base_and_destine_paths(base_file_name, destine_file_name, channel_package_directory):
     base_file    = os.path.join( BASE_FILE_FOLDER, base_file_name )
     destine_file = os.path.join( channel_package_directory, destine_file_name )
@@ -380,28 +348,6 @@ def _configure_channel_commands_file(channel_package_name, channel_package_direc
                 file.write( text )
 
 
-def compare_text_with_file(input_text, file):
-    """
-        Return `True` when the provided text and the `file` contents are equal.
-    """
-
-    if os.path.exists( file ):
-
-        with open( file, "r", encoding='utf-8' ) as file:
-            text = file.read()
-            return input_text == text
-
-
-def print_all_variables_for_debugging(dictionary):
-    dictionary_lines = dictionary_to_string_by_line( dictionary )
-    log( 1, "\nImporting %s settings... \n%s" % ( str(datetime.datetime.now())[0:19], dictionary_lines ) )
-
-
-def print_data_file(file_path):
-    channel_dictionary = load_data_file( file_path )
-    log( 1, "channel_dictionary: " + json.dumps( channel_dictionary, indent=4, sort_keys=True ) )
-
-
 def print_failed_repositories(failed_repositories):
 
     if len( failed_repositories ) > 0:
@@ -412,270 +358,6 @@ def print_failed_repositories(failed_repositories):
 
     for package_name in failed_repositories:
         log( 1, "Package: %s" % ( package_name ) )
-
-
-def add_item_if_not_exists(list_to_append, item):
-
-    if item not in list_to_append:
-        list_to_append.append( item )
-
-
-def add_path_if_not_exists(list_to_add, path):
-
-    if path != "." and path != "..":
-        add_item_if_not_exists( list_to_add, path )
-
-
-def add_git_folder_by_file(file_relative_path, git_folders):
-    match = re.search( "\.git", file_relative_path )
-
-    if match:
-        git_folder_relative = file_relative_path[:match.end(0)]
-
-        if git_folder_relative not in git_folders:
-            git_folders.append( git_folder_relative )
-
-
-def sort_dictionary(dictionary):
-    return OrderedDict( sorted( dictionary.items() ) )
-
-
-def sort_dictionaries_on_list(list_of_dictionaries):
-    sorted_dictionaries = []
-
-    for dictionary in list_of_dictionaries:
-        sorted_dictionaries.append( sort_dictionary( dictionary ) )
-
-    return sorted_dictionaries
-
-
-def sort_list_of_dictionaries(list_of_dictionaries):
-    """
-        How do I sort a list of dictionaries by values of the dictionary in Python?
-        https://stackoverflow.com/questions/72899/how-do-i-sort-a-list-of-dictionaries-by-values-of-the-dictionary-in-python
-
-        case-insensitive list sorting, without lowercasing the result?
-        https://stackoverflow.com/questions/10269701/case-insensitive-list-sorting-without-lowercasing-the-result
-    """
-    sorted_dictionaries = sort_dictionaries_on_list( list_of_dictionaries )
-    return sorted( sorted_dictionaries, key=lambda k: k['name'].lower() )
-
-
-def is_directory_empty(directory_path):
-    """
-        How to check to see if a folder contains files using python 3
-        https://stackoverflow.com/questions/25675352/how-to-check-to-see-if-a-folder-contains-files-using-python-3
-    """
-    is_empty = False
-
-    try:
-        os.rmdir( directory_path )
-
-    except OSError:
-        is_empty = True
-
-    return is_empty
-
-
-def remove_if_exists(items_list, item):
-
-    if item in items_list:
-        items_list.remove( item )
-
-
-def remove_item_if_exists(list_to_remove, item):
-
-    if item in list_to_remove:
-        list_to_remove.remove( item )
-
-
-def safe_remove(path):
-
-    try:
-        os.remove( path )
-
-    except Exception as error:
-        log( 1, "Failed to remove `%s`. Error is: %s" % ( path, error) )
-
-        try:
-            delete_read_only_file(path)
-
-        except Exception as error:
-            log( 1, "Failed to remove `%s`. Error is: %s" % ( path, error) )
-
-
-def remove_only_if_exists(file_path):
-
-    if os.path.exists( file_path ):
-        safe_remove( file_path )
-
-
-def delete_read_only_file(path):
-    _delete_read_only_file( None, path, None )
-
-
-def _delete_read_only_file(action, name, exc):
-    """
-        shutil.rmtree to remove readonly files
-        https://stackoverflow.com/questions/21261132/shutil-rmtree-to-remove-readonly-files
-    """
-    os.chmod( name, stat.S_IWRITE )
-    os.remove( name )
-
-
-def remove_git_folder(default_git_folder, parent_folder=None):
-    log( 1, "remove_git_folder, default_git_folder: %s" % str( default_git_folder ) )
-    shutil.rmtree( default_git_folder, ignore_errors=True, onerror=_delete_read_only_file )
-
-    if parent_folder:
-        folders_not_empty = []
-        recursively_delete_empty_folders( parent_folder, folders_not_empty )
-
-        if len( folders_not_empty ) > 0:
-            log( 1, "The installed default_git_folder `%s` could not be removed because is it not empty." % default_git_folder )
-            log( 1, "Its files contents are: " + str( os.listdir( default_git_folder ) ) )
-
-
-def recursively_delete_empty_folders(root_folder, folders_not_empty=[]):
-    """
-        Recursively descend the directory tree rooted at top, calling the callback function for each
-        regular file.
-
-        Python script: Recursively remove empty folders/directories
-        https://www.jacobtomlinson.co.uk/2014/02/16/python-script-recursively-remove-empty-folders-directories/
-
-        @param root_folder           the folder to search on
-        @param folders_not_empty     a empty python list to put on the deleted folders paths
-    """
-
-    try:
-        children_folders = os.listdir( root_folder )
-
-        for child_folder in children_folders:
-            child_path = os.path.join( root_folder, child_folder )
-
-            if os.path.isdir( child_path ):
-                recursively_delete_empty_folders( child_path, folders_not_empty )
-
-                try:
-                    os.removedirs( root_folder )
-                    is_empty = True
-
-                except OSError:
-                    is_empty = False
-
-                    try:
-                        _removeEmptyFolders( root_folder )
-
-                    except:
-                        pass
-
-                if not is_empty:
-                    folders_not_empty.append( child_path )
-
-        os.rmdir( root_folder )
-
-    except:
-        pass
-
-
-def _removeEmptyFolders(path):
-
-    if not os.path.isdir( path ):
-        return
-
-    files = os.listdir( path )
-
-    if len( files ):
-
-        for file in files:
-            fullpath = os.path.join( path, file )
-
-            if os.path.isdir( fullpath ):
-                _removeEmptyFolders( fullpath )
-
-    os.rmdir( path )
-
-
-def get_immediate_subdirectories(a_dir):
-    """
-        How to get all of the immediate subdirectories in Python
-        https://stackoverflow.com/questions/800197/how-to-get-all-of-the-immediate-subdirectories-in-python
-    """
-    return [ name for name in os.listdir(a_dir) if os.path.isdir( os.path.join( a_dir, name ) ) ]
-
-
-def wrap_text(text):
-    return re.sub( r"(?<!\n)\n(?!\n)", " ", textwrap.dedent( text ).strip( " " ) )
-
-
-def unique_list_join(*lists):
-    unique_list = []
-
-    for _list in lists:
-
-        for item in _list:
-
-            if item not in unique_list:
-                unique_list.append( item )
-
-    return unique_list
-
-
-def unique_list_append(a_list, *lists):
-
-    for _list in lists:
-
-        for item in _list:
-
-            if item not in a_list:
-                a_list.append( item )
-
-
-def upcase_first_letter(s):
-    return s[0].upper() + s[1:]
-
-
-def _clean_urljoin(url):
-
-    if url.startswith( '/' ) or url.startswith( ' ' ):
-        url = url[1:]
-        url = _clean_urljoin( url )
-
-    if url.endswith( '/' ) or url.endswith( ' ' ):
-        url = url[0:-1]
-        url = _clean_urljoin( url )
-
-    return url
-
-
-def clean_urljoin(*urls):
-    fixed_urls = []
-
-    for url in urls:
-
-        fixed_urls.append( _clean_urljoin(url) )
-
-    return "/".join( fixed_urls )
-
-
-def dictionary_to_string_by_line(dictionary):
-    variables = \
-    [
-        "%-50s: %s" % ( variable_name, dictionary[variable_name] )
-        for variable_name in dictionary.keys()
-    ]
-
-    return "%s" % ( "\n".join( sorted( variables ) ) )
-
-
-def convert_to_unix_path(relative_path):
-    relative_path = relative_path.replace( "\\", "/" )
-
-    if relative_path.startswith( "/" ):
-        relative_path = relative_path[1:]
-
-    return relative_path
 
 
 def is_sublime_text_upgraded(caller_indentifier):
