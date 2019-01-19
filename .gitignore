@@ -1,4 +1,5 @@
 /all/last_session.json
 /all/commands.log
+/all/.__commands.lock
 *.pyc
 _gsdata_
