@@ -122,9 +122,6 @@ class MyBrandNewChannelRunInstallation(sublime_plugin.ApplicationCommand):
     def run(self):
         installation_wizard.main( g_channelSettings )
 
-    def is_enabled(self):
-        return not is_channel_installed()
-
 
 class MyBrandNewChannelRunUninstallation(sublime_plugin.ApplicationCommand):
 
