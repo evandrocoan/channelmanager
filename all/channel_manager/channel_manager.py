@@ -916,13 +916,13 @@ def create_packages_manager_tag(absolute_path, date_tag, command_line_interface)
         release_date = datetime.datetime.today().strftime('%Y-%m-%d %H:%M:%S')
         date_tag     = get_git_version( release_date )
 
-        package_metadata_json = os.path.join( g_channelSettings['CHANNEL_ROOT_DIRECTORY'],
-                "Packages", package_name, "package-metadata.json" )
+        package_metadata_json = "package-metadata.json"
+        package_metadata_absolute = os.path.join( absolute_path, package_metadata_json )
 
-        package_metadata = load_data_file( package_metadata_json )
+        package_metadata = load_data_file( package_metadata_absolute )
         package_metadata['version'] = date_tag
 
-        write_data_file( package_metadata_json, package_metadata )
+        write_data_file( package_metadata_absolute, package_metadata )
 
         # https://stackoverflow.com/questions/7239333/how-do-i-commit-only-some-files
         command = 'git commit --only "%s" -m "Updated package-metadata.json version to %s"' % ( package_metadata_json, date_tag )
