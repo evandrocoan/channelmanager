@@ -204,7 +204,7 @@ def calculate_next_step( sublime_dialog ):
 
 
 def show_goodbye_message():
-    ok_button_text = "Ask me later"
+    ok_button_text = "Return to the Wizard"
     negative_button_text = "Never ask again"
 
     lines = \
@@ -233,14 +233,13 @@ def show_goodbye_message():
     channelDetails = load_data_file( channelDetailsPath )
     sublime_dialog = sublime.yes_no_cancel_dialog( "\n".join( lines ), ok_button_text, negative_button_text )
 
-    if sublime_dialog == sublime.DIALOG_YES:
+    if sublime_dialog == sublime.DIALOG_YES: # "Return to the Wizard"
         return True
 
-    elif sublime_dialog == sublime.DIALOG_NO:
+    elif sublime_dialog == sublime.DIALOG_NO: # "Never ask again"
         channelDetails['automatically_show_installation_wizard'] = False
 
-    elif sublime_dialog == sublime.DIALOG_CANCEL:
-        # When pressing escape key, it returns to DIALOG_CANCEL
+    elif sublime_dialog == sublime.DIALOG_CANCEL: # When pressing escape key, it returns DIALOG_CANCEL
         channelDetails['automatically_show_installation_wizard'] = True
 
     else:
