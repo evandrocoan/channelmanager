@@ -521,7 +521,8 @@ class ChannelInstaller(threading.Thread):
             # When installing the channel, we must mark the packages already installed as packages which
             # where not installed, so they are not uninstalled when the channel is uninstalled.
             if not self.isUpdateInstallation \
-                    and package_name in installed_packages:
+                    and package_name in installed_packages \
+                    and package_name not in g_packages_not_installed:
 
                 g_packages_not_installed.append( package_name )
 
@@ -1776,7 +1777,9 @@ class ChannelInstaller(threading.Thread):
             raise InstallationCancelled( "The user closed the %s's packages pick up list." % self.word_installer )
 
         for package_name in selected_packages_to_not_install:
-            g_packages_not_installed.append( package_name )
+
+            if package_name not in g_packages_not_installed:
+                g_packages_not_installed.append( package_name )
 
             target_index = packages_names.index( package_name )
             del packages_names[target_index]
