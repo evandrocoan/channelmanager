@@ -450,10 +450,11 @@ class ChannelInstaller(threading.Thread):
             else:
                 packages_to_install = self.get_stable_packages()
 
-            if len( packages_to_install ) < 1:
-                raise NoPackagesAvailable( "There are 0 packages available to install!" )
-
             if self.isUpdateInstallation:
+
+                if len( packages_to_install ) < 1:
+                    raise NoPackagesAvailable( "There are 0 packages available to install!" )
+
                 log( 1, "New packages packages to install found... %s", packages_to_install )
 
             self.install_stable_packages( packages_to_install )
