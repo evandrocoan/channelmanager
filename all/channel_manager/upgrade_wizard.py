@@ -157,10 +157,10 @@ def show_goodbye_message():
 
     sublime_dialog = sublime.yes_no_cancel_dialog( "\n".join( lines ), ok_button_text, no_button_text )
 
-    if sublime_dialog == sublime.DIALOG_YES:
+    if sublime_dialog == sublime.DIALOG_YES: # "Go back"
         return True
 
-    elif sublime_dialog == sublime.DIALOG_NO:
+    elif sublime_dialog == sublime.DIALOG_NO: # "Skip this upgrade"
         g_channelSettings['CHANNEL_UPGRADE_SKIP'] = True
 
     elif sublime_dialog == sublime.DIALOG_CANCEL:

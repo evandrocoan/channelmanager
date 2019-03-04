@@ -290,7 +290,12 @@ class ChannelInstaller(threading.Thread):
         packages_to_install = self.get_stable_packages()
         packages_to_uninstall = self.get_packages_to_uninstall( True )
 
-        upgrade_wizard.main( packages_to_install, packages_to_uninstall, self )
+        if packages_to_install or packages_to_uninstall:
+            upgrade_wizard.main( packages_to_install, packages_to_uninstall, self )
+
+        else:
+            self.channelSettings['CHANNEL_UPGRADE_SKIP'] = True
+
         self.packages_to_install = packages_to_install
         self.packages_to_uninstall = packages_to_uninstall
 
@@ -317,6 +322,7 @@ class ChannelInstaller(threading.Thread):
                         Check you Sublime Text Console for more information.
                         """.format( channel_name=self.channelSettings['CHANNEL_PACKAGE_NAME'] )
                         ) )
+
         _unlock_installer( self, is_forced=True )
 
 
