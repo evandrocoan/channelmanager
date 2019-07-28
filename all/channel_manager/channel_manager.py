@@ -566,7 +566,7 @@ def get_last_tag_fixed(absolute_path, last_dictionary, command_line_interface, f
 
                 if len( current_tags ) > 0:
                     tags_list = current_tags.split( "\n" )
-                    log( 1, "Error: The current HEAD commit already has the following tags(s): %s" % str( current_tags ) )
+                    log( 1, "The current HEAD commit already has the following tags(s): %s" % str( current_tags ) )
 
                     # For now, disable all tag prefixes, i.e., tags which are not strictly "0.0.0",
                     # because we cannot handle repositories which have a tag prefix for each
