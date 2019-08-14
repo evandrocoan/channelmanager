@@ -234,6 +234,52 @@ def extract_package(package_path, destine_folder):
 
         log( 1, "The file '%s' was successfully extracted." % package_path )
 
+    files_to_not_delete = \
+    {
+        ".gitignore",
+        ".no-sublime-package",
+        "README.md",
+        "settings.json",
+    }
+
+    zip_namelist = set( package_file.namelist() )
+    directory_namelist = set()
+
+    for path, subdirs, files in os.walk( destine_folder ):
+        path = path.replace( destine_folder, "" )
+        path = path.strip( "\\\\/" )
+
+        if not path.startswith( '.git' ):
+            for name in files:
+                relativepath = os.path.join( path, name )
+                directory_namelist.add( relativepath )
+
+    zip_namelist = normalizepath( zip_namelist )
+    directory_namelist = normalizepath( directory_namelist )
+    files_to_remove = directory_namelist - zip_namelist - files_to_not_delete
+
+    # print( 'zip_namelist', zip_namelist )
+    # print( 'directory_namelist', directory_namelist )
+    # print( 'files_to_remove', files_to_remove  )
+    for file in files_to_remove:
+        fullpath = os.path.join( destine_folder, file )
+        log( 1, "Removing missing file '%s'", fullpath )
+
+        try:
+            os.remove( fullpath )
+
+        except:
+            log.exception( 1, "Error: Could not remove the file %s", fullpath )
+
+
+def normalizepath(iterable):
+    fixedpaths = set()
+
+    for path in iterable:
+        fixedpaths.add( os.path.normpath( path ) )
+
+    return fixedpaths
+
 
 @contextlib.contextmanager
 def lock_context_manager():
