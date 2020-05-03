@@ -100,8 +100,8 @@ def main(channel_settings, command="all"):
     channel_thread = GenerateChannelThread( channel_settings, command )
     channel_thread.start()
 
-    set_progress = CurrentUpdateProgress( "Generating Channel and Repositories files" )
-    ThreadProgress( channel_thread, set_progress, "Channel and repositories files successfully created." )
+    set_progress = CurrentUpdateProgress( "Generating Repositories files" )
+    ThreadProgress( channel_thread, set_progress, "Repositories files successfully created." )
 
 
 def unpack_settings(channel_settings):
