@@ -51,7 +51,7 @@ PACKAGES_COUNT_TO_IGNORE_AHEAD = 8
 
 # The minimum time between multiple calls setting the `ignored_packages` setting, without triggering
 # the Sublime Text error `It appears a package is trying to ignore itself, causing a loop`
-IGNORE_PACKAGE_MINIMUM_WAIT_TIME = 1.7
+IGNORE_PACKAGE_MINIMUM_WAIT_TIME = 3.7
 
 CLEAN_PACKAGESMANAGER_FLAG   = 1
 RESTORE_REMOVE_ORPHANED_FLAG = 2
