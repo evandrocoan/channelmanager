@@ -92,6 +92,7 @@ from .channel_utilities import is_channel_upgraded
 from .channel_utilities import print_failed_repositories
 from .channel_utilities import is_dependency
 from .channel_utilities import is_package_dependency
+from .channel_utilities import run_on_main_thread
 
 
 # When there is an ImportError, means that Package Control is installed instead of PackagesManager,
@@ -1553,12 +1554,12 @@ class ChannelInstaller(threading.Thread):
 
         # This adds them to the `in_process` list on the Package Control.sublime-settings file
         if len( packages_to_add ):
-            self.package_disabler.disable_packages( packages_to_add, ignoring_type )
+            run_on_main_thread( lambda: self.package_disabler.disable_packages( packages_to_add, ignoring_type ) )
             time.sleep( IGNORE_PACKAGE_MINIMUM_WAIT_TIME )
 
         # This should remove them from the `in_process` list on the Package Control.sublime-settings file
         if len( packages_to_remove ):
-            self.package_disabler.reenable_package( packages_to_remove, ignoring_type )
+            run_on_main_thread( lambda: self.package_disabler.reenable_package( packages_to_remove, ignoring_type ) )
             time.sleep( IGNORE_PACKAGE_MINIMUM_WAIT_TIME )
 
         # Something, somewhere is setting the ignored_packages list back to `["Vintage"]`. Then
