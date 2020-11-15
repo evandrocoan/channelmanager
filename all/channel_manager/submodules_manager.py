@@ -583,8 +583,9 @@ class RunBackstrokeThread(threading.Thread):
 
 def run(command, *args):
     command = shlex.split( command )
-    output = command_line_interface.execute( command, os.path.join( *args ), live_output=True, short_errors=True )
+    basepath = os.path.join( *args )
 
+    output = command_line_interface.execute( command, basepath, live_output=True, short_errors=True )
     if is_python_2:
         log.clean( 1, output )
 
