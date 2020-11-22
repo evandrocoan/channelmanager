@@ -903,7 +903,7 @@ def get_git_latest_tag(absolute_path, command_line_interface):
     return clean_tag
 
 
-def create_packages_manager_tag(absolute_path, date_tag, command_line_interface):
+def create_packages_manager_tag(absolute_path, command_line_interface):
     """
         Create the `date_tag` as the current time because we cannot call get_git_tag_date() because
         we did not created the tag neither the commit yet.
@@ -934,7 +934,7 @@ def create_packages_manager_tag(absolute_path, date_tag, command_line_interface)
 
 
 def create_git_tag(absolute_path, new_tag_name, command_line_interface):
-    create_packages_manager_tag( absolute_path, new_tag_name, command_line_interface )
+    create_packages_manager_tag( absolute_path, command_line_interface )
 
     command = shlex.split( "git tag %s" % new_tag_name )
     output = command_line_interface.execute( command, absolute_path, short_errors=True )
