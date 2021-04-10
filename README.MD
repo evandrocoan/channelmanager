@@ -86,6 +86,7 @@ channel files. Currently there are implemented the following keys:
     path = Packages/Notepad++ Color Scheme
     url = https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme
     upstream =
+    branches = master->master
 ```
 
 The `upstream` can be empty or not present if you would like to. It is used to set your repository
@@ -94,6 +95,10 @@ the project `https://github.com/evandrocoan/SublimeNotepadPlusPlusTheme` and cre
 Github. Now, instead of installing the original package from `evandrocoan`, you installed your fork,
 from your address `https://github.com/your_user_name/SublimeNotepadPlusPlusTheme`, then you would
 set the `upstream` key pointing to the original repository and the `url` key for your fork of it.
+
+The keys `upstream` and `branches` are used to create create pull-requests from the upstream remotes
+with the Python Module [githubpullrequests](https://github.com/evandrocoan/githubpullrequests), 
+and by commands like `Pull & Rebase all Upstreams` (see section [#commands-go-to-top](#commands-go-to-top)).
 
 
 ### Tags Management <sub><sub>[Go to Top](#channel-manager)</sub></sub>
@@ -751,10 +756,6 @@ installed the Development Version of the channel:
 1. **YourChannelName: Pull & Rebase all Upstreams** (Not Yet Implemented) Walk through all git
    repositories and perform `git remote add upstream_url`, checkout on the specified remote branch,
    and do a git merge with the upstream contents.
-
-   This is not yet implemented, it should require a new settings entry key on the `.gitmodules` to
-   set which one should be the remote branch used to checkout to do the merge. Otherwise, if the
-   setting is not set/present, the default branch would be used.
 
 1. **YourChannelName: Add All Upstreams Remotes** Walk through all git repositories and add as
    remote their upstream set on the file `.gitmodules`, if it exists. The upstream will have the
