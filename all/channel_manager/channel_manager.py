@@ -859,6 +859,11 @@ def get_git_tag_date(absolute_path, command_line_interface, tag):
         g_failed_repositories.append( (command, absolute_path) )
         raise ValueError("Git could not find the last git tag date!")
 
+    # https://stackoverflow.com/questions/13073062/git-warning-refname-master-is-ambiguous/16302266
+    if 'warning: refname' in output:
+        log(1, "%s output %s", "WARNING\n" * 8, output)
+        output = output.split("\n")[1]
+
     return output[0:19]
 
 
