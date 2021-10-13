@@ -131,7 +131,8 @@ the fix for build `3147` also broke completely the package for Sublime Text stab
 Hence, we must to create a tag which targets the last commit which is working for build `3143`.
 Moreover, when some user using the stable build `3143` installs the `Notepad++ Color Scheme`, they
 must install the one from the tag `3143`, and not the one from the master branch, which has the
-latest fixes for build development build `3144` or newer. Stills also to do automatic tagging of the
+latest fixes for build development build `3144` or newer.
+It on the TODO list, to also perform automatic tagging of the
 latest release package is working for Sublime Text as the tag `3143` just mentioned, however this
 seems not much required to be done as should there be only a few exceptions for when a packages
 stops working for some build of Sublime Text.
