@@ -512,7 +512,7 @@ def create_repositories_list(all_packages, last_channel_file):
             repository.info['details'] = repository.url
 
         repository.release_data['platforms']    = "*"
-        repository.release_data['sublime_text'] = ">=3126"
+        repository.release_data['sublime_text'] = ">=4000"
 
         # Must to be called after setting `release_data{}`
         repository.setVersioningTag( last_channel_file, command_line_interface )
