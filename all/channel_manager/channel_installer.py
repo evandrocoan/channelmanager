@@ -1120,17 +1120,22 @@ class ChannelInstaller(threading.Thread):
             log.newline( count=2 )
 
             log( 1, "Finishing PackagesManager %s..." % self.installationType )
-            self.uninstall_list_of_packages( [("PackagesManager", False), ("0_packagesmanager_loader", None)] )
+            self.uninstall_list_of_packages( [
+                    ("PackagesManager", False),
+                    ("0_packagesmanager_loader33", None),
+                    ("0_packagesmanager_loader38", None),
+                ] )
 
-            self.remove_0_package_dependency_loader( "0_packagesmanager_loader" )
+            self.remove_0_package_dependency_loader( "0_packagesmanager_loader33" )
+            self.remove_0_package_dependency_loader( "0_packagesmanager_loader38" )
             self.clean_packagesmanager_settings()
 
 
     def remove_0_package_dependency_loader(self, loader_name):
         """
-            Most times the 0_packagesmanager_loader is not being deleted/removed, then try again.
+            Most times the 0_packagesmanager_loader33 is not being deleted/removed, then try again.
         """
-        packagesmanager_loader_path     = os.path.join(
+        packagesmanager_loader_path = os.path.join(
                 self.channelSettings['CHANNEL_ROOT_DIRECTORY'], "Installed Packages", "%s.sublime-package" % loader_name )
 
         packagesmanager_loader_path_new = os.path.join(
