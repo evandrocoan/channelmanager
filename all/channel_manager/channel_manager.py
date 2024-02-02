@@ -521,6 +521,13 @@ def create_repositories_list(all_packages, last_channel_file):
         user_forker = get_user_name( repository.url )
         repository.ensureAuthorName( user_forker )
 
+        repository.release_data['python_versions'] = ['3.3']
+        python_version = repository.absolute_path + '/.python-version'
+
+        if os.path.exists(python_version):
+            with open(python_version, 'r') as file:
+                repository.release_data['python_versions'] = [file.read().strip()]
+
         # Must to be called after `setVersioningTag()`
         tagged_releases = repository.getOldCompatibleVersions( command_line_interface )
         tagged_releases.insert( 0, repository.release_data )
