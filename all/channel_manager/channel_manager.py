@@ -859,7 +859,7 @@ def get_git_tag_date(absolute_path, command_line_interface, tag):
         @return release_date `2018-02-16 01:40:11`
     """
     # command = shlex.split( "git log -1 --date=iso" )
-    command = shlex.split( "git log -1 --pretty=format:%ci {}".format( tag ) )
+    command = shlex.split( "git log -1 --pretty=format:%ci refs/tags/{}".format( tag ) )
     output  = command_line_interface.execute( command, absolute_path, short_errors=True )
 
     if output is False:
