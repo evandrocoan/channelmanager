@@ -152,7 +152,7 @@ def load_repository_file(channel_repository_file, load_dependencies=True):
     last_packages_dictionary = {}
 
     if load_dependencies:
-        dependencies_list = repositories_dictionary.get( 'dependencies', [] )
+        dependencies_list = repositories_dictionary.get( 'libraries', [] )
         packages_list.extend( dependencies_list )
 
     for package in packages_list:
@@ -408,7 +408,7 @@ def is_channel_upgraded(channel_settings):
 
         write_data_file( os.path.join( os.path.dirname( sublime.packages_path() ), channel_settings['CHANNEL_PACKAGE_METADATA'] ),
             {
-                "dependencies": [],
+                "libraries": [],
                 "description": "No description available.",
                 "platforms": "*",
                 "sublime_text": ">3114",
