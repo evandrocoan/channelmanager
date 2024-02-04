@@ -448,10 +448,12 @@ def load_deafault_channel():
 
 def create_repository_file(repositories, dependencies):
     repository_file = OrderedDict()
-    repository_file['schema_version'] = "3.0.0"
 
-    repository_file['packages']     = repositories
-    repository_file['dependencies'] = dependencies
+    repository_file['$schema'] = "sublime://packagecontrol.io/schemas/channel"
+    repository_file['schema_version'] = "4.0.0"
+
+    repository_file['packages']  = repositories
+    repository_file['libraries'] = dependencies
 
     # print_data_file( g_channelSettings['CHANNEL_REPOSITORY_FILE'] )
     write_data_file( g_channelSettings['CHANNEL_REPOSITORY_FILE'], repository_file )
@@ -460,15 +462,17 @@ def create_repository_file(repositories, dependencies):
 def create_channel_file(repositories, dependencies):
     channel_dictionary = OrderedDict()
 
+    channel_dictionary['$schema'] = "sublime://packagecontrol.io/schemas/channel"
+    channel_dictionary['schema_version'] = "4.0.0"
+
     channel_dictionary['repositories'] = []
     channel_dictionary['repositories'].append( g_channelSettings['CHANNEL_REPOSITORY_URL'] )
 
-    channel_dictionary['schema_version'] = "3.0.0"
     channel_dictionary['packages_cache'] = OrderedDict()
     channel_dictionary['packages_cache'][g_channelSettings['CHANNEL_REPOSITORY_URL']] = repositories
 
-    channel_dictionary['dependencies_cache'] = OrderedDict()
-    channel_dictionary['dependencies_cache'][g_channelSettings['CHANNEL_REPOSITORY_URL']] = dependencies
+    channel_dictionary['libraries_cache'] = OrderedDict()
+    channel_dictionary['libraries_cache'][g_channelSettings['CHANNEL_REPOSITORY_URL']] = dependencies
 
     # print_data_file( g_channelSettings['CHANNEL_FILE_PATH'] )
     write_data_file( g_channelSettings['CHANNEL_FILE_PATH'], channel_dictionary )
@@ -1141,18 +1145,22 @@ class Repository():
 
     def ensureAuthorName(self, user_forker):
 
-        if 'authors' not in self.info:
+        if 'authors' in self.info:
+            self.info['author'] = self.info['authors']
+            del self.info['authors']
+
+        if 'author' not in self.info:
 
             if len( self.upstream ) > 20:
                 original_author      = get_user_name( self.upstream )
-                self.info['authors'] = [ original_author ]
+                self.info['author'] = [ original_author ]
 
             else:
                 # If there is not upstream set, then it is your own package (user_forker)
-                self.info['authors'] = [user_forker]
+                self.info['author'] = [user_forker]
 
-        if user_forker not in self.info['authors']:
-            self.info['authors'].append( "Forked by " + user_forker )
+        if user_forker not in self.info['author']:
+            self.info['author'].append( "Forked by " + user_forker )
 
     def getOldCompatibleVersions(self, command_line_interface):
         """
