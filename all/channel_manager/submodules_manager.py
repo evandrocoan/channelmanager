@@ -598,7 +598,7 @@ def parse_upstream( upstream ):
         https://stackoverflow.com/questions/4666973/how-to-extract-a-substring-from-inside-a-string-in-python
     """
     # https://regex101.com/r/TRxkI9/1/
-    matches = re.search( 'github\.com\/(.+)\/(.+)', upstream )
+    matches = re.search( r'github\.com\/(.+)\/(.+)', upstream )
 
     if matches:
         return matches.group(1), matches.group(2)

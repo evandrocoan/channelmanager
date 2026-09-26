@@ -745,7 +745,7 @@ def fix_sublime_text_release(repository, repositories, dependencies):
 
 
 def get_version_number(sublime_version_text):
-    number_match = re.match('.+(\d+)$',  sublime_version_text)
+    number_match = re.match(r'.+(\d+)$',  sublime_version_text)
 
     if number_match:
         return int( number_match.group( 1 ) )
@@ -765,11 +765,11 @@ def is_compatible_version(release_version, acceptable_version):
     min_version = float("-inf")
     max_version = float("inf")
 
-    range_match      = re.match('(\d+)\s*-\s*(\d+)$', release_version)
-    less_than        = re.match('<(\d+)$',  release_version)
-    greater_than     = re.match('>(\d+)$',  release_version)
-    less_or_equal    = re.match('<=(\d+)$', release_version)
-    greater_or_equal = re.match('>=(\d+)$', release_version)
+    range_match      = re.match(r'(\d+)\s*-\s*(\d+)$', release_version)
+    less_than        = re.match(r'<(\d+)$',  release_version)
+    greater_than     = re.match(r'>(\d+)$',  release_version)
+    less_or_equal    = re.match(r'<=(\d+)$', release_version)
+    greater_or_equal = re.match(r'>=(\d+)$', release_version)
 
     if greater_than:
         min_version = int( greater_than.group( 1 ) ) + 1
@@ -796,7 +796,7 @@ def is_compatible_version(release_version, acceptable_version):
     return True
 
 
-def get_user_name(url, regular_expression="github\.com\/(.+)/(.+)", allow_recursion=True):
+def get_user_name(url, regular_expression=r"github\.com\/(.+)/(.+)", allow_recursion=True):
     """
         How to extract a substring from inside a string in Python?
         https://stackoverflow.com/questions/4666973/how-to-extract-a-substring-from-inside-a-string-in-python
@@ -808,7 +808,7 @@ def get_user_name(url, regular_expression="github\.com\/(.+)/(.+)", allow_recurs
         return matches.group(1)
 
     elif allow_recursion:
-        return get_user_name( url, "bitbucket\.org\/(.+)/(.+)", False )
+        return get_user_name( url, r"bitbucket\.org\/(.+)/(.+)", False )
 
     return ""
 
@@ -825,7 +825,7 @@ def fix_semantic_version(tag):
     """
         Returns a git tag on the format `0.0.0`.
     """
-    regexes = [ ("(\d+)", ".0.0"), ("(\d+\.\d+)", ".0"), ("(\d+\.\d+\.\d+)", "") ]
+    regexes = [ (r"(\d+)", ".0.0"), (r"(\d+\.\d+)", ".0"), (r"(\d+\.\d+\.\d+)", "") ]
 
     for expression, complement in reversed( regexes ):
         matches = re.search( expression, tag )
@@ -912,7 +912,7 @@ def get_git_latest_tag(absolute_path, command_line_interface):
     # Takes the latest tag which is numeric on the form `0.0anything` (number.number)
     for index, git_tag in enumerate( git_tags ):
 
-        if re.search( "^(\d+)\.(\d+)(.+)?$", git_tag ):
+        if re.search( r"^(\d+)\.(\d+)(.+)?$", git_tag ):
             clean_tag = git_tag
 
     return clean_tag
