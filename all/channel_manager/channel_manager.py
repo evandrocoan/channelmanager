@@ -43,7 +43,6 @@ import configparser
 import contextlib
 
 from collections import OrderedDict
-from distutils.version import LooseVersion
 
 from . import settings as g_settings
 g_is_already_running = False

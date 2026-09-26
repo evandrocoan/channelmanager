@@ -31,9 +31,6 @@ import os
 import sys
 import time
 
-from distutils.version import LooseVersion
-
-
 # Relative imports in Python 3
 # https://stackoverflow.com/questions/16981921/relative-imports-in-python-3
 try:
@@ -41,6 +38,11 @@ try:
 
 except( ImportError, ValueError):
     import settings as g_settings
+
+try:
+    from .loose_version import LooseVersion
+except ImportError:
+    from loose_version import LooseVersion
 
 
 BASE_FILE_FOLDER          = os.path.join( g_settings.PACKAGE_ROOT_DIRECTORY, "all", "channel_manager", "base_file" )
