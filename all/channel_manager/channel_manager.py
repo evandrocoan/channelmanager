@@ -45,6 +45,7 @@ import contextlib
 from collections import OrderedDict
 
 from . import settings as g_settings
+from .release_markers import declared_main_branch, latest_semantic_tag, mutable_release_tags, parse_release_markers
 g_is_already_running = False
 g_failed_repositories = []
 
@@ -552,6 +553,10 @@ def get_last_tag_fixed(absolute_path, last_dictionary, command_line_interface, f
     """
     git_tag = get_git_latest_tag( absolute_path, command_line_interface )
 
+    if git_tag == "master" and not force_tag_update:
+        release_date = get_git_commit_date( absolute_path, command_line_interface )
+        return git_tag, get_git_version( release_date ), release_date
+
     # # Delete all local tags not present on the remote
     # # https://stackoverflow.com/questions/1841341/remove-local-tags-that-are-no-longer
     # command = shlex.split( 'git fetch --prune origin "+refs/tags/*:refs/tags/*"' )
@@ -574,8 +579,9 @@ def get_last_tag_fixed(absolute_path, last_dictionary, command_line_interface, f
                 next_git_tag, is_incremented, unprefixed_tag = increment_tag_version( git_tag, force_tag_update, severity_level )
                 current_tags = get_current_commit_tags( absolute_path, command_line_interface )
 
-                if len( current_tags ) > 0:
-                    tags_list = current_tags.split( "\n" )
+                tags_list = mutable_release_tags( current_tags.split( "\n" ) )
+
+                if len( tags_list ) > 0:
                     log( 1, "The current HEAD commit already has the following tags(s): %s" % str( current_tags ) )
 
                     # For now, disable all tag prefixes, i.e., tags which are not strictly "0.0.0",
@@ -615,6 +621,7 @@ def get_last_tag_fixed(absolute_path, last_dictionary, command_line_interface, f
 
 
 def delete_tags_list(absolute_path, tags_list, command_line_interface):
+    tags_list    = mutable_release_tags( tags_list )
     tags_count   = len( tags_list )
     remote_index = 0
 
@@ -849,7 +856,7 @@ def get_git_commit_date(absolute_path, command_line_interface):
 
     if output is False:
         g_failed_repositories.append( (command, absolute_path) )
-        return "2017-04-13 16:44:14"
+        raise ValueError( "Git could not find the latest commit date!" )
 
     return output[0:19]
 
@@ -897,25 +904,17 @@ def get_git_latest_tag(absolute_path, command_line_interface):
     git_tags  = command_line_interface.execute( command, absolute_path, short_errors=True )
     clean_tag = "master"
 
-    if git_tags is False \
-            or "warning:" in git_tags \
-            or len( git_tags ) < 3:
+    if git_tags is False or "warning:" in git_tags:
 
         log( 1, "Error: Failed getting git tag for the package `%s`, results: %s" % ( absolute_path, git_tags ) )
         g_failed_repositories.append( (command, absolute_path) )
 
         return clean_tag
 
-    git_tags  = git_tags.split( "\n" )
-    clean_tag = git_tags[-1]
+    if not git_tags.strip():
+        return clean_tag
 
-    # Takes the latest tag which is numeric on the form `0.0anything` (number.number)
-    for index, git_tag in enumerate( git_tags ):
-
-        if re.search( r"^(\d+)\.(\d+)(.+)?$", git_tag ):
-            clean_tag = git_tag
-
-    return clean_tag
+    return latest_semantic_tag( git_tags.split( "\n" ) )
 
 
 def create_packages_manager_tag(absolute_path, command_line_interface):
@@ -1107,8 +1106,11 @@ class Repository():
             git_tag, date_tag, release_date = get_last_tag_fixed( self.absolute_path, last_dictionary, command_line_interface )
 
         except ValueError as error:
-            log( 1, "Warning: Skipping tag... %s" % error )
-            main_branch = "master"
+            raise ValueError( "Could not resolve current release for %s" % self.name ) from error
+
+        if git_tag == "master" and not main_branch:
+            branch_mappings = self.gitModulesFile.get( self.section, "branches", fallback="" )
+            main_branch = declared_main_branch( branch_mappings )
 
         if main_branch:
             self.release_data['is_branched_tag'] = True
@@ -1126,40 +1128,31 @@ class Repository():
         """
             @return None when not branch is found.
         """
-        main_branch = None
-        tags_list = self.settings.get( "tags" )
-
-        if tags_list:
-
-            for tag in tags_list:
-
-                try:
-                    tag_interger = int( tag )
-
-                except ValueError as error:
-                    main_branch = tag
-                    break
-
+        main_branch, _ = parse_release_markers( self.settings.get( "tags" ) )
         return main_branch
 
     def ensureAuthorName(self, user_forker):
+        authors = self.info.pop( 'authors', None ) or self.info.get( 'author' )
 
-        if 'authors' in self.info:
-            self.info['author'] = self.info['authors']
-            del self.info['authors']
+        if isinstance( authors, str ):
+            authors = [ authors ]
 
-        if 'author' not in self.info:
+        elif not isinstance( authors, list ):
+            authors = []
+
+        if not authors:
 
             if len( self.upstream ) > 20:
-                original_author      = get_user_name( self.upstream )
-                self.info['author'] = [ original_author ]
+                authors = [ get_user_name( self.upstream ) ]
 
             else:
                 # If there is not upstream set, then it is your own package (user_forker)
-                self.info['author'] = [user_forker]
+                authors = [ user_forker ]
 
-        if user_forker not in self.info['author']:
-            self.info['author'].append( "Forked by " + user_forker )
+        if user_forker not in authors:
+            authors.append( "Forked by " + user_forker )
+
+        self.info['author'] = authors
 
     def getOldCompatibleVersions(self, command_line_interface):
         """
@@ -1179,35 +1172,32 @@ class Repository():
 
             @return a list of dictionary releases created, otherwise a empty list if not tags exists
         """
-        greatest_tag    = get_version_number( self.release_data['sublime_text'] )
         tagged_releases = []
-        tags_list       = self.settings.get( "tags" )
+        _, markers = parse_release_markers( self.settings.get( "tags" ) )
 
-        if tags_list:
+        for marker in markers:
+            tag = marker['ref']
 
-            for tag in tags_list:
+            try:
+                tag_date = get_git_tag_date( self.absolute_path, command_line_interface, tag )
 
-                try:
-                    tag_interger = int( tag )
-                    tag_date     = get_git_tag_date( self.absolute_path, command_line_interface, tag )
+            except ValueError as error:
+                raise ValueError( "Missing historical build marker %s in %s" % (
+                    tag, self.absolute_path ) ) from error
 
-                except ValueError as error:
-                    log( 1, "Warning: Skipping tag... %s" % error )
-                    continue
+            release_data = OrderedDict()
+            release_data['platforms']        = "*"
+            release_data['sublime_text']     = marker['sublime_text']
+            release_data['python_versions']  = marker['python_versions']
+            release_data['url']              = get_download_url( self.url, tag )
+            release_data['date']             = tag_date
+            release_data['version']          = get_git_version( tag_date )
 
-                release_data = OrderedDict()
-                release_data['platforms']    = "*"
-                release_data['sublime_text'] = "<=%s" % tag
+            tagged_releases.append( release_data )
 
-                if greatest_tag < tag_interger:
-                    greatest_tag = tag_interger
-                    self.release_data['sublime_text'] = ">" + tag
-
-                release_data['url']     = get_download_url( self.url, tag )
-                release_data['date']    = tag_date
-                release_data['version'] = get_git_version( tag_date )
-
-                tagged_releases.append( release_data )
+        if markers:
+            self.release_data['sublime_text'] = ">" + str( max(
+                marker['ceiling'] for marker in markers ) )
 
         return tagged_releases
 
